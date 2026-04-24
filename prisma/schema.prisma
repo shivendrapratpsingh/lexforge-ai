@@ -129,3 +129,30 @@ model CourtDate {
   draft      Draft?   @relation(fields: [draftId], references: [id])
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// Admin-set free-Pro window for EVERYONE. Only the most recent row is treated
+// as the active window; the rest are history. Pro access is granted while
+// NOW is between startsAt and endsAt (inclusive).
+model GlobalPromo {
+  id        String   @id @default(cuid())
+  startsAt  DateTime
+  endsAt    DateTime
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Admin-set free-Pro grant for a specific email. The email does NOT need to
+// belong to an existing user — if they sign up later, Pro kicks in during
+// the window. Multiple non-overlapping rows per email are allowed.
+model EmailPromo {
+  id        String   @id @default(cuid())
+  email     String
+  startsAt  DateTime
+  endsAt    DateTime
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}

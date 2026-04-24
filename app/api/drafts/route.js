@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { DOCUMENT_TYPES, getRelevantCaseLaws } from '@/lib/utils'
-import { isAdmin, isProOrAdminEmail, requiresProDocument, FREE_DOCS_PER_MONTH } from '@/lib/admin'
+import { isAdmin, hasProAccess, requiresProDocument, FREE_DOCS_PER_MONTH } from '@/lib/admin'
 
 // ─── Extract client info from templateData by document type ───────
 function extractClientFromTemplate(documentType, templateData) {
@@ -99,7 +99,7 @@ export async function POST(req) {
     if (dbUser.suspended)
       return NextResponse.json({ error: 'Your account is suspended. Contact the administrator.' }, { status: 403 })
 
-    const userIsPro = isProOrAdminEmail(dbUser.email, dbUser.tier)
+    const userIsPro = await hasProAccess(dbUser.email, dbUser.tier)
 
     // Block premium document types for free users
     if (!userIsPro && requiresProDocument(documentType)) {

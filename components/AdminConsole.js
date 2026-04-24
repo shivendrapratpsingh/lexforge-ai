@@ -54,25 +54,80 @@ function Badge({ children, color }) {
   )
 }
 
+// Helper: format a Date or ISO string for an <input type="datetime-local">.
+function toLocalInput(d) {
+  if (!d) return ''
+  const dt = new Date(d)
+  if (isNaN(dt)) return ''
+  const pad = n => String(n).padStart(2, '0')
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`
+}
+
+function fmtRange(startsAt, endsAt) {
+  const s = new Date(startsAt), e = new Date(endsAt)
+  const opts = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+  return `${s.toLocaleString(undefined, opts)} → ${e.toLocaleString(undefined, opts)}`
+}
+
+function statusColor(status) {
+  if (status === 'active')   return '#4ADE80'
+  if (status === 'upcoming') return '#60A5FA'
+  return '#6A6A6A' // expired
+}
+
+const INPUT = {
+  background: '#0D0D0D',
+  border: '1px solid #1C1C1C',
+  borderRadius: 8,
+  padding: '8px 10px',
+  color: '#F0F0F0',
+  fontSize: 13,
+  outline: 'none',
+}
+const FIELD_LABEL = { fontSize: 10, color: '#6A6A6A', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }
+
 export default function AdminConsole() {
   const [stats, setStats] = useState(null)
   const [users, setUsers] = useState([])
   const [drafts, setDrafts] = useState([])
+  const [globalPromo, setGlobalPromo] = useState(null)
+  const [emailPromos, setEmailPromos] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState({})
   const [err, setErr] = useState(null)
 
+  // Global promo form state
+  const [gpStart, setGpStart] = useState('')
+  const [gpEnd,   setGpEnd]   = useState('')
+  const [gpNote,  setGpNote]  = useState('')
+
+  // Email promo form state
+  const [epEmail, setEpEmail] = useState('')
+  const [epStart, setEpStart] = useState('')
+  const [epEnd,   setEpEnd]   = useState('')
+  const [epNote,  setEpNote]  = useState('')
+
   async function loadAll() {
     setLoading(true)
     try {
-      const [s, u, d] = await Promise.all([
+      const [s, u, d, gp, ep] = await Promise.all([
         fetch('/api/admin/stats').then(r => r.json()),
         fetch('/api/admin/users').then(r => r.json()),
         fetch('/api/admin/drafts').then(r => r.json()),
+        fetch('/api/admin/global-promo').then(r => r.json()),
+        fetch('/api/admin/email-promos').then(r => r.json()),
       ])
       setStats(s.stats || null)
       setUsers(u.users || [])
       setDrafts(d.drafts || [])
+      setGlobalPromo(gp.promo || null)
+      setEmailPromos(ep.promos || [])
+      // Prefill global promo form with existing window if any.
+      if (gp.promo) {
+        setGpStart(toLocalInput(gp.promo.startsAt))
+        setGpEnd(toLocalInput(gp.promo.endsAt))
+        setGpNote(gp.promo.note || '')
+      }
     } catch (e) {
       setErr('Failed to load admin data.')
     } finally {
@@ -81,6 +136,85 @@ export default function AdminConsole() {
   }
 
   useEffect(() => { loadAll() }, [])
+
+  async function saveGlobalPromo() {
+    if (!gpStart || !gpEnd) { alert('Start and end dates are required.'); return }
+    setBusy(b => ({ ...b, gpSave: true }))
+    try {
+      const r = await fetch('/api/admin/global-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startsAt: new Date(gpStart).toISOString(),
+          endsAt:   new Date(gpEnd).toISOString(),
+          note:     gpNote,
+        }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Save failed')
+      await loadAll()
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setBusy(b => ({ ...b, gpSave: false }))
+    }
+  }
+
+  async function cancelGlobalPromo() {
+    if (!confirm('Cancel the global free-Pro window? Everyone on free tier will lose Pro access immediately (unless they have a personal grant).')) return
+    setBusy(b => ({ ...b, gpDel: true }))
+    try {
+      const r = await fetch('/api/admin/global-promo', { method: 'DELETE' })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Cancel failed')
+      setGpStart(''); setGpEnd(''); setGpNote('')
+      await loadAll()
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setBusy(b => ({ ...b, gpDel: false }))
+    }
+  }
+
+  async function addEmailPromo() {
+    if (!epEmail || !epStart || !epEnd) { alert('Email, start and end are required.'); return }
+    setBusy(b => ({ ...b, epAdd: true }))
+    try {
+      const r = await fetch('/api/admin/email-promos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:    epEmail,
+          startsAt: new Date(epStart).toISOString(),
+          endsAt:   new Date(epEnd).toISOString(),
+          note:     epNote,
+        }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Add failed')
+      setEpEmail(''); setEpStart(''); setEpEnd(''); setEpNote('')
+      await loadAll()
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setBusy(b => ({ ...b, epAdd: false }))
+    }
+  }
+
+  async function deleteEmailPromo(id, email) {
+    if (!confirm(`Delete free-Pro grant for ${email}?`)) return
+    setBusy(b => ({ ...b, [id + 'ep']: true }))
+    try {
+      const r = await fetch(`/api/admin/email-promos/${id}`, { method: 'DELETE' })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Delete failed')
+      await loadAll()
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setBusy(b => ({ ...b, [id + 'ep']: false }))
+    }
+  }
 
   async function updateUser(id, patch, label) {
     setBusy(b => ({ ...b, [id + label]: true }))
@@ -155,6 +289,120 @@ export default function AdminConsole() {
           </div>
         </section>
       )}
+
+      {/* ── Global Pro Promotion ── */}
+      <section>
+        <h2 style={{ fontSize: 13, color: '#D4A017', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>
+          Global Pro Promotion
+        </h2>
+        <div style={{ fontSize: 12, color: '#6A6A6A', marginBottom: 12 }}>
+          Opens Pro access for <b style={{ color: '#C0C0C0' }}>every user</b> during the window below. Outside this window, regular tier rules apply.
+        </div>
+
+        <div style={CARD}>
+          {globalPromo ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+              <Badge color={statusColor(globalPromo.status)}>{globalPromo.status}</Badge>
+              <span style={{ fontSize: 13, color: '#C0C0C0' }}>{fmtRange(globalPromo.startsAt, globalPromo.endsAt)}</span>
+              {globalPromo.note && <span style={{ fontSize: 12, color: '#6A6A6A' }}>— {globalPromo.note}</span>}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: '#6A6A6A', marginBottom: 16 }}>No active or upcoming global promotion.</div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+            <div>
+              <div style={FIELD_LABEL}>Start</div>
+              <input type="datetime-local" value={gpStart} onChange={e => setGpStart(e.target.value)} style={{ ...INPUT, width: '100%' }} />
+            </div>
+            <div>
+              <div style={FIELD_LABEL}>End</div>
+              <input type="datetime-local" value={gpEnd} onChange={e => setGpEnd(e.target.value)} style={{ ...INPUT, width: '100%' }} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={FIELD_LABEL}>Note (optional)</div>
+              <input type="text" value={gpNote} onChange={e => setGpNote(e.target.value)} placeholder="e.g. Launch week special" style={{ ...INPUT, width: '100%' }} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+            <Btn onClick={saveGlobalPromo} disabled={busy.gpSave}>
+              {globalPromo ? 'Update Window' : 'Create Window'}
+            </Btn>
+            {globalPromo && (
+              <Btn onClick={cancelGlobalPromo} disabled={busy.gpDel} danger>
+                Cancel Promotion
+              </Btn>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Per-Email Pro Grants ── */}
+      <section>
+        <h2 style={{ fontSize: 13, color: '#D4A017', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>
+          Individual Pro Grants
+        </h2>
+        <div style={{ fontSize: 12, color: '#6A6A6A', marginBottom: 12 }}>
+          Grant free Pro access to a specific email for a fixed window. Works even if that email hasn&rsquo;t registered yet — Pro kicks in automatically on signup.
+        </div>
+
+        <div style={{ ...CARD, marginBottom: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={FIELD_LABEL}>Email</div>
+              <input type="email" value={epEmail} onChange={e => setEpEmail(e.target.value)} placeholder="friend@example.com" style={{ ...INPUT, width: '100%' }} />
+            </div>
+            <div>
+              <div style={FIELD_LABEL}>Start</div>
+              <input type="datetime-local" value={epStart} onChange={e => setEpStart(e.target.value)} style={{ ...INPUT, width: '100%' }} />
+            </div>
+            <div>
+              <div style={FIELD_LABEL}>End</div>
+              <input type="datetime-local" value={epEnd} onChange={e => setEpEnd(e.target.value)} style={{ ...INPUT, width: '100%' }} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={FIELD_LABEL}>Note (optional)</div>
+              <input type="text" value={epNote} onChange={e => setEpNote(e.target.value)} placeholder="e.g. Family member, beta tester" style={{ ...INPUT, width: '100%' }} />
+            </div>
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <Btn onClick={addEmailPromo} disabled={busy.epAdd}>+ Add Grant</Btn>
+          </div>
+        </div>
+
+        <div style={{ ...CARD, padding: 0, overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
+              <thead>
+                <tr>
+                  <th style={TH}>Email</th>
+                  <th style={TH}>Status</th>
+                  <th style={TH}>Window</th>
+                  <th style={TH}>Note</th>
+                  <th style={TH}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emailPromos.map(p => (
+                  <tr key={p.id}>
+                    <td style={TD}>{p.email}</td>
+                    <td style={TD}><Badge color={statusColor(p.status)}>{p.status}</Badge></td>
+                    <td style={TD}>{fmtRange(p.startsAt, p.endsAt)}</td>
+                    <td style={{ ...TD, color: '#8A8A8A' }}>{p.note || '—'}</td>
+                    <td style={TD}>
+                      <Btn onClick={() => deleteEmailPromo(p.id, p.email)} disabled={busy[p.id + 'ep']} danger>Delete</Btn>
+                    </td>
+                  </tr>
+                ))}
+                {emailPromos.length === 0 && (
+                  <tr><td colSpan={5} style={{ ...TD, textAlign: 'center', color: '#6A6A6A' }}>No individual grants yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       {/* ── Users ── */}
       <section>

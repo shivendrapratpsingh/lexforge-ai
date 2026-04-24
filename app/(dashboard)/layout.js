@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { SignOutButton } from '@/components/SignOutButton'
-import { isAdmin, isPro } from '@/lib/admin'
+import { isAdmin, hasProAccessForSession } from '@/lib/admin'
 
 const baseNavLinks = [
   { href: '/dashboard',   label: 'Dashboard',      icon: '◈', proOnly: false },
@@ -20,8 +20,8 @@ export default async function DashboardLayout({ children }) {
 
   const initial = (session.user?.name?.[0] || session.user?.email?.[0] || 'U').toUpperCase()
   const admin = isAdmin(session)
-  const pro = isPro(session)
-  const tier = admin ? 'admin' : (session.user?.tier === 'pro' ? 'pro' : 'free')
+  const pro = await hasProAccessForSession(session)
+  const tier = admin ? 'admin' : (pro ? 'pro' : 'free')
 
   const navLinks = [
     ...baseNavLinks.map(l => ({

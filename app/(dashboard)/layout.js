@@ -45,6 +45,7 @@ export default async function DashboardLayout({ children }) {
         flexDirection: 'column',
         position: 'fixed',
         height: '100vh',
+        overflowY: 'auto',
         zIndex: 40,
         flexShrink: 0,
       }}>

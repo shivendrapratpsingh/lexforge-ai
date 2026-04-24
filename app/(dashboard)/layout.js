@@ -44,14 +44,16 @@ export default async function DashboardLayout({ children }) {
         display: 'flex',
         flexDirection: 'column',
         position: 'fixed',
+        top: 0,
+        left: 0,
         height: '100vh',
-        overflowY: 'auto',
+        overflow: 'hidden',
         zIndex: 40,
         flexShrink: 0,
       }}>
 
         {/* Logo */}
-        <div style={{ padding: '22px 20px', borderBottom: '1px solid #1C1C1C' }}>
+        <div style={{ padding: '22px 20px', borderBottom: '1px solid #1C1C1C', flexShrink: 0 }}>
           <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg, #D4A017, #F0C040)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <span style={{ color: '#0D0D0D', fontWeight: 900, fontSize: 13 }}>LF</span>
@@ -64,7 +66,7 @@ export default async function DashboardLayout({ children }) {
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '14px 10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
           {navLinks.map((link, idx) => (
             <Link
               key={`${link.href}-${idx}`}
@@ -94,7 +96,7 @@ export default async function DashboardLayout({ children }) {
         </nav>
 
         {/* New Document CTA */}
-        <div style={{ padding: '0 10px 12px' }}>
+        <div style={{ padding: '0 10px 12px', flexShrink: 0 }}>
           <Link href="/new-draft" style={{
             display: 'flex',
             alignItems: 'center',
@@ -113,7 +115,7 @@ export default async function DashboardLayout({ children }) {
         </div>
 
         {/* User info + Sign Out */}
-        <div style={{ padding: '12px 10px 16px', borderTop: '1px solid #1C1C1C' }}>
+        <div style={{ padding: '12px 10px 16px', borderTop: '1px solid #1C1C1C', flexShrink: 0, background: '#090909' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: '#141414', marginBottom: 6 }}>
             <div style={{
               width: 32, height: 32,

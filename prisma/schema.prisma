@@ -8,26 +8,124 @@ datasource db {
 }
 
 model User {
+  id         String      @id @default(cuid())
+  name       String?
+  email      String      @unique
+  password   String?
+  tier       String      @default("free")
+  suspended  Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  clients    Client[]
+  courtDates CourtDate[]
+  drafts     Draft[]
+}
+
+model Client {
+  id            String             @id @default(cuid())
+  userId        String
+  name          String
+  fatherName    String?
+  age           String?
+  gender        String?
+  phone         String?
+  email         String?
+  address       String?
+  city          String?
+  district      String?
+  state         String?            @default("Uttar Pradesh")
+  pincode       String?
+  aadhaarNumber String?
+  photo         String?
+  tags          String?
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attachments   ClientAttachment[]
+  payments      ClientPayment[]
+  courtDates    CourtDate[]
+  drafts        Draft[]
+}
+
+model ClientAttachment {
   id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
-  password  String?
+  clientId  String
+  name      String
+  label     String?
+  docType   String   @default("other")
+  mimeType  String   @default("application/octet-stream")
+  size      Int?
+  data      String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  drafts    Draft[]
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model ClientPayment {
+  id          String   @id @default(cuid())
+  clientId    String
+  amount      Float
+  date        DateTime
+  mode        String   @default("cash")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model Draft {
-  id             String   @id @default(cuid())
+  id             String         @id @default(cuid())
   userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title          String
-  content        String   @db.Text
+  content        String
   documentType   String
-  status         String   @default("draft")
+  status         String         @default("draft")
   templateData   Json?
   caseLaws       Json?
-  legalReasoning String?  @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  legalReasoning String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  court          String?
+  intakeMethod   String?        @default("form")
+  language       String?        @default("english")
+  sourceText     String?
+  caseStatus     String?        @default("active")
+  clientId       String?
+  positivePoints String?
+  amendmentNote  String?
+  parentDraftId  String?
+  courtDates     CourtDate[]
+  client         Client?        @relation(fields: [clientId], references: [id])
+  parentDraft    Draft?         @relation("DraftAmendments", fields: [parentDraftId], references: [id])
+  amendments     Draft[]        @relation("DraftAmendments")
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions       DraftVersion[]
+}
+
+model DraftVersion {
+  id         String   @id @default(cuid())
+  draftId    String
+  version    Int
+  content    String
+  changeNote String?
+  createdAt  DateTime @default(now())
+  draft      Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+}
+
+model CourtDate {
+  id         String   @id @default(cuid())
+  userId     String
+  draftId    String?
+  clientId   String?
+  title      String
+  caseNumber String?
+  date       DateTime
+  type       String   @default("hearing")
+  notes      String?
+  completed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  client     Client?  @relation(fields: [clientId], references: [id])
+  draft      Draft?   @relation(fields: [draftId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

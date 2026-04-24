@@ -2,12 +2,16 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { SignOutButton } from '@/components/SignOutButton'
+import { isAdmin, isPro } from '@/lib/admin'
 
-const navLinks = [
-  { href: '/dashboard', label: 'Dashboard', icon: '◈' },
-  { href: '/new-draft', label: 'New Document', icon: '✦' },
-  { href: '/drafts', label: 'My Drafts', icon: '◉' },
-  { href: '/research', label: 'Legal Research', icon: '◎' },
+const baseNavLinks = [
+  { href: '/dashboard',   label: 'Dashboard',      icon: '◈', proOnly: false },
+  { href: '/new-draft',   label: 'New Document',   icon: '✦', proOnly: false },
+  { href: '/drafts',      label: 'My Documents',   icon: '◉', proOnly: false },
+  { href: '/clients',     label: 'Clients',        icon: '👤', proOnly: true },
+  { href: '/court-dates', label: 'Court Dates',    icon: '📅', proOnly: true },
+  { href: '/tools',       label: 'Legal Tools',    icon: '⚒️', proOnly: true },
+  { href: '/research',    label: 'Legal Research', icon: '◎', proOnly: true },
 ]
 
 export default async function DashboardLayout({ children }) {
@@ -15,6 +19,18 @@ export default async function DashboardLayout({ children }) {
   if (!session) redirect('/login')
 
   const initial = (session.user?.name?.[0] || session.user?.email?.[0] || 'U').toUpperCase()
+  const admin = isAdmin(session)
+  const pro = isPro(session)
+  const tier = admin ? 'admin' : (session.user?.tier === 'pro' ? 'pro' : 'free')
+
+  const navLinks = [
+    ...baseNavLinks.map(l => ({
+      ...l,
+      href: !pro && l.proOnly ? '/upgrade' : l.href,
+      locked: !pro && l.proOnly,
+    })),
+    ...(admin ? [{ href: '/admin', label: 'Admin Console', icon: '◆', proOnly: false, locked: false, admin: true }] : []),
+  ]
 
   return (
     <div style={{ minHeight: '100vh', background: '#0D0D0D', display: 'flex' }}>
@@ -48,9 +64,9 @@ export default async function DashboardLayout({ children }) {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '14px 10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {navLinks.map(link => (
+          {navLinks.map((link, idx) => (
             <Link
-              key={link.href}
+              key={`${link.href}-${idx}`}
               href={link.href}
               className="nav-link"
               style={{
@@ -60,16 +76,18 @@ export default async function DashboardLayout({ children }) {
                 padding: '11px 14px',
                 borderRadius: 10,
                 textDecoration: 'none',
-                color: '#6A6A6A',
+                color: link.admin ? '#D4A017' : '#6A6A6A',
                 fontSize: 14,
-                fontWeight: 500,
+                fontWeight: link.admin ? 700 : 500,
                 transition: 'all 0.15s',
+                border: link.admin ? '1px solid rgba(212,160,23,0.3)' : '1px solid transparent',
               }}
             >
               <span style={{ color: '#D4A017', fontSize: 15, width: 18, textAlign: 'center', flexShrink: 0 }}>
                 {link.icon}
               </span>
-              {link.label}
+              <span style={{ flex: 1 }}>{link.label}</span>
+              {link.locked && <span style={{ fontSize: 10, color: '#D4A017', opacity: 0.7 }}>🔒 PRO</span>}
             </Link>
           ))}
         </nav>
@@ -106,14 +124,41 @@ export default async function DashboardLayout({ children }) {
               <span style={{ color: '#0D0D0D', fontWeight: 800, fontSize: 13 }}>{initial}</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#C0C0C0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {session.user?.name || 'User'}
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#C0C0C0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.user?.name || 'User'}</span>
+                <span style={{
+                  fontSize: 9,
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  background: tier === 'free' ? '#1C1C1C' : 'rgba(212,160,23,0.15)',
+                  color: tier === 'free' ? '#6A6A6A' : '#D4A017',
+                  fontWeight: 800,
+                  letterSpacing: '0.5px',
+                  flexShrink: 0,
+                }}>{tier.toUpperCase()}</span>
               </div>
               <div style={{ fontSize: 11, color: '#4A4A4A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {session.user?.email}
               </div>
             </div>
           </div>
+          {!pro && (
+            <Link href="/upgrade" style={{
+              display: 'block',
+              textAlign: 'center',
+              padding: '8px 12px',
+              marginBottom: 6,
+              background: 'linear-gradient(135deg, rgba(212,160,23,0.15), rgba(212,160,23,0.05))',
+              border: '1px solid rgba(212,160,23,0.3)',
+              borderRadius: 10,
+              textDecoration: 'none',
+              color: '#D4A017',
+              fontSize: 12,
+              fontWeight: 700,
+            }}>
+              ★ Upgrade to Pro
+            </Link>
+          )}
           <SignOutButton />
         </div>
       </aside>

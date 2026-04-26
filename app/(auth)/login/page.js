@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -12,6 +12,29 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const emailRef = useRef(null)
+  const passwordRef = useRef(null)
+
+  // Stable random suffix per mount — keeps the name attribute stable across renders
+  // while still being unrecognised by browser password managers.
+  const [nameSuffix] = useState(() => Math.random().toString(36).slice(2, 10))
+
+  // Defensive: explicitly clear the inputs after mount in case the browser autofills
+  // them before React state hydrates. Runs once on mount and after a short delay
+  // because Chromium fills credentials asynchronously after the DOM is interactive.
+  useEffect(() => {
+    const clearAutofill = () => {
+      if (emailRef.current)    emailRef.current.value = ''
+      if (passwordRef.current) passwordRef.current.value = ''
+      setForm({ email: '', password: '' })
+    }
+    clearAutofill()
+    const t1 = setTimeout(clearAutofill, 50)
+    const t2 = setTimeout(clearAutofill, 250)
+    const t3 = setTimeout(clearAutofill, 600)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+  }, [])
 
   useEffect(() => {
     if (searchParams.get('registered')) setSuccess('Account created! Sign in below.')
@@ -77,13 +100,30 @@ function LoginForm() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
+            {/* Hidden honeypot inputs — soak up Chromium / Safari autofill that ignores autoComplete="off" */}
+            <input type="text"     name="username"         autoComplete="username"         tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', height: 0, width: 0, opacity: 0, pointerEvents: 'none' }} />
+            <input type="password" name="current-password" autoComplete="current-password" tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', height: 0, width: 0, opacity: 0, pointerEvents: 'none' }} />
+
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8A8A8A', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</label>
               <input
-                type="email" value={form.email}
+                ref={emailRef}
+                type="email"
+                value={form.email}
+                name={`lf_login_email_${nameSuffix}`}
+                id={`lf-login-email-${nameSuffix}`}
                 onChange={e => setForm({ ...form, email: e.target.value })}
-                placeholder="you@example.com" required style={inp}
+                placeholder="you@example.com"
+                required
+                style={inp}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-form-type="other"
                 onFocus={e => e.target.style.borderColor = '#D4A017'}
                 onBlur={e => e.target.style.borderColor = '#2A2A2A'}
               />
@@ -91,9 +131,22 @@ function LoginForm() {
             <div style={{ marginBottom: 24 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8A8A8A', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password</label>
               <input
-                type="password" value={form.password}
+                ref={passwordRef}
+                type="password"
+                value={form.password}
+                name={`lf_login_password_${nameSuffix}`}
+                id={`lf-login-password-${nameSuffix}`}
                 onChange={e => setForm({ ...form, password: e.target.value })}
-                placeholder="••••••••" required style={inp}
+                placeholder="••••••••"
+                required
+                style={inp}
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-form-type="other"
                 onFocus={e => e.target.style.borderColor = '#D4A017'}
                 onBlur={e => e.target.style.borderColor = '#2A2A2A'}
               />

@@ -22,8 +22,10 @@ export async function PATCH(req, { params }) {
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const { id } = await params
     const updates = await req.json()
-    const allowed = ['title', 'content', 'status']
+    const allowed = ['title', 'content', 'status', 'caseStatus', 'clientId']
     const data = Object.fromEntries(Object.entries(updates).filter(([k]) => allowed.includes(k)))
+    // Allow explicit null for clientId (unlink client)
+    if ('clientId' in updates && updates.clientId === null) data.clientId = null
     const { prisma } = await import('@/lib/prisma')
     await prisma.draft.updateMany({ where: { id, userId: session.user.id }, data })
     return NextResponse.json({ success: true })

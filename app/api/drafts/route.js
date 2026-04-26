@@ -2,6 +2,22 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { DOCUMENT_TYPES, getRelevantCaseLaws } from '@/lib/utils'
 import { isAdmin, hasProAccess, requiresProDocument, FREE_DOCS_PER_MONTH } from '@/lib/admin'
+import { isJunkValue } from '@/lib/validation'
+
+// Strip junk placeholders ("NA", "no", "don't know", "-", etc.) from templateData
+// so the AI never sees them. The client-side guard normally blocks these,
+// but this is defense-in-depth — empty values trigger placeholders downstream
+// thanks to the FIDELITY_MANDATE in lib/groq.js.
+function sanitizeTemplateData(templateData) {
+  if (!templateData || typeof templateData !== 'object') return {}
+  const out = {}
+  for (const [k, v] of Object.entries(templateData)) {
+    if (v === null || v === undefined) continue
+    if (isJunkValue(v)) continue
+    out[k] = v
+  }
+  return out
+}
 
 // ─── Extract client info from templateData by document type ───────
 function extractClientFromTemplate(documentType, templateData) {
@@ -86,6 +102,19 @@ export async function POST(req) {
     if (!documentType || !DOCUMENT_TYPES.find(t => t.value === documentType))
       return NextResponse.json({ error: 'Invalid document type.' }, { status: 400 })
 
+    // ── Strip junk placeholders ("NA", "no", "don't know", etc.) ──
+    const cleanTemplateData = sanitizeTemplateData(templateData)
+    const incomingFieldCount = templateData && typeof templateData === 'object'
+      ? Object.values(templateData).filter(v => v !== null && v !== undefined && String(v).trim().length > 0).length
+      : 0
+    const cleanFieldCount = Object.keys(cleanTemplateData).length
+    if (incomingFieldCount > 0 && cleanFieldCount === 0) {
+      return NextResponse.json({
+        error: 'All fields contained placeholders like "NA", "no", or "don\'t know". Please fill in real details and try again.',
+        hint: 'The document cannot be drafted accurately without the actual particulars.',
+      }, { status: 422 })
+    }
+
     const { generateLegalDocument, generateMeritsDemerits } = await import('@/lib/groq')
     const { prisma }                                        = await import('@/lib/prisma')
 
@@ -124,8 +153,8 @@ export async function POST(req) {
       }
     }
 
-    // Build detail string from template fields
-    const details = Object.entries(templateData || {})
+    // Build detail string from template fields (junk values already stripped)
+    const details = Object.entries(cleanTemplateData)
       .filter(([, v]) => v?.toString().trim())
       .map(([k, v]) => `${k.replace(/([A-Z])/g, ' $1').trim()}: ${v}`)
       .join('\n')
@@ -136,7 +165,7 @@ export async function POST(req) {
     ].filter(Boolean).join('\n')
     const fullDetails = contextPrefix ? `${contextPrefix}\n\n${details}` : details
 
-    const searchTerms = Object.values(templateData || {}).join(' ')
+    const searchTerms = Object.values(cleanTemplateData).join(' ')
     const caseLaws    = getRelevantCaseLaws(documentType, court, searchTerms)
 
     let content
@@ -153,18 +182,18 @@ export async function POST(req) {
     }
 
     // ── Generate merits/demerits conclusion in parallel with client lookup ──
-    const meritsPromise = generateMeritsDemerits(documentType, content, templateData, court)
+    const meritsPromise = generateMeritsDemerits(documentType, content, cleanTemplateData, court)
 
     const dtLabel  = DOCUMENT_TYPES.find(t => t.value === documentType)?.label
     const titleKey =
-      templateData?.subject        ||
-      templateData?.caseName       ||
-      templateData?.purpose        ||
-      templateData?.to             ||
-      templateData?.petitionerName ||
-      templateData?.applicantName  ||
-      templateData?.deponentName   ||
-      templateData?.publicIssue    ||
+      cleanTemplateData.subject        ||
+      cleanTemplateData.caseName       ||
+      cleanTemplateData.purpose        ||
+      cleanTemplateData.to             ||
+      cleanTemplateData.petitionerName ||
+      cleanTemplateData.applicantName  ||
+      cleanTemplateData.deponentName   ||
+      cleanTemplateData.publicIssue    ||
       'Document'
     const title = `${dtLabel}: ${String(titleKey).substring(0, 55)}`
 
@@ -173,7 +202,7 @@ export async function POST(req) {
     let autoClientAction = null   // 'created' | 'linked' | null
 
     try {
-      const extracted = extractClientFromTemplate(documentType, templateData)
+      const extracted = extractClientFromTemplate(documentType, cleanTemplateData)
       if (extracted?.name) {
         // Try to find existing client (same user, same name)
         const existing = await prisma.client.findFirst({
@@ -227,7 +256,7 @@ export async function POST(req) {
         title,
         content,
         documentType,
-        templateData: templateData || {},
+        templateData: cleanTemplateData,
         caseLaws,
         status:    'draft',
         caseStatus: 'active',

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { DOCUMENT_TYPES, getRelevantCaseLaws } from '@/lib/utils'
-import { isAdmin, hasProAccess, requiresProDocument, FREE_DOCS_PER_MONTH } from '@/lib/admin'
+import { isAdmin, hasProAccess, requiresProDocumentDynamic, getFreeDocsLimit } from '@/lib/admin'
 import { isJunkValue } from '@/lib/validation'
 
 // Strip junk placeholders ("NA", "no", "don't know", "-", etc.) from templateData
@@ -130,15 +130,16 @@ export async function POST(req) {
 
     const userIsPro = await hasProAccess(dbUser.email, dbUser.tier)
 
-    // Block premium document types for free users
-    if (!userIsPro && requiresProDocument(documentType)) {
+    // Block premium document types for free users (only when Pro enforcement is on)
+    if (!userIsPro && (await requiresProDocumentDynamic(documentType))) {
       return NextResponse.json({
         error: 'This document type requires Pro. Please contact the administrator to upgrade.',
         code: 'PRO_REQUIRED',
       }, { status: 403 })
     }
 
-    // Enforce monthly quota for free users
+    // Enforce monthly quota for free users (limit is admin-controlled)
+    const FREE_DOCS_PER_MONTH = await getFreeDocsLimit()
     if (!userIsPro) {
       const startOfMonth = new Date()
       startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0)
@@ -182,7 +183,7 @@ export async function POST(req) {
     }
 
     // ── Generate merits/demerits conclusion in parallel with client lookup ──
-    const meritsPromise = generateMeritsDemerits(documentType, content, cleanTemplateData, court)
+    const meritsPromise = generateMeritsDemerits(documentType, content, cleanTemplateData, court, { isPro: userIsPro })
 
     const dtLabel  = DOCUMENT_TYPES.find(t => t.value === documentType)?.label
     const titleKey =

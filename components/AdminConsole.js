@@ -107,15 +107,21 @@ export default function AdminConsole() {
   const [epEnd,   setEpEnd]   = useState('')
   const [epNote,  setEpNote]  = useState('')
 
+  // System settings (Pro toggle + free quota) state
+  const [sysConfig, setSysConfig] = useState(null)
+  const [scProEnf,  setScProEnf]  = useState(false)
+  const [scLimit,   setScLimit]   = useState(10)
+
   async function loadAll() {
     setLoading(true)
     try {
-      const [s, u, d, gp, ep] = await Promise.all([
+      const [s, u, d, gp, ep, sc] = await Promise.all([
         fetch('/api/admin/stats').then(r => r.json()),
         fetch('/api/admin/users').then(r => r.json()),
         fetch('/api/admin/drafts').then(r => r.json()),
         fetch('/api/admin/global-promo').then(r => r.json()),
         fetch('/api/admin/email-promos').then(r => r.json()),
+        fetch('/api/admin/system-config').then(r => r.json()).catch(() => ({})),
       ])
       setStats(s.stats || null)
       setUsers(u.users || [])
@@ -127,6 +133,12 @@ export default function AdminConsole() {
         setGpStart(toLocalInput(gp.promo.startsAt))
         setGpEnd(toLocalInput(gp.promo.endsAt))
         setGpNote(gp.promo.note || '')
+      }
+      // System config (Pro toggle + free quota)
+      if (sc?.config) {
+        setSysConfig(sc.config)
+        setScProEnf(!!sc.config.proEnforcementEnabled)
+        setScLimit(typeof sc.config.freeDocsLimit === 'number' ? sc.config.freeDocsLimit : 10)
       }
     } catch (e) {
       setErr('Failed to load admin data.')
@@ -216,6 +228,32 @@ export default function AdminConsole() {
     }
   }
 
+  async function saveSystemConfig() {
+    const limit = Number(scLimit)
+    if (!Number.isFinite(limit) || limit < 0 || limit > 1000) {
+      alert('Free docs limit must be a number between 0 and 1000.')
+      return
+    }
+    setBusy(b => ({ ...b, scSave: true }))
+    try {
+      const r = await fetch('/api/admin/system-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          proEnforcementEnabled: !!scProEnf,
+          freeDocsLimit:         Math.floor(limit),
+        }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Save failed')
+      setSysConfig(j.config || null)
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setBusy(b => ({ ...b, scSave: false }))
+    }
+  }
+
   async function updateUser(id, patch, label) {
     setBusy(b => ({ ...b, [id + label]: true }))
     try {
@@ -289,6 +327,68 @@ export default function AdminConsole() {
           </div>
         </section>
       )}
+
+      {/* ── System Settings (Pro toggle + free quota) ── */}
+      <section>
+        <h2 style={{ fontSize: 13, color: '#D4A017', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>
+          System Settings
+        </h2>
+        <div style={{ fontSize: 12, color: '#6A6A6A', marginBottom: 12 }}>
+          Master switch for Pro enforcement and the monthly free-tier draft cap. While Pro enforcement is <b style={{ color: '#C0C0C0' }}>off</b>, every user gets the full Pro experience (longer drafts, full citations, AI Case Assistant). Flip it on to start charging Pro features.
+        </div>
+
+        <div style={CARD}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, alignItems: 'flex-start' }}>
+            {/* Pro enforcement toggle */}
+            <div>
+              <div style={FIELD_LABEL}>Pro Enforcement</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 0' }}>
+                <input
+                  type="checkbox"
+                  checked={scProEnf}
+                  onChange={e => setScProEnf(e.target.checked)}
+                  style={{ width: 18, height: 18, accentColor: '#D4A017', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 13, color: '#F0F0F0', fontWeight: 600 }}>
+                  {scProEnf ? 'ON — Pro features locked behind tier' : 'OFF — Pro features open to everyone'}
+                </span>
+              </label>
+              <div style={{ fontSize: 11, color: '#6A6A6A', marginTop: 4 }}>
+                Admin and active promo grants always retain Pro regardless of this toggle.
+              </div>
+            </div>
+
+            {/* Free monthly limit */}
+            <div>
+              <div style={FIELD_LABEL}>Free Docs / Month</div>
+              <input
+                type="number"
+                min={0}
+                max={1000}
+                step={1}
+                value={scLimit}
+                onChange={e => setScLimit(e.target.value)}
+                style={{ ...INPUT, width: 120 }}
+              />
+              <div style={{ fontSize: 11, color: '#6A6A6A', marginTop: 4 }}>
+                Cap on drafts a free user can generate per calendar month. Only enforced when Pro is ON.
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Btn onClick={saveSystemConfig} disabled={busy.scSave}>
+              {busy.scSave ? 'Saving…' : 'Save Settings'}
+            </Btn>
+            {sysConfig?.updatedAt && (
+              <span style={{ fontSize: 11, color: '#6A6A6A' }}>
+                Last updated {new Date(sysConfig.updatedAt).toLocaleString()}
+                {sysConfig.updatedBy ? ` by ${sysConfig.updatedBy}` : ''}
+              </span>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* ── Global Pro Promotion ── */}
       <section>

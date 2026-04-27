@@ -156,3 +156,21 @@ model EmailPromo {
 
   @@index([email])
 }
+
+// Singleton config row (id = "default") that the admin can toggle at runtime
+// from the Admin Console.
+//
+//  proEnforcementEnabled = false  →  Pro features are unlocked for EVERYONE
+//                                    (free users get full Pro experience,
+//                                     no quota, no Pro-only locks).
+//  proEnforcementEnabled = true   →  Free vs Pro distinction kicks in:
+//                                    free users see basic generation,
+//                                    capped at `freeDocsLimit` per month,
+//                                    Pro-only doc types are locked.
+model SystemConfig {
+  id                    String   @id @default("default")
+  proEnforcementEnabled Boolean  @default(false)
+  freeDocsLimit         Int      @default(10)
+  updatedAt             DateTime @updatedAt
+  updatedBy             String?
+}

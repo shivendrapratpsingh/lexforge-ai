@@ -1,6 +1,15 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { auth } from '@/lib/auth'
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // If the visitor is already signed in, send them straight into the app.
+  // This makes "Dashboard" feel reachable from the very first page —
+  // hitting `/` after login takes you to the working dashboard, not back
+  // to the marketing splash.
+  const session = await auth()
+  if (session?.user) redirect('/dashboard')
+
   return (
     <div className="min-h-screen" style={{ background: '#0D0D0D', color: '#F0F0F0' }}>
 

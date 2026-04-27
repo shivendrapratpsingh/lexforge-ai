@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { SignOutButton } from '@/components/SignOutButton'
 import { isAdmin, hasProAccessForSession } from '@/lib/admin'
+import AssistantWidget from '@/components/AssistantWidget'
+import SidebarNav from '@/components/SidebarNav'
 
 const baseNavLinks = [
   { href: '/dashboard',   label: 'Dashboard',      icon: '◈', proOnly: false },
@@ -65,35 +67,8 @@ export default async function DashboardLayout({ children }) {
           </Link>
         </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {navLinks.map((link, idx) => (
-            <Link
-              key={`${link.href}-${idx}`}
-              href={link.href}
-              className="nav-link"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '11px 14px',
-                borderRadius: 10,
-                textDecoration: 'none',
-                color: link.admin ? '#D4A017' : '#6A6A6A',
-                fontSize: 14,
-                fontWeight: link.admin ? 700 : 500,
-                transition: 'all 0.15s',
-                border: link.admin ? '1px solid rgba(212,160,23,0.3)' : '1px solid transparent',
-              }}
-            >
-              <span style={{ color: '#D4A017', fontSize: 15, width: 18, textAlign: 'center', flexShrink: 0 }}>
-                {link.icon}
-              </span>
-              <span style={{ flex: 1 }}>{link.label}</span>
-              {link.locked && <span style={{ fontSize: 10, color: '#D4A017', opacity: 0.7 }}>🔒 PRO</span>}
-            </Link>
-          ))}
-        </nav>
+        {/* Nav (active-state highlight + click handling lives in SidebarNav). */}
+        <SidebarNav links={navLinks} />
 
         {/* New Document CTA */}
         <div style={{ padding: '0 10px 12px', flexShrink: 0 }}>
@@ -170,6 +145,9 @@ export default async function DashboardLayout({ children }) {
       <main style={{ marginLeft: 240, flex: 1, padding: '32px 36px', minHeight: '100vh', minWidth: 0 }}>
         {children}
       </main>
+
+      {/* ── Floating Pro Case Assistant (visible on every dashboard page) ── */}
+      <AssistantWidget isPro={pro || admin} />
     </div>
   )
 }

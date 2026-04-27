@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { DOCUMENT_TYPES, COURTS, ALL_COURTS, LANGUAGES } from '@/lib/utils'
 import { isJunkValue, validateTemplateData, buildValidationError } from '@/lib/validation'
+import { PRO_TAGLINE, getProFeatureList } from '@/lib/pro-features'
 
 // ─── Client field mapping per document type ──────────────────────
 const CLIENT_FIELD_MAP = {
@@ -466,6 +468,15 @@ export default function NewDraftPage() {
   const [selectedClient, setSelectedClient] = useState(null)
   const [clientLoading,  setClientLoading]  = useState(false)
 
+  // Effective user tier (drives Pro badges + upgrade banner)
+  const [me, setMe] = useState(null)
+  useEffect(() => {
+    fetch('/api/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setMe(d))
+      .catch(() => {})
+  }, [])
+
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chatStep])
 
   useEffect(() => {
@@ -648,9 +659,46 @@ export default function NewDraftPage() {
     const inputData  = intakeMethod === 'chat' ? chatAnswers : formData
     const fieldDefs  = FIELDS[result.documentType] || []
 
+    const proExtras = getProFeatureList(result.documentType)
+
     return (
       <div>
         <style>{`.res-field:hover{background:#1A1A1A !important}`}</style>
+
+        {/* Upgrade banner — only shown when Pro is being enforced and user is on Free */}
+        {me && !me.isPro && (
+          <div style={{
+            marginBottom: 18,
+            padding: '14px 18px',
+            background: 'linear-gradient(90deg, rgba(212,160,23,0.10), rgba(212,160,23,0.02))',
+            border: '1px solid rgba(212,160,23,0.35)',
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ flex: '1 1 320px', minWidth: 240 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#D4A017', marginBottom: 4, letterSpacing: '0.5px' }}>
+                ★ Want a longer, more authoritative draft?
+              </div>
+              <div style={{ fontSize: 12, color: '#A8A8A8', lineHeight: 1.55 }}>
+                Pro gives you {proExtras.slice(0, 3).join(' · ')} and a private AI Case Assistant that suggests favourable IPC sections.
+              </div>
+            </div>
+            <Link href="/upgrade" style={{
+              padding: '10px 18px',
+              background: 'linear-gradient(135deg, #D4A017, #B8860B)',
+              color: '#0D0D0D',
+              fontSize: 13,
+              fontWeight: 800,
+              borderRadius: 10,
+              textDecoration: 'none',
+              letterSpacing: '0.5px',
+              whiteSpace: 'nowrap',
+            }}>Upgrade to Pro</Link>
+          </div>
+        )}
 
         {/* Result Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -771,17 +819,89 @@ export default function NewDraftPage() {
       {step === 1 && (
         <div>
           <p style={{ color: '#6A6A6A', marginBottom: 18, fontSize: 14 }}>Choose the type of legal document:</p>
+
+          {/* Tier banner — what Pro adds vs. Free */}
+          {me && (
+            me.isPro ? (
+              <div style={{
+                marginBottom: 16,
+                padding: '10px 14px',
+                background: 'linear-gradient(90deg, rgba(212,160,23,0.12), rgba(212,160,23,0.04))',
+                border: '1px solid rgba(212,160,23,0.3)',
+                borderRadius: 10,
+                fontSize: 12,
+                color: '#D4A017',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}>
+                <span style={{ fontSize: 14 }}>★</span>
+                <span>{PRO_TAGLINE}</span>
+              </div>
+            ) : (
+              <div style={{
+                marginBottom: 16,
+                padding: '12px 14px',
+                background: '#141414',
+                border: '1px solid #2A2A2A',
+                borderRadius: 10,
+                fontSize: 12,
+                color: '#9A9A9A',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}>
+                <span><b style={{ color: '#C0C0C0' }}>Free plan:</b> short drafts, limited citations, {me.freeDocsLimit ?? 10} documents/month.</span>
+                <Link href="/upgrade" style={{
+                  marginLeft: 'auto',
+                  padding: '6px 12px',
+                  background: 'rgba(212,160,23,0.12)',
+                  border: '1px solid rgba(212,160,23,0.4)',
+                  borderRadius: 8,
+                  color: '#D4A017',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  fontSize: 12,
+                }}>★ Upgrade to Pro</Link>
+              </div>
+            )
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))', gap: 12 }}>
-            {DOCUMENT_TYPES.map(type => (
-              <button key={type.value} onClick={() => selectType(type.value)}
-                style={{ background: '#141414', border: '2px solid #2A2A2A', borderRadius: 14, padding: '18px 16px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A017'; e.currentTarget.style.boxShadow = '0 0 16px rgba(212,160,23,0.1)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2A2A'; e.currentTarget.style.boxShadow = 'none' }}>
-                <div style={{ fontSize: 28, marginBottom: 10 }}>{type.icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#D0D0D0', marginBottom: 5 }}>{type.label}</div>
-                <div style={{ fontSize: 11, color: '#4A4A4A', lineHeight: 1.4 }}>{type.description}</div>
-              </button>
-            ))}
+            {DOCUMENT_TYPES.map(type => {
+              const proExtras = getProFeatureList(type.value)
+              const tip = proExtras.length
+                ? `Pro adds: ${proExtras.slice(0, 4).join(' · ')}${proExtras.length > 4 ? '…' : ''}`
+                : PRO_TAGLINE
+              return (
+                <button key={type.value} onClick={() => selectType(type.value)}
+                  title={tip}
+                  style={{ background: '#141414', border: '2px solid #2A2A2A', borderRadius: 14, padding: '18px 16px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A017'; e.currentTarget.style.boxShadow = '0 0 16px rgba(212,160,23,0.1)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2A2A'; e.currentTarget.style.boxShadow = 'none' }}>
+                  <span style={{
+                    position: 'absolute',
+                    top: 10,
+                    right: 10,
+                    padding: '2px 7px',
+                    borderRadius: 5,
+                    background: me?.isPro ? 'rgba(212,160,23,0.18)' : 'rgba(212,160,23,0.08)',
+                    color: '#D4A017',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '0.6px',
+                    border: `1px solid rgba(212,160,23,${me?.isPro ? 0.5 : 0.25})`,
+                  }}>
+                    {me?.isPro ? '★ PRO' : 'PRO'}
+                  </span>
+                  <div style={{ fontSize: 28, marginBottom: 10 }}>{type.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#D0D0D0', marginBottom: 5 }}>{type.label}</div>
+                  <div style={{ fontSize: 11, color: '#4A4A4A', lineHeight: 1.4 }}>{type.description}</div>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}

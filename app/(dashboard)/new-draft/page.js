@@ -230,6 +230,21 @@ const FIELDS = {
     { name: 'witnesses',        label: 'Witnesses',              ph: 'Names and addresses of persons who witnessed the offence' },
     { name: 'evidence',         label: 'Evidence Available',     ph: 'CCTV footage, medical reports, photographs, WhatsApp messages, bank statements etc.' },
   ],
+  LEGAL_EMAIL: [
+    { name: 'purpose',          label: 'Purpose of Email',       ph: 'Choose: LEGAL_DEMAND / CLIENT_UPDATE / ADVOCATE_TO_ADVOCATE / SETTLEMENT / FOLLOW_UP / TRANSMITTAL / RETAINER / GENERIC' },
+    { name: 'tone',             label: 'Tone',                   ph: 'Formal / Semi-formal / Firm  (default: Formal)' },
+    { name: 'recipientName',    label: 'Recipient Name',         ph: 'Full name of person you are emailing (e.g., Mr. Rajesh Kumar)' },
+    { name: 'recipientEmail',   label: 'Recipient Email',        ph: 'recipient@example.com (optional - leave blank if not yet known)' },
+    { name: 'senderName',       label: 'Your Name',              ph: 'Your full name as you sign off (e.g., Adv. Shivendra Pratap Singh)' },
+    { name: 'senderDesignation',label: 'Your Designation',       ph: 'e.g., Advocate, Allahabad High Court (optional)' },
+    { name: 'senderContact',    label: 'Your Contact',           ph: 'Phone / email / Bar Council Enrollment No. (optional)' },
+    { name: 'subjectHint',      label: 'Subject (optional)',     ph: 'Leave blank to auto-generate. Otherwise: short subject line you want.' },
+    { name: 'caseRef',          label: 'Case / Reference No.',   ph: 'Optional. e.g., FIR No. 123/2024, WP No. 5678/2024, your client ID' },
+    { name: 'facts',            label: 'Facts / Background',     ph: 'What is the situation? Provide all relevant facts, dates, amounts, names', multi: true },
+    { name: 'ask',              label: 'Action Sought',          ph: 'What do you want the recipient to do? (e.g., pay X by Y, share documents, attend hearing)' },
+    { name: 'deadline',         label: 'Deadline',               ph: 'Optional. e.g., 7 days, 15 days, by 15 May 2026' },
+    { name: 'attachments',      label: 'Attachments mentioned',  ph: 'Optional. List of documents being attached (e.g., copy of cheque, FIR, agreement)' },
+  ],
 }
 
 // ─── Chat Q&A questions per document type ─────────────────────────
@@ -417,6 +432,21 @@ const CHAT_QUESTIONS = {
     { key: 'accusedDetails',   q: 'Who is the accused? (Name, address, description — or unknown if not identified)' },
     { key: 'incidentFacts',    q: 'Describe what happened in detail — chronologically, with any witnesses and evidence.' },
     { key: 'offenceSections',  q: 'Under which IPC/BNS sections should the FIR be registered? (If unsure, describe the nature of the crime)' },
+  ],
+  LEGAL_EMAIL: [
+    { key: 'purpose',           q: 'What is the purpose of the email? (legal demand / client update / advocate-to-advocate / settlement / follow-up / transmittal / retainer / generic)' },
+    { key: 'tone',              q: 'Tone — formal, semi-formal, or firm? (default: formal)' },
+    { key: 'recipientName',     q: 'Who are you writing to? (full name; if a company, the name of the addressee)' },
+    { key: 'recipientEmail',    q: 'Recipient email address? (optional)' },
+    { key: 'senderName',        q: 'Your full name as it should appear in the sign-off?' },
+    { key: 'senderDesignation', q: 'Your designation? (e.g., Advocate, Allahabad High Court — optional)' },
+    { key: 'senderContact',     q: 'Your contact details? (phone, email, Bar Council enrollment no. — optional)' },
+    { key: 'subjectHint',       q: 'Any specific subject line you want? (leave blank to auto-generate)' },
+    { key: 'caseRef',           q: 'Any case or reference number to mention? (FIR no., writ no., client ID — optional)' },
+    { key: 'facts',             q: 'What are the relevant facts / background? Be specific — dates, names, amounts, what happened.' },
+    { key: 'ask',               q: 'What do you want the recipient to do?' },
+    { key: 'deadline',          q: 'Any deadline for the recipient? (e.g., 7 days, 15 days, by a specific date — optional)' },
+    { key: 'attachments',       q: 'Are you attaching any documents? List them. (optional)' },
   ],
 }
 

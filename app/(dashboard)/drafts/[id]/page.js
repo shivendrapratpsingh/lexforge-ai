@@ -7,6 +7,7 @@ import DraftControls from '@/components/DraftControls'
 import VersionHistoryPanel from '@/components/VersionHistoryPanel'
 import ParagraphEditor from '@/components/ParagraphEditor'
 import CloneButton from '@/components/CloneButton'
+import EmailCopyButton from '@/components/EmailCopyButton'
 import Link from 'next/link'
 
 export default async function DraftPage({ params }) {
@@ -145,6 +146,11 @@ export default async function DraftPage({ params }) {
               </div>
             ))}
           </div>
+
+          {/* Email copy button - only for LEGAL_EMAIL drafts */}
+          {draft.documentType === 'LEGAL_EMAIL' && (
+            <EmailCopyButton content={draft.content || ''} />
+          )}
 
           {/* Export */}
           <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 14, padding: 18 }}>

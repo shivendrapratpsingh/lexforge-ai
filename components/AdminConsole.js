@@ -112,6 +112,9 @@ export default function AdminConsole() {
   const [scProEnf,  setScProEnf]  = useState(false)
   const [scLimit,   setScLimit]   = useState(10)
 
+  // All Drafts filter
+  const [draftFilter, setDraftFilter] = useState('')
+
   async function loadAll() {
     setLoading(true)
     try {
@@ -585,9 +588,27 @@ export default function AdminConsole() {
         <h2 style={{ fontSize: 13, color: '#D4A017', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>
           All Drafts ({drafts.length})
         </h2>
+
+        {/* Search box: filters by user email, title, OR document type */}
+        <div style={{ marginBottom: 12 }}>
+          <input
+            type="text"
+            value={draftFilter}
+            onChange={e => setDraftFilter(e.target.value)}
+            placeholder="Search by user email, title, or document type..."
+            style={{ ...INPUT, width: '100%' }}
+          />
+          {draftFilter && (
+            <div style={{ fontSize: 11, color: '#6A6A6A', marginTop: 6 }}>
+              Filtering on “{draftFilter}” —
+              click the <span style={{ color: '#D4A017' }}>×</span> below the table to clear.
+            </div>
+          )}
+        </div>
+
         <div style={{ ...CARD, padding: 0, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 920 }}>
               <thead>
                 <tr>
                   <th style={TH}>Title</th>
@@ -595,29 +616,81 @@ export default function AdminConsole() {
                   <th style={TH}>User</th>
                   <th style={TH}>Status</th>
                   <th style={TH}>Created</th>
+                  <th style={TH}>Download</th>
                   <th style={TH}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {drafts.map(d => (
-                  <tr key={d.id}>
-                    <td style={{ ...TD, maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</td>
-                    <td style={TD}>{d.documentType}</td>
-                    <td style={TD}>{d.user?.email || '—'}</td>
-                    <td style={TD}>{d.status}</td>
-                    <td style={TD}>{new Date(d.createdAt).toLocaleDateString()}</td>
-                    <td style={TD}>
-                      <Btn onClick={() => deleteDraft(d.id, d.title)} disabled={busy[d.id + 'del']} danger>Delete</Btn>
-                    </td>
-                  </tr>
-                ))}
-                {drafts.length === 0 && (
-                  <tr><td colSpan={6} style={{ ...TD, textAlign: 'center', color: '#6A6A6A' }}>No drafts yet.</td></tr>
-                )}
+                {(() => {
+                  const q = draftFilter.trim().toLowerCase()
+                  const filtered = q
+                    ? drafts.filter(d =>
+                        (d.title || '').toLowerCase().includes(q) ||
+                        (d.documentType || '').toLowerCase().includes(q) ||
+                        (d.user?.email || '').toLowerCase().includes(q) ||
+                        (d.user?.name || '').toLowerCase().includes(q)
+                      )
+                    : drafts
+                  if (filtered.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={7} style={{ ...TD, textAlign: 'center', color: '#6A6A6A' }}>
+                          {q ? 'No drafts match your filter.' : 'No drafts yet.'}
+                        </td>
+                      </tr>
+                    )
+                  }
+                  return filtered.map(d => (
+                    <tr key={d.id}>
+                      <td style={{ ...TD, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</td>
+                      <td style={TD}>{d.documentType}</td>
+                      <td style={TD}>{d.user?.email || '—'}</td>
+                      <td style={TD}>{d.status}</td>
+                      <td style={TD}>{new Date(d.createdAt).toLocaleDateString()}</td>
+                      <td style={TD}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {['pdf', 'docx', 'txt'].map(fmt => (
+                            <a key={fmt}
+                              href={`/api/export/${d.id}/${fmt}`}
+                              title={`Download as ${fmt.toUpperCase()}`}
+                              style={{
+                                padding: '4px 9px',
+                                background: 'rgba(212,160,23,0.10)',
+                                border: '1px solid rgba(212,160,23,0.35)',
+                                borderRadius: 6,
+                                color: '#D4A017',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                textDecoration: 'none',
+                                letterSpacing: '0.4px',
+                              }}>
+                              {fmt.toUpperCase()}
+                            </a>
+                          ))}
+                        </div>
+                      </td>
+                      <td style={TD}>
+                        <Btn onClick={() => deleteDraft(d.id, d.title)} disabled={busy[d.id + 'del']} danger>Delete</Btn>
+                      </td>
+                    </tr>
+                  ))
+                })()}
               </tbody>
             </table>
           </div>
         </div>
+
+        {draftFilter && (
+          <div style={{ marginTop: 10 }}>
+            <button
+              onClick={() => setDraftFilter('')}
+              style={{
+                background: 'transparent', border: '1px solid #2A2A2A', borderRadius: 6,
+                color: '#D4A017', padding: '6px 12px', fontSize: 12, fontWeight: 700,
+                cursor: 'pointer',
+              }}>× Clear filter</button>
+          </div>
+        )}
       </section>
     </div>
   )

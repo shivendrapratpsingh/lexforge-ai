@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/admin'
 import { stripMarkdown, parseInline, pdfRenderLine } from '@/lib/markdown'
 
 export async function GET(req, { params }) {
@@ -12,7 +13,10 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: 'Invalid format. Use: pdf, docx, txt' }, { status: 400 })
 
     const { prisma } = await import('@/lib/prisma')
-    const draft = await prisma.draft.findFirst({ where: { id, userId: session.user.id } })
+    // Admins can export any user's draft (used by the Admin Console
+    // "All Drafts" tab). Regular users are restricted to their own.
+    const where = isAdmin(session) ? { id } : { id, userId: session.user.id }
+    const draft = await prisma.draft.findFirst({ where })
     if (!draft) return NextResponse.json({ error: 'Document not found.' }, { status: 404 })
 
     const safeName = draft.title.replace(/[^a-z0-9]/gi, '_').substring(0, 50)

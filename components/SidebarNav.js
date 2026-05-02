@@ -7,6 +7,10 @@ import { usePathname } from 'next/navigation'
 // current pathname. Lives in its own client component so the surrounding
 // dashboard layout can stay a server component (and keep doing the auth
 // check + Pro/admin gating server-side).
+//
+// Each link is now expected to carry an already-translated `label` and
+// optional `proLockText` (passed from the parent server component which
+// has access to next-intl's getTranslations).
 export default function SidebarNav({ links }) {
   const pathname = usePathname() || ''
 
@@ -28,8 +32,8 @@ export default function SidebarNav({ links }) {
     }}>
       {links.map((link, idx) => {
         const active = isActive(link.href)
-        const baseColor = link.admin ? '#D4A017' : (active ? '#F0F0F0' : '#6A6A6A')
-        const baseBg    = active ? '#1C1C1C' : 'transparent'
+        const baseColor  = link.admin ? '#D4A017' : (active ? '#F0F0F0' : '#6A6A6A')
+        const baseBg     = active ? '#1C1C1C' : 'transparent'
         const baseBorder = link.admin
           ? '1px solid rgba(212,160,23,0.3)'
           : (active ? '1px solid #2A2A2A' : '1px solid transparent')
@@ -58,7 +62,11 @@ export default function SidebarNav({ links }) {
               {link.icon}
             </span>
             <span style={{ flex: 1 }}>{link.label}</span>
-            {link.locked && <span style={{ fontSize: 10, color: '#D4A017', opacity: 0.7 }}>🔒 PRO</span>}
+            {link.locked && (
+              <span style={{ fontSize: 10, color: '#D4A017', opacity: 0.7 }}>
+                {link.proLockText || '🔒 PRO'}
+              </span>
+            )}
           </Link>
         )
       })}

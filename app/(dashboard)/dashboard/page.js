@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { getTranslations, getLocale } from 'next-intl/server'
 import { formatDate, DOCUMENT_TYPES } from '@/lib/utils'
 
 async function getDashboardData(userId) {
@@ -37,15 +38,22 @@ export default async function DashboardPage() {
   const session = await auth()
   if (!session) redirect('/login')
 
+  const t       = await getTranslations('dashboard')
+  const tNav    = await getTranslations('nav')
+  const locale  = await getLocale()
+
   const { drafts, total, finalized, clientCount, upcomingDates, error } = await getDashboardData(session.user.id)
-  const firstName = session.user?.name?.split(' ')[0] || 'Advocate'
+  const firstName = session.user?.name?.split(' ')[0] || t('defaultName')
 
   const stats = [
-    { label: 'Total Documents', value: total,          icon: '📄', color: '#D4A017' },
-    { label: 'Finalized',       value: finalized,       icon: '✅', color: '#4CAF50' },
-    { label: 'Clients',         value: clientCount,     icon: '👤', color: '#8B5CF6', href: '/clients' },
-    { label: 'Doc Types',       value: 11,              icon: '⚖️', color: '#2196F3' },
+    { label: t('stats.totalDocuments'), value: total,       icon: '📄', color: '#D4A017' },
+    { label: t('stats.finalized'),      value: finalized,    icon: '✅', color: '#4CAF50' },
+    { label: t('stats.clients'),        value: clientCount,  icon: '👤', color: '#8B5CF6', href: '/clients' },
+    { label: t('stats.docTypes'),       value: DOCUMENT_TYPES.length, icon: '⚖️', color: '#2196F3' },
   ]
+
+  // Use Hindi-friendly date formatting when locale=hi
+  const dateLocale = locale === 'hi' ? 'hi-IN' : 'en-IN'
 
   return (
     <div>
@@ -53,15 +61,15 @@ export default async function DashboardPage() {
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, color: '#F0F0F0', marginBottom: 6 }}>
-          Good day, {firstName} 👋
+          {t('greeting', { name: firstName })}
         </h1>
-        <p style={{ color: '#5A5A5A', fontSize: 15 }}>Here's an overview of your legal documents</p>
+        <p style={{ color: '#5A5A5A', fontSize: 15 }}>{t('subtitle')}</p>
       </div>
 
       {/* DB error banner */}
       {error && (
         <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 24, color: '#EF4444', fontSize: 14 }}>
-          ⚠️ {error}
+          {t('dbError', { error })}
         </div>
       )}
 
@@ -88,16 +96,16 @@ export default async function DashboardPage() {
         {/* Recent Documents */}
         <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#F0F0F0' }}>Recent Documents</h2>
-            <Link href="/drafts" style={{ fontSize: 13, color: '#D4A017', textDecoration: 'none', fontWeight: 600 }}>View all →</Link>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#F0F0F0' }}>{t('recentDocuments')}</h2>
+            <Link href="/drafts" style={{ fontSize: 13, color: '#D4A017', textDecoration: 'none', fontWeight: 600 }}>{t('viewAll')}</Link>
           </div>
 
           {drafts.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 0' }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
-              <p style={{ color: '#5A5A5A', marginBottom: 16 }}>No documents yet. Generate your first!</p>
+              <p style={{ color: '#5A5A5A', marginBottom: 16 }}>{t('noDocuments')}</p>
               <Link href="/new-draft" style={{ background: 'linear-gradient(135deg, #D4A017, #B8860B)', color: '#0D0D0D', padding: '10px 20px', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
-                Create First Document
+                {t('createFirst')}
               </Link>
             </div>
           ) : (
@@ -129,25 +137,25 @@ export default async function DashboardPage() {
         {/* Quick Actions + Upcoming Dates */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#F0F0F0', marginBottom: 14 }}>Quick Actions</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#F0F0F0', marginBottom: 14 }}>{t('quickActions')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Link href="/new-draft" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'linear-gradient(135deg, #D4A017, #B8860B)', borderRadius: 10, textDecoration: 'none', color: '#0D0D0D', fontWeight: 700, fontSize: 14 }}>
-                <span>✦</span> Generate Document
+                <span>✦</span> {tNav('generateDocument')}
               </Link>
               <Link href="/clients" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#8B5CF6' }}>👤</span> Manage Clients
+                <span style={{ color: '#8B5CF6' }}>👤</span> {t('manageClients')}
               </Link>
               <Link href="/court-dates" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#60A5FA' }}>📅</span> Court Dates
+                <span style={{ color: '#60A5FA' }}>📅</span> {tNav('courtDates')}
               </Link>
               <Link href="/tools" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#F97316' }}>⚒️</span> Legal Tools
+                <span style={{ color: '#F97316' }}>⚒️</span> {tNav('legalTools')}
               </Link>
               <Link href="/research" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#D4A017' }}>◎</span> Research Case Laws
+                <span style={{ color: '#D4A017' }}>◎</span> {t('researchCaseLaws')}
               </Link>
               <Link href="/drafts" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#D4A017' }}>◉</span> View All Documents
+                <span style={{ color: '#D4A017' }}>◉</span> {t('viewAllDocuments')}
               </Link>
             </div>
           </div>
@@ -155,13 +163,13 @@ export default async function DashboardPage() {
           {/* Upcoming Court Dates widget */}
           <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#F0F0F0' }}>📅 Upcoming Dates</h3>
-              <Link href="/court-dates" style={{ fontSize: 12, color: '#D4A017', textDecoration: 'none', fontWeight: 600 }}>View all →</Link>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#F0F0F0' }}>{t('upcomingDates')}</h3>
+              <Link href="/court-dates" style={{ fontSize: 12, color: '#D4A017', textDecoration: 'none', fontWeight: 600 }}>{t('viewAll')}</Link>
             </div>
             {upcomingDates.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '16px 0', color: '#3A3A3A', fontSize: 13 }}>
-                No upcoming dates.{' '}
-                <Link href="/court-dates" style={{ color: '#D4A017', textDecoration: 'none' }}>Add one →</Link>
+                {t('noUpcomingDates')}{' '}
+                <Link href="/court-dates" style={{ color: '#D4A017', textDecoration: 'none' }}>{t('addOne')}</Link>
               </div>
             ) : (
               upcomingDates.map(d => {
@@ -175,13 +183,13 @@ export default async function DashboardPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#C0C0C0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</div>
                         <div style={{ fontSize: 11, color: '#4A4A4A', marginTop: 2 }}>
-                          {new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                          {new Date(d.date).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short' })}
                           {d.client && <span style={{ color: '#8B5CF6', marginLeft: 6 }}>· {d.client.name}</span>}
                         </div>
                       </div>
                       <div style={{ flexShrink: 0, textAlign: 'right' }}>
                         <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 100, background: `${color}1A`, color }}>
-                          {diff === 0 ? 'TODAY' : diff === 1 ? 'Tomorrow' : `${diff}d`}
+                          {diff === 0 ? t('today') : diff === 1 ? t('tomorrow') : `${diff}d`}
                         </span>
                       </div>
                     </div>
@@ -192,7 +200,7 @@ export default async function DashboardPage() {
           </div>
 
           <div style={{ background: 'linear-gradient(135deg, #1A1200, #141414)', border: '1px solid rgba(212,160,23,0.15)', borderRadius: 16, padding: 20 }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#D4A017', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Document Types</h3>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#D4A017', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('documentTypes')}</h3>
             {DOCUMENT_TYPES.map(t => (
               <div key={t.value} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: '#7A7A7A' }}>
                 <span>{t.icon}</span> {t.label}

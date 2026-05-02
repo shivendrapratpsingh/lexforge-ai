@@ -1,11 +1,23 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { hasProAccess } from '@/lib/admin'
 
 export async function POST(req) {
   try {
     const session = await auth()
-    if (!session?.user?.id)
+    if (!session?.user?.id || !session?.user?.email)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // Pro-gate: this is a Pro tier tool. hasProAccess respects the global
+    // proEnforcementEnabled toggle and any active promos, so when
+    // enforcement is off everyone passes through.
+    const userIsPro = await hasProAccess(session.user.email, session.user.tier)
+    if (!userIsPro) {
+      return NextResponse.json({
+        error: 'The Appeal Generator is a Pro feature. Upgrade to Pro to continue.',
+        code: 'PRO_REQUIRED',
+      }, { status: 403 })
+    }
 
     const body = await req.json().catch(() => null)
     if (!body?.judgmentText?.trim())

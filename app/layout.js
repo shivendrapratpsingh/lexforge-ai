@@ -1,18 +1,28 @@
 import './globals.css'
 import { Providers } from '@/components/Providers'
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale, getMessages, getTranslations } from 'next-intl/server'
 
-export const metadata = {
-  title: 'LexForge AI — AI-Powered Legal Platform',
-  description: 'Generate professional Indian legal documents with AI. Legal notices, contracts, case briefs, petitions — powered by Llama 3.3 70B.',
+export async function generateMetadata() {
+  const t = await getTranslations('metadata')
+  return {
+    title: t('title'),
+    description: t('description'),
+  }
 }
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const locale   = await getLocale()
+  const messages = await getMessages()
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body>
-        <Providers>
-          {children}
-        </Providers>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <Providers>
+            {children}
+          </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

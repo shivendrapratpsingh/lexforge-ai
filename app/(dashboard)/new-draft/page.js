@@ -466,6 +466,10 @@ export default function NewDraftPage() {
   const [selectedCourt, setSelectedCourt]   = useState('PRAYAGRAJ_HC')
   const [selectedLang, setSelectedLang]     = useState('english')
   const [intakeMethod, setIntakeMethod]     = useState('form')
+  // Target word count — empty string = let the model decide. Otherwise the
+  // user's number is rounded to the nearest 10 (so 1273 -> 1270) before
+  // we send it to the API. The downstream prompt + token budget honours it.
+  const [targetWords, setTargetWords]       = useState('')
 
   const [formData, setFormData]             = useState({})
   const [similarDrafts, setSimilarDrafts]   = useState([])
@@ -618,7 +622,19 @@ export default function NewDraftPage() {
       const res = await fetch('/api/drafts', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ documentType: selectedType, templateData: dataToSend, court: selectedCourt, language: selectedLang, intakeMethod, sourceText: intakeMethod === 'upload' ? uploadText : null }),
+        body:    JSON.stringify({
+          documentType: selectedType,
+          templateData: dataToSend,
+          court: selectedCourt,
+          language: selectedLang,
+          intakeMethod,
+          sourceText: intakeMethod === 'upload' ? uploadText : null,
+          // Round to nearest 10 (so 1273 -> 1270, 947 -> 950).
+          // Empty / non-numeric -> server picks tier-appropriate default.
+          targetWords: targetWords && Number(targetWords) > 0
+            ? Math.round(Number(targetWords) / 10) * 10
+            : null,
+        }),
         signal:  controller.signal,
       })
       clearTimeout(timeoutId)
@@ -1032,6 +1048,57 @@ export default function NewDraftPage() {
                     <div style={{ fontSize: 10, marginTop: 2, opacity: 0.6 }}>{l.desc}</div>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Target word count — OPTIONAL. Blank means "let AdShield pick
+                a tier-appropriate default length"; otherwise rounded to
+                nearest 10 and clamped to tier maximum. */}
+            <div style={{ marginBottom: 22 }}>
+              <label style={S.label}>
+                Target length (in words)
+                <span style={{ color: '#6A6A6A', fontWeight: 400, marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>
+                  — optional
+                </span>
+              </label>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={100}
+                  max={5000}
+                  step={10}
+                  value={targetWords}
+                  onChange={e => setTargetWords(e.target.value)}
+                  placeholder="Leave blank for automatic length"
+                  style={{ ...S.input, flex: '0 0 240px' }}
+                />
+                {targetWords && (
+                  <button
+                    type="button"
+                    onClick={() => setTargetWords('')}
+                    title="Clear and use default length"
+                    style={{
+                      padding: '8px 12px', fontSize: 11, fontWeight: 700,
+                      color: '#6A6A6A', background: 'transparent',
+                      border: '1px solid #2A2A2A', borderRadius: 8, cursor: 'pointer',
+                    }}>
+                    × Clear
+                  </button>
+                )}
+                <div style={{ fontSize: 12, color: '#6A6A6A', flex: '1 1 200px', lineHeight: 1.5 }}>
+                  {!targetWords && (
+                    <span>Optional. Skip this and AdShield picks the right length for your tier (Free ≈ 1,200 words, Pro ≈ 2,000-3,000 words).</span>
+                  )}
+                  {targetWords && Number(targetWords) > 0 && (
+                    <span>
+                      Rounded to nearest 10. Free tier capped at 1,200; Pro tier capped at 5,000.
+                      <span style={{ display: 'block', marginTop: 4, color: '#D4A017', fontWeight: 600 }}>
+                        Will target: {Math.round(Number(targetWords) / 10) * 10} words
+                      </span>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

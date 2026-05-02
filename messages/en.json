@@ -1,0 +1,94 @@
+{
+  "metadata": {
+    "title": "LexForge AI — AI-Powered Legal Platform",
+    "description": "Generate professional Indian legal documents with AI. Legal notices, contracts, case briefs, petitions — powered by Llama 3.3 70B."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "newDocument": "New Document",
+    "myDocuments": "My Documents",
+    "clients": "Clients",
+    "courtDates": "Court Dates",
+    "legalTools": "Legal Tools",
+    "legalResearch": "Legal Research",
+    "adminConsole": "Admin Console",
+    "generateDocument": "Generate Document",
+    "upgradeToPro": "★ Upgrade to Pro",
+    "signOut": "Sign Out",
+    "language": "Language"
+  },
+  "tier": {
+    "free": "FREE",
+    "pro": "PRO",
+    "admin": "ADMIN",
+    "proLock": "🔒 PRO"
+  },
+  "dashboard": {
+    "greeting": "Good day, {name} 👋",
+    "subtitle": "Here's an overview of your legal documents",
+    "defaultName": "Advocate",
+    "stats": {
+      "totalDocuments": "Total Documents",
+      "finalized": "Finalized",
+      "clients": "Clients",
+      "docTypes": "Doc Types"
+    },
+    "recentDocuments": "Recent Documents",
+    "viewAll": "View all →",
+    "noDocuments": "No documents yet. Generate your first!",
+    "createFirst": "Create First Document",
+    "quickActions": "Quick Actions",
+    "manageClients": "Manage Clients",
+    "researchCaseLaws": "Research Case Laws",
+    "viewAllDocuments": "View All Documents",
+    "upcomingDates": "📅 Upcoming Dates",
+    "noUpcomingDates": "No upcoming dates.",
+    "addOne": "Add one →",
+    "today": "TODAY",
+    "tomorrow": "Tomorrow",
+    "documentTypes": "Document Types",
+    "dbError": "⚠️ {error}"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "search": "Search",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "close": "Close",
+    "user": "User"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "name": "Full Name"
+  },
+  "upgrade": {
+    "title": "Upgrade to Pro",
+    "subtitle": "Unlock all 20+ professional services",
+    "feature_unlimited": "Unlimited documents per month",
+    "feature_longer": "Longer documents (up to 5,000 words)",
+    "feature_model": "Llama 3.3 70B (top-tier model)",
+    "feature_clients": "Client management",
+    "feature_courtdates": "Court date tracker",
+    "feature_tools": "All 6 Legal Tools",
+    "feature_research": "Case law research (30+ precedents)",
+    "feature_assistant": "AI Case Assistant chatbot"
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "english": "English",
+    "hindi": "हिन्दी",
+    "tooltip": "Change interface language"
+  }
+}

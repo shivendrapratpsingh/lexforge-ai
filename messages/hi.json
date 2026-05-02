@@ -1,0 +1,94 @@
+{
+  "metadata": {
+    "title": "लेक्सफ़ोर्ज़ AI — AI-संचालित विधिक मंच",
+    "description": "AI से व्यावसायिक भारतीय विधिक दस्तावेज़ तैयार करें। कानूनी नोटिस, अनुबंध, केस-ब्रीफ़, याचिकाएँ — Llama 3.3 70B द्वारा संचालित।"
+  },
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "newDocument": "नया दस्तावेज़",
+    "myDocuments": "मेरे दस्तावेज़",
+    "clients": "मुवक्किल",
+    "courtDates": "तारीख़ें",
+    "legalTools": "विधिक उपकरण",
+    "legalResearch": "विधिक शोध",
+    "adminConsole": "एडमिन कंसोल",
+    "generateDocument": "दस्तावेज़ तैयार करें",
+    "upgradeToPro": "★ प्रो अपग्रेड करें",
+    "signOut": "साइन आउट",
+    "language": "भाषा"
+  },
+  "tier": {
+    "free": "निःशुल्क",
+    "pro": "प्रो",
+    "admin": "एडमिन",
+    "proLock": "🔒 प्रो"
+  },
+  "dashboard": {
+    "greeting": "नमस्कार, {name} 🙏",
+    "subtitle": "आपके विधिक दस्तावेज़ों का सारांश",
+    "defaultName": "अधिवक्ता",
+    "stats": {
+      "totalDocuments": "कुल दस्तावेज़",
+      "finalized": "अंतिम रूप",
+      "clients": "मुवक्किल",
+      "docTypes": "दस्तावेज़ प्रकार"
+    },
+    "recentDocuments": "हाल के दस्तावेज़",
+    "viewAll": "सभी देखें →",
+    "noDocuments": "अभी तक कोई दस्तावेज़ नहीं। अपना पहला तैयार करें!",
+    "createFirst": "पहला दस्तावेज़ बनाएँ",
+    "quickActions": "त्वरित कार्य",
+    "manageClients": "मुवक्किल प्रबंधन",
+    "researchCaseLaws": "केस लॉ शोध",
+    "viewAllDocuments": "सभी दस्तावेज़ देखें",
+    "upcomingDates": "📅 आगामी तारीख़ें",
+    "noUpcomingDates": "कोई आगामी तारीख़ नहीं।",
+    "addOne": "जोड़ें →",
+    "today": "आज",
+    "tomorrow": "कल",
+    "documentTypes": "दस्तावेज़ प्रकार",
+    "dbError": "⚠️ {error}"
+  },
+  "common": {
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "delete": "हटाएँ",
+    "edit": "संपादित करें",
+    "loading": "लोड हो रहा है…",
+    "search": "खोजें",
+    "back": "वापस",
+    "next": "आगे",
+    "submit": "प्रस्तुत करें",
+    "confirm": "पुष्टि करें",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "close": "बंद करें",
+    "user": "उपयोगकर्ता"
+  },
+  "auth": {
+    "signIn": "साइन इन",
+    "signOut": "साइन आउट",
+    "register": "पंजीकरण",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "name": "पूरा नाम"
+  },
+  "upgrade": {
+    "title": "प्रो में अपग्रेड करें",
+    "subtitle": "सभी 20+ व्यावसायिक सेवाएँ अनलॉक करें",
+    "feature_unlimited": "प्रति माह असीमित दस्तावेज़",
+    "feature_longer": "लंबे दस्तावेज़ (5,000 शब्दों तक)",
+    "feature_model": "Llama 3.3 70B (शीर्ष-स्तरीय मॉडल)",
+    "feature_clients": "मुवक्किल प्रबंधन",
+    "feature_courtdates": "तारीख़ ट्रैकर",
+    "feature_tools": "सभी 6 विधिक उपकरण",
+    "feature_research": "केस लॉ शोध (30+ निर्णय)",
+    "feature_assistant": "AI केस सहायक चैटबॉट"
+  },
+  "languageSwitcher": {
+    "label": "भाषा",
+    "english": "English",
+    "hindi": "हिन्दी",
+    "tooltip": "इंटरफ़ेस की भाषा बदलें"
+  }
+}

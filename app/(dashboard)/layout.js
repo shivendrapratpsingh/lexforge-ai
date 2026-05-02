@@ -1,37 +1,51 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { SignOutButton } from '@/components/SignOutButton'
 import { isAdmin, hasProAccessForSession } from '@/lib/admin'
 import AssistantWidget from '@/components/AssistantWidget'
 import SidebarNav from '@/components/SidebarNav'
-
-const baseNavLinks = [
-  { href: '/dashboard',   label: 'Dashboard',      icon: '◈', proOnly: false },
-  { href: '/new-draft',   label: 'New Document',   icon: '✦', proOnly: false },
-  { href: '/drafts',      label: 'My Documents',   icon: '◉', proOnly: false },
-  { href: '/clients',     label: 'Clients',        icon: '👤', proOnly: true },
-  { href: '/court-dates', label: 'Court Dates',    icon: '📅', proOnly: true },
-  { href: '/tools',       label: 'Legal Tools',    icon: '⚒️', proOnly: true },
-  { href: '/research',    label: 'Legal Research', icon: '◎', proOnly: true },
-]
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 export default async function DashboardLayout({ children }) {
   const session = await auth()
   if (!session) redirect('/login')
 
-  const initial = (session.user?.name?.[0] || session.user?.email?.[0] || 'U').toUpperCase()
-  const admin = isAdmin(session)
-  const pro = await hasProAccessForSession(session)
-  const tier = admin ? 'admin' : (pro ? 'pro' : 'free')
+  const t        = await getTranslations()
+  const initial  = (session.user?.name?.[0] || session.user?.email?.[0] || 'U').toUpperCase()
+  const admin    = isAdmin(session)
+  const pro      = await hasProAccessForSession(session)
+  const tier     = admin ? 'admin' : (pro ? 'pro' : 'free')
+  const tierLbl  = t(`tier.${tier}`)
+
+  // Build localized nav links. Pro-locked links redirect to /upgrade for
+  // free users so they can see what they're missing without errors.
+  const baseNavLinks = [
+    { href: '/dashboard',   labelKey: 'nav.dashboard',     icon: '◈', proOnly: false },
+    { href: '/new-draft',   labelKey: 'nav.newDocument',   icon: '✦', proOnly: false },
+    { href: '/drafts',      labelKey: 'nav.myDocuments',   icon: '◉', proOnly: false },
+    { href: '/clients',     labelKey: 'nav.clients',       icon: '👤', proOnly: true  },
+    { href: '/court-dates', labelKey: 'nav.courtDates',    icon: '📅', proOnly: true  },
+    { href: '/tools',       labelKey: 'nav.legalTools',    icon: '⚒️', proOnly: true  },
+    { href: '/research',    labelKey: 'nav.legalResearch', icon: '◎', proOnly: true  },
+  ]
 
   const navLinks = [
     ...baseNavLinks.map(l => ({
-      ...l,
-      href: !pro && l.proOnly ? '/upgrade' : l.href,
+      href:   !pro && l.proOnly ? '/upgrade' : l.href,
+      label:  t(l.labelKey),
+      icon:   l.icon,
       locked: !pro && l.proOnly,
+      proLockText: t('tier.proLock'),
     })),
-    ...(admin ? [{ href: '/admin', label: 'Admin Console', icon: '◆', proOnly: false, locked: false, admin: true }] : []),
+    ...(admin ? [{
+      href: '/admin',
+      label: t('nav.adminConsole'),
+      icon: '◆',
+      locked: false,
+      admin: true,
+    }] : []),
   ]
 
   return (
@@ -70,7 +84,7 @@ export default async function DashboardLayout({ children }) {
         {/* Nav (active-state highlight + click handling lives in SidebarNav). */}
         <SidebarNav links={navLinks} />
 
-        {/* New Document CTA */}
+        {/* Generate Document CTA */}
         <div style={{ padding: '0 10px 12px', flexShrink: 0 }}>
           <Link href="/new-draft" style={{
             display: 'flex',
@@ -85,12 +99,14 @@ export default async function DashboardLayout({ children }) {
             fontSize: 13,
             fontWeight: 700,
           }}>
-            <span>✦</span> Generate Document
+            <span>✦</span> {t('nav.generateDocument')}
           </Link>
         </div>
 
-        {/* User info + Sign Out */}
+        {/* Language switcher + User info + Sign Out */}
         <div style={{ padding: '12px 10px 16px', borderTop: '1px solid #1C1C1C', flexShrink: 0, background: '#090909' }}>
+          <LanguageSwitcher />
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: '#141414', marginBottom: 6 }}>
             <div style={{
               width: 32, height: 32,
@@ -103,7 +119,7 @@ export default async function DashboardLayout({ children }) {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#C0C0C0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.user?.name || 'User'}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.user?.name || t('common.user')}</span>
                 <span style={{
                   fontSize: 9,
                   padding: '2px 6px',
@@ -113,7 +129,7 @@ export default async function DashboardLayout({ children }) {
                   fontWeight: 800,
                   letterSpacing: '0.5px',
                   flexShrink: 0,
-                }}>{tier.toUpperCase()}</span>
+                }}>{tierLbl}</span>
               </div>
               <div style={{ fontSize: 11, color: '#4A4A4A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {session.user?.email}
@@ -134,7 +150,7 @@ export default async function DashboardLayout({ children }) {
               fontSize: 12,
               fontWeight: 700,
             }}>
-              ★ Upgrade to Pro
+              {t('nav.upgradeToPro')}
             </Link>
           )}
           <SignOutButton />
@@ -147,7 +163,10 @@ export default async function DashboardLayout({ children }) {
       </main>
 
       {/* ── Floating Pro Case Assistant (visible on every dashboard page) ── */}
-      <AssistantWidget isPro={pro || admin} />
+      <AssistantWidget
+        isPro={pro || admin}
+        userName={session.user?.name || (session.user?.email?.split('@')[0]) || 'friend'}
+      />
     </div>
   )
 }

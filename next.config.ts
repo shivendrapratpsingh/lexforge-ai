@@ -1,4 +1,9 @@
 import type { NextConfig } from 'next'
+import createNextIntlPlugin from 'next-intl/plugin'
+
+// Point next-intl at our request-config file. Cookie-based locale, no
+// [locale] route restructuring needed.
+const withNextIntl = createNextIntlPlugin('./i18n/request.js')
 
 const nextConfig: NextConfig = {
   // Keep Prisma in Node.js runtime only (it uses native bindings).
@@ -10,9 +15,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-
-  // (Next 16 removed the `eslint` config key — `next build` no longer runs
-  // ESLint. Run lint manually with `npx eslint .` if needed.)
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

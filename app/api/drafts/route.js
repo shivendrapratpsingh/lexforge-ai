@@ -97,7 +97,20 @@ export async function POST(req) {
       language     = 'english',
       intakeMethod = 'form',
       sourceText   = null,
+      targetWords  = null,        // user-requested length, rounded to nearest 10
     } = body
+
+    // Sanitise targetWords. The client already rounds to the nearest 10,
+    // but we re-round here so a hand-crafted POST can't bypass it.
+    // Caps:  free  = 1,200 words   |   pro = 5,000 words.
+    function clampTargetWords(raw, isPro) {
+      const n = Number(raw)
+      if (!Number.isFinite(n) || n <= 0) return null
+      const cap = isPro ? 5000 : 1200
+      const min = 100
+      const rounded = Math.round(n / 10) * 10
+      return Math.max(min, Math.min(cap, rounded))
+    }
 
     if (!documentType || !DOCUMENT_TYPES.find(t => t.value === documentType))
       return NextResponse.json({ error: 'Invalid document type.' }, { status: 400 })
@@ -169,9 +182,14 @@ export async function POST(req) {
     const searchTerms = Object.values(cleanTemplateData).join(' ')
     const caseLaws    = getRelevantCaseLaws(documentType, court, searchTerms)
 
+    const targetWordsClamped = clampTargetWords(targetWords, userIsPro)
+
     let content
     try {
-      content = await generateLegalDocument(documentType, fullDetails, court, language, { isPro: userIsPro })
+      content = await generateLegalDocument(documentType, fullDetails, court, language, {
+        isPro: userIsPro,
+        targetWords: targetWordsClamped,
+      })
     } catch (genErr) {
       if (genErr?.code === 'AI_REFUSAL') {
         return NextResponse.json({

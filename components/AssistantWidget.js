@@ -154,7 +154,70 @@ function IntentCTA({ intent, message, onGenerate }) {
   )
 }
 
-export default function AssistantWidget({ isPro = false }) {
+// ─── Quick-pick grid of all 20 document types ────────────────────
+// Rendered inside the greeting bubble so the user can jump straight
+// into any tool with one click instead of typing.
+const QUICK_ICONS = {
+  WRIT_PETITION: '🔏', PIL: '⚡', BAIL_APPLICATION: '🔓',
+  DIVORCE_PETITION: '⚖️', CHEQUE_BOUNCE: '💳', FIR_COMPLAINT: '🚔',
+  CONSUMER_COMPLAINT: '🛒', RTI_APPLICATION: '🔍', STAY_APPLICATION: '⏸️',
+  PETITION: '🏛️', CONTRACT: '📝', RENT_AGREEMENT: '🏠',
+  SALE_DEED: '🏗️', AFFIDAVIT: '🖊️', VAKALATNAMA: '✍️',
+  CASE_BRIEF: '📚', MEMORANDUM: '📄', LEGAL_OPINION: '💡',
+  LEGAL_NOTICE: '📋', LEGAL_EMAIL: '✉️',
+}
+
+function QuickPicks({ onPick }) {
+  return (
+    <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px dashed ${COLORS.border}` }}>
+      <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
+        Quick picks
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(118px, 1fr))', gap: 6 }}>
+        {INTENTS.map(intent => (
+          <button key={intent.type} onClick={() => onPick(intent)}
+            title={`Generate ${intent.label}`}
+            style={{
+              padding: '7px 9px',
+              borderRadius: 8,
+              border: '1px solid rgba(212,160,23,0.25)',
+              background: 'rgba(212,160,23,0.05)',
+              color: '#D8D8D8',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              textAlign: 'left',
+              display: 'flex', alignItems: 'center', gap: 6,
+              transition: 'all 0.12s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(212,160,23,0.18)'
+              e.currentTarget.style.borderColor = 'rgba(212,160,23,0.55)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(212,160,23,0.05)'
+              e.currentTarget.style.borderColor = 'rgba(212,160,23,0.25)'
+            }}>
+            <span style={{ fontSize: 14 }}>{QUICK_ICONS[intent.type] || '📑'}</span>
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {intent.label}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Pretty-format a name: trim, take first word only, capitalise first letter.
+function prettyName(raw) {
+  const s = String(raw || 'friend').trim()
+  if (!s) return 'friend'
+  const first = s.split(/\s+/)[0]
+  return first.charAt(0).toUpperCase() + first.slice(1)
+}
+
+export default function AssistantWidget({ isPro = false, userName = 'friend' }) {
   const router = useRouter()
   const [open, setOpen]       = useState(false)
   const [input, setInput]     = useState('')
@@ -163,23 +226,23 @@ export default function AssistantWidget({ isPro = false }) {
   const [messages, setMessages] = useState([])
   const listRef = useRef(null)
 
+  const greetName = prettyName(userName)
+
   // Reset to greeting whenever the panel is freshly opened.
   useEffect(() => {
     if (!open) return
     setMessages([{
       role: 'assistant',
       content:
-        "Hi! What can I do for you today?\n\n" +
-        "Tell me what you need — for example:\n" +
-        "  • \"I need a writ petition for service matters\"\n" +
-        "  • \"Draft a bail application for my client\"\n" +
-        "  • \"Send a cheque bounce notice u/s 138\"\n\n" +
-        "I'll detect what you need and take you straight to the right form. " +
-        "You can close me any time using the × at the top or the Cancel button below.",
+        `Hi ${greetName}, how may I assist you bro?\n\n` +
+        "Pick any document below to start, or just type your request — " +
+        "I'll detect what you need (writ petition, bail, contract, RTI, " +
+        "cheque bounce, etc.) and take you to the right form.",
+      showQuickPicks: true,   // ← marks this bubble to render the doc-type chips
     }])
     setError(null)
     setInput('')
-  }, [open])
+  }, [open, greetName])
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
@@ -342,6 +405,9 @@ export default function AssistantWidget({ isPro = false }) {
           }}>
             {messages.map((m, i) => (
               <MessageBubble key={i} role={m.role} content={m.content}>
+                {m.showQuickPicks && (
+                  <QuickPicks onPick={(intent) => handleGenerate(intent, '')} />
+                )}
                 {m.intent && (
                   <IntentCTA intent={m.intent} message={m.seedMessage || ''} onGenerate={handleGenerate} />
                 )}

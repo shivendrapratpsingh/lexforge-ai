@@ -29,12 +29,16 @@ export default async function DashboardLayout({ children }) {
     { href: '/court-dates', labelKey: 'nav.courtDates',    icon: '📅', proOnly: true  },
     { href: '/tools',       labelKey: 'nav.legalTools',    icon: '⚒️', proOnly: true  },
     { href: '/research',    labelKey: 'nav.legalResearch', icon: '◎', proOnly: true  },
+    { href: '/study',       label:    'Study & Learn',     icon: '📚', proOnly: false },
   ]
 
   const navLinks = [
     ...baseNavLinks.map(l => ({
       href:   !pro && l.proOnly ? '/upgrade' : l.href,
-      label:  t(l.labelKey),
+      // Most links resolve their label from i18n via `labelKey`; the
+      // /study link uses a hardcoded `label` so we don't have to touch
+      // every translation file. Fall back gracefully.
+      label:  l.label ?? t(l.labelKey),
       icon:   l.icon,
       locked: !pro && l.proOnly,
       proLockText: t('tier.proLock'),
@@ -158,15 +162,4 @@ export default async function DashboardLayout({ children }) {
       </aside>
 
       {/* ── Main Content ── */}
-      <main style={{ marginLeft: 240, flex: 1, padding: '32px 36px', minHeight: '100vh', minWidth: 0 }}>
-        {children}
-      </main>
-
-      {/* ── Floating Pro Case Assistant (visible on every dashboard page) ── */}
-      <AssistantWidget
-        isPro={pro || admin}
-        userName={session.user?.name || (session.user?.email?.split('@')[0]) || 'friend'}
-      />
-    </div>
-  )
-}
+      <main style={{ marginLeft: 240, flex: 1, padding: '32px 36px', minHeight: '100vh', minWidth:

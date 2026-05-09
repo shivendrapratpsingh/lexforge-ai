@@ -6,6 +6,10 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 
+// AI route — needs > 10s on Vercel Hobby plan.
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 export async function POST(req) {
   try {
     const session = await auth()

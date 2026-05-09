@@ -31,6 +31,27 @@ export default function SidebarNav({ links }) {
       gap: 3,
     }}>
       {links.map((link, idx) => {
+        // Section header rows are non-clickable labels that visually split
+        // the nav into groups. Pass `{ type: 'header', label: 'Lawyer' }`
+        // from the parent layout.
+        if (link.type === 'header') {
+          return (
+            <div
+              key={`hdr-${idx}`}
+              style={{
+                fontSize: 10,
+                color: '#5A5A5A',
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                padding: '14px 14px 6px',
+                marginTop: idx === 0 ? 0 : 8,
+              }}
+            >
+              {link.label}
+            </div>
+          )
+        }
         const active = isActive(link.href)
         const baseColor  = link.admin ? '#D4A017' : (active ? '#F0F0F0' : '#6A6A6A')
         const baseBg     = active ? '#1C1C1C' : 'transparent'

@@ -8,6 +8,10 @@ import { auth } from '@/lib/auth'
 import { buildLawsPromptBlock } from '@/lib/indian-laws'
 import { LANDMARK_JUDGMENTS, LEGAL_PRINCIPLES } from '@/lib/study-content'
 
+// AI route — needs > 10s on Vercel Hobby plan.
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 const TUTOR_SYSTEM = `You are LexForge AI — Tutor Mode, an experienced law professor specialising in Indian law.
 You help law students and curious citizens understand Indian legal concepts.
 

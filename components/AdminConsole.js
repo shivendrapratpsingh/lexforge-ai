@@ -140,7 +140,10 @@ export default function AdminConsole() {
       // System config (Pro toggle + free quota)
       if (sc?.config) {
         setSysConfig(sc.config)
-        setScProEnf(!!sc.config.proEnforcementEnabled)
+        // Storage flag is INVERTED for admin UI:
+        //   storage true  = Free tier enforced  ⇒ toggle should show OFF
+        //   storage false = Everyone gets Pro   ⇒ toggle should show ON
+        setScProEnf(!sc.config.proEnforcementEnabled)
         setScLimit(typeof sc.config.freeDocsLimit === 'number' ? sc.config.freeDocsLimit : 10)
       }
     } catch (e) {
@@ -243,7 +246,7 @@ export default function AdminConsole() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          proEnforcementEnabled: !!scProEnf,
+          proEnforcementEnabled: !scProEnf,   // inverted: toggle ON ⇒ Pro for everyone ⇒ enforcement off
           freeDocsLimit:         Math.floor(limit),
         }),
       })
@@ -337,14 +340,14 @@ export default function AdminConsole() {
           System Settings
         </h2>
         <div style={{ fontSize: 12, color: '#6A6A6A', marginBottom: 12 }}>
-          Master switch for Pro enforcement and the monthly free-tier draft cap. While Pro enforcement is <b style={{ color: '#C0C0C0' }}>off</b>, every user gets the full Pro experience (longer drafts, full citations, AI Case Assistant). Flip it on to start charging Pro features.
+          Master switch for the entire app. <b style={{ color: '#C0C0C0' }}>Pro ON</b> = every signed-in user gets the full Pro experience (longer drafts, full citations, AI Case Assistant, no monthly cap). <b style={{ color: '#C0C0C0' }}>Pro OFF</b> = everyone is on the free tier with the monthly draft cap below. Admin always retains Pro regardless.
         </div>
 
         <div style={CARD}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, alignItems: 'flex-start' }}>
             {/* Pro enforcement toggle */}
             <div>
-              <div style={FIELD_LABEL}>Pro Enforcement</div>
+              <div style={FIELD_LABEL}>Pro Mode (master switch)</div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 0' }}>
                 <input
                   type="checkbox"
@@ -353,11 +356,11 @@ export default function AdminConsole() {
                   style={{ width: 18, height: 18, accentColor: '#D4A017', cursor: 'pointer' }}
                 />
                 <span style={{ fontSize: 13, color: '#F0F0F0', fontWeight: 600 }}>
-                  {scProEnf ? 'ON — Pro features locked behind tier' : 'OFF — Pro features open to everyone'}
+                  {scProEnf ? 'ON — Pro mode for everyone (unlimited)' : 'OFF — Free tier for everyone (monthly cap below)'}
                 </span>
               </label>
               <div style={{ fontSize: 11, color: '#6A6A6A', marginTop: 4 }}>
-                Admin and active promo grants always retain Pro regardless of this toggle.
+                Admin always has Pro. Active promo grants override the toggle for the user / window they cover.
               </div>
             </div>
 
@@ -374,7 +377,7 @@ export default function AdminConsole() {
                 style={{ ...INPUT, width: 120 }}
               />
               <div style={{ fontSize: 11, color: '#6A6A6A', marginTop: 4 }}>
-                Cap on drafts a free user can generate per calendar month. Only enforced when Pro is ON.
+                Cap on drafts a free user can generate per calendar month. Only takes effect when Pro mode is OFF.
               </div>
             </div>
           </div>

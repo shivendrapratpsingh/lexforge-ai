@@ -9,6 +9,10 @@ import { auth } from '@/lib/auth'
 import { LANDMARK_JUDGMENTS, LEGAL_PRINCIPLES } from '@/lib/study-content'
 import { INDIAN_LAWS } from '@/lib/indian-laws'
 
+// AI route — needs > 10s on Vercel Hobby plan.
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 function pickSeed(topic) {
   const t = (topic || '').toLowerCase()
   const cases = LANDMARK_JUDGMENTS.filter(j =>

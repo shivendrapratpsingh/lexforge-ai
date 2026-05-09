@@ -32,24 +32,51 @@ export default async function DashboardLayout({ children }) {
     { href: '/study',       label:    'Study & Learn',     icon: '📚', proOnly: false },
   ]
 
-  const navLinks = [
-    ...baseNavLinks.map(l => ({
-      href:   !pro && l.proOnly ? '/upgrade' : l.href,
-      // Most links resolve their label from i18n via `labelKey`; the
-      // /study link uses a hardcoded `label` so we don't have to touch
-      // every translation file. Fall back gracefully.
-      label:  l.label ?? t(l.labelKey),
-      icon:   l.icon,
-      locked: !pro && l.proOnly,
-      proLockText: t('tier.proLock'),
-    })),
-    ...(admin ? [{
-      href: '/admin',
-      label: t('nav.adminConsole'),
-      icon: '◆',
+  // Sidebar layout the user asked for:
+  //   ┌── LAWYER ─────────────┐
+  //   │ Dashboard / New Draft │
+  //   │ Drafts / Clients      │
+  //   │ Court Dates / Tools   │
+  //   │ Research / Study      │
+  //   ├── FUTURE LAWYER ──────┤
+  //   │ Coming-soon services  │
+  //   └───────────────────────┘
+  // Admin gets an extra Admin Console link at the bottom.
+  const lawyerLinks = baseNavLinks.map(l => ({
+    href:   !pro && l.proOnly ? '/upgrade' : l.href,
+    // Most links resolve their label from i18n via `labelKey`; the
+    // /study link uses a hardcoded `label` so we don't have to touch
+    // every translation file. Fall back gracefully.
+    label:  l.label ?? t(l.labelKey),
+    icon:   l.icon,
+    locked: !pro && l.proOnly,
+    proLockText: t('tier.proLock'),
+  }))
+
+  const futureLawyerLinks = [
+    {
+      href: '/future-lawyer',
+      label: 'Services',
+      icon: '🎓',
       locked: false,
-      admin: true,
-    }] : []),
+    },
+  ]
+
+  const navLinks = [
+    { type: 'header', label: 'Lawyer' },
+    ...lawyerLinks,
+    { type: 'header', label: 'Future Lawyer' },
+    ...futureLawyerLinks,
+    ...(admin ? [
+      { type: 'header', label: 'Admin' },
+      {
+        href: '/admin',
+        label: t('nav.adminConsole'),
+        icon: '◆',
+        locked: false,
+        admin: true,
+      },
+    ] : []),
   ]
 
   return (
@@ -162,4 +189,15 @@ export default async function DashboardLayout({ children }) {
       </aside>
 
       {/* ── Main Content ── */}
-      <main style={{ marginLeft: 240, flex: 1, padding: '32px 36px', minHeight: '100vh', minWidth:
+      <main style={{ marginLeft: 240, flex: 1, padding: '32px 36px', minHeight: '100vh', minWidth: 0 }}>
+        {children}
+      </main>
+
+      {/* ── Floating Pro Case Assistant (visible on every dashboard page) ── */}
+      <AssistantWidget
+        isPro={pro || admin}
+        userName={session.user?.name || (session.user?.email?.split('@')[0]) || 'friend'}
+      />
+    </div>
+  )
+}

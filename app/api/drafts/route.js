@@ -4,6 +4,13 @@ import { DOCUMENT_TYPES, getRelevantCaseLaws } from '@/lib/utils'
 import { isAdmin, hasProAccess, requiresProDocumentDynamic, getFreeDocsLimit } from '@/lib/admin'
 import { isJunkValue } from '@/lib/validation'
 
+// AI generation can take 20–40s with 70B models. Vercel's Hobby plan caps
+// serverless functions at 10s by default, which silently kills the request
+// and the user sees no output. Raise to 60s (Hobby max). Pro plans allow up
+// to 300s — bump this if you ever need it.
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 // Strip junk placeholders ("NA", "no", "don't know", "-", etc.) from templateData
 // so the AI never sees them. The client-side guard normally blocks these,
 // but this is defense-in-depth — empty values trigger placeholders downstream
@@ -295,13 +302,20 @@ export async function POST(req) {
     console.error('[POST /api/drafts]', err)
     // Always return a descriptive error so the user knows what failed
     let msg = 'Failed to generate document. Please try again.'
-    if (err?.message?.includes('.prisma/client') || err?.message?.includes('PrismaClient')) {
-      msg = 'Database not initialized. Please run SETUP.bat or FIX.bat to set up the database, then restart the app.'
-    } else if (err?.message?.includes('API key') || err?.message?.includes('GROQ')) {
-      msg = 'Invalid GROQ_API_KEY. Please check your .env.local file.'
+    let status = 500
+    const errMsg = err?.message || ''
+    if (errMsg.includes('.prisma/client') || errMsg.includes('PrismaClient')) {
+      msg = 'Database not initialized. Please ensure DATABASE_URL is set and `prisma db push` has been run against it.'
+      status = 503
+    } else if (err?.status === 401 || err?.status === 403 || errMsg.includes('API key') || errMsg.includes('GROQ_API_KEY')) {
+      msg = 'Invalid or missing GROQ_API_KEY. Set it in your environment variables and redeploy.'
+      status = 503
+    } else if (err?.status === 429 || /rate[\s_-]?limit/i.test(errMsg)) {
+      msg = 'Groq rate limit hit. Wait a minute and try again.'
+      status = 429
     } else if (process.env.NODE_ENV === 'development') {
-      msg = `Generation failed: ${err?.message}`
+      msg = `Generation failed: ${errMsg}`
     }
-    return NextResponse.json({ error: msg }, { status: 500 })
+    return NextResponse.json({ error: msg }, { status })
   }
 }

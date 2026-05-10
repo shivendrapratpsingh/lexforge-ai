@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { DOCUMENT_TYPES, COURTS, ALL_COURTS, LANGUAGES } from '@/lib/utils'
 import { isJunkValue, validateTemplateData, buildValidationError } from '@/lib/validation'
 import { PRO_TAGLINE, getProFeatureList } from '@/lib/pro-features'
+import FolderUploader from '@/components/FolderUploader'
 
 // ─── Client field mapping per document type ──────────────────────
 const CLIENT_FIELD_MAP = {
@@ -484,6 +485,13 @@ export default function NewDraftPage() {
   const [extracting, setExtracting]         = useState(false)
   const [extracted, setExtracted]           = useState(false)
 
+  // Folder upload mode
+  const [folderText, setFolderText]         = useState('')
+  const [folderFiles, setFolderFiles]       = useState([])    // [{name, status, ...}]
+  const [briefing, setBriefing]             = useState(false)
+  const [shortBrief, setShortBrief]         = useState('')
+  const [briefError, setBriefError]         = useState('')
+
   const [generating, setGenerating]         = useState(false)
   const [error, setError]                   = useState('')
 
@@ -594,6 +602,51 @@ export default function NewDraftPage() {
     finally { setExtracting(false) }
   }
 
+  // Folder upload → SHORT case brief (CASE_BRIEF doc type)
+  async function handleFolderBrief() {
+    if (!folderText || folderText.length < 60) {
+      setBriefError('Please choose a folder containing readable documents first.')
+      return
+    }
+    setBriefing(true); setBriefError(''); setShortBrief('')
+    try {
+      const res = await fetch('/api/case-brief-folder', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceText: folderText, court, language: selectedLang }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
+      setShortBrief(data.brief || 'No brief returned.')
+    } catch (e) {
+      setBriefError(e?.message || 'Failed to generate brief. Please try again.')
+    } finally { setBriefing(false) }
+  }
+
+  // Folder upload → extract details + pre-fill form (any non-CASE_BRIEF doc)
+  async function handleFolderExtract() {
+    if (!folderText || folderText.length < 60) {
+      setError('Please choose a folder containing readable documents first.')
+      return
+    }
+    setExtracting(true); setError('')
+    try {
+      const res  = await fetch('/api/extract', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rawText: folderText, documentType: selectedType }),
+      })
+      const data = await res.json()
+      if (data?.extracted && Object.keys(data.extracted).length > 0) {
+        setFormData(data.extracted); setExtracted(true)
+        // Also keep folderText as the source for the eventual draft request
+        setUploadText(folderText)
+      } else {
+        setError('Could not extract details from the folder. Please fill the form manually or try a different intake method.')
+      }
+    } catch (e) {
+      setError(e?.message || 'Extraction failed. Please try again or fill manually.')
+    } finally { setExtracting(false) }
+  }
+
   async function handleGenerate() {
     setError('')
     const dataToSend = intakeMethod === 'chat' ? chatAnswers : formData
@@ -628,7 +681,7 @@ export default function NewDraftPage() {
           court: selectedCourt,
           language: selectedLang,
           intakeMethod,
-          sourceText: intakeMethod === 'upload' ? uploadText : null,
+          sourceText: (intakeMethod === 'upload' || intakeMethod === 'folder') ? (uploadText || folderText) : null,
           // Round to nearest 10 (so 1273 -> 1270, 947 -> 950).
           // Empty / non-numeric -> server picks tier-appropriate default.
           targetWords: targetWords && Number(targetWords) > 0
@@ -1105,11 +1158,12 @@ export default function NewDraftPage() {
             {/* Intake Method */}
             <div style={{ marginBottom: 8 }}>
               <label style={S.label}>How to provide case details?</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
                 {[
                   { value: 'form',   icon: '📋', title: 'Fill Form',     desc: 'Fill structured fields' },
                   { value: 'chat',   icon: '💬', title: 'Smart Q&A',     desc: 'AI asks questions one by one' },
                   { value: 'upload', icon: '📤', title: 'Paste Document', desc: 'AI extracts details from pasted doc' },
+                  { value: 'folder', icon: '📁', title: 'Upload Folder', desc: selectedType === 'CASE_BRIEF' ? 'AI reads every file → short brief' : 'AI reads every file in a folder' },
                 ].map(m => (
                   <button key={m.value} onClick={() => setIntakeMethod(m.value)}
                     style={{ background: intakeMethod === m.value ? 'rgba(212,160,23,0.08)' : '#0D0D0D', border: `1px solid ${intakeMethod === m.value ? '#D4A017' : '#2A2A2A'}`, borderRadius: 12, padding: '14px 10px', cursor: 'pointer', textAlign: 'center' }}>
@@ -1119,6 +1173,11 @@ export default function NewDraftPage() {
                   </button>
                 ))}
               </div>
+              {intakeMethod === 'folder' && selectedType === 'CASE_BRIEF' && (
+                <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: 8, fontSize: 11, color: '#93C5FD', lineHeight: 1.5 }}>
+                  💡 <b>Folder mode for Case Brief</b> — drop a folder of case papers (FIRs, orders, pleadings, agreements). AI reads them and produces a 2-minute executive brief. No form-filling.
+                </div>
+              )}
             </div>
 
             {/* Load from history */}
@@ -1140,7 +1199,7 @@ export default function NewDraftPage() {
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
               <button onClick={() => setStep(1)} style={{ padding: '11px 18px', background: 'transparent', border: '1px solid #2A2A2A', borderRadius: 10, color: '#6A6A6A', fontSize: 13, cursor: 'pointer' }}>← Back</button>
               <button onClick={() => setStep(3)} style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #D4A017, #B8860B)', color: '#0D0D0D', borderRadius: 10, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                Continue → {intakeMethod === 'form' ? 'Fill Details' : intakeMethod === 'chat' ? 'Start Q&A' : 'Paste Document'}
+                Continue → {intakeMethod === 'form' ? 'Fill Details' : intakeMethod === 'chat' ? 'Start Q&A' : intakeMethod === 'upload' ? 'Paste Document' : 'Upload Folder'}
               </button>
             </div>
           </div>
@@ -1338,6 +1397,121 @@ export default function NewDraftPage() {
                     )
                   })}
                   <button onClick={() => { setExtracted(false); setFormData({}) }} style={{ marginBottom: 10, padding: '9px 14px', background: 'transparent', border: '1px solid #2A2A2A', borderRadius: 8, color: '#6A6A6A', fontSize: 12, cursor: 'pointer' }}>↩ Re-paste</button>
+                  <GenBtn generating={generating} onClick={handleGenerate} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* FOLDER UPLOAD MODE */}
+          {intakeMethod === 'folder' && (
+            <div style={S.card}>
+              {!extracted && !shortBrief ? (
+                <div>
+                  <label style={S.label}>
+                    Upload an entire case folder
+                    {selectedType === 'CASE_BRIEF' && (
+                      <span style={{ marginLeft: 8, fontSize: 10, padding: '2px 7px', background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.4)', borderRadius: 6, color: '#93C5FD', letterSpacing: 0.4 }}>
+                        SHORT BRIEF MODE
+                      </span>
+                    )}
+                  </label>
+                  <p style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 14, lineHeight: 1.6 }}>
+                    {selectedType === 'CASE_BRIEF'
+                      ? 'AI reads every file in your folder (FIRs, court orders, pleadings, agreements) and produces a 2-minute executive case brief — parties, chronology, issues, strengths, weaknesses, next steps.'
+                      : 'AI reads every file in your folder and uses the combined content to extract details and pre-fill the form below.'}
+                  </p>
+
+                  <FolderUploader
+                    onText={(text, files) => { setFolderText(text); setFolderFiles(files); setBriefError(''); setError('') }}
+                  />
+
+                  {(briefError || error) && (
+                    <div style={{ marginTop: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.35)', color: '#EF4444', padding: '10px 14px', borderRadius: 10, fontSize: 12 }}>
+                      ❌ {briefError || error}
+                    </div>
+                  )}
+
+                  {/* Action button(s) */}
+                  {folderText && (
+                    <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+                      {selectedType === 'CASE_BRIEF' ? (
+                        <button onClick={handleFolderBrief} disabled={briefing}
+                          style={{ flex: 1, minWidth: 220, padding: '13px', background: briefing ? '#1C1C1C' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', color: briefing ? '#5A5A5A' : '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: briefing ? 'not-allowed' : 'pointer' }}>
+                          {briefing ? '⚙ Reading folder & drafting brief…' : '✨ Generate SHORT case brief'}
+                        </button>
+                      ) : (
+                        <button onClick={handleFolderExtract} disabled={extracting}
+                          style={{ flex: 1, minWidth: 220, padding: '13px', background: extracting ? '#1C1C1C' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', color: extracting ? '#5A5A5A' : '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: extracting ? 'not-allowed' : 'pointer' }}>
+                          {extracting ? '⚙ Extracting details from folder…' : '🔍 Extract & Auto-fill Form'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : shortBrief ? (
+                /* CASE_BRIEF — show the generated brief */
+                <div>
+                  <div style={{ padding: '10px 14px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: 10, color: '#93C5FD', fontSize: 12, marginBottom: 14 }}>
+                    ✅ Brief generated from {folderFiles.filter(f => f.status === 'ok').length} file(s) ·
+                    <span style={{ marginLeft: 6, fontFamily: 'monospace', color: '#6EA8E8' }}>
+                      {(folderText.length / 1000).toFixed(1)}K chars analysed
+                    </span>
+                  </div>
+
+                  <div style={{ background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 12, padding: '20px 22px', maxHeight: 540, overflowY: 'auto', whiteSpace: 'pre-wrap', fontSize: 13.5, lineHeight: 1.75, color: '#E0E0E0', fontFamily: 'Georgia, serif' }}>
+                    {shortBrief}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+                    <button onClick={() => navigator.clipboard.writeText(shortBrief)}
+                      style={{ padding: '10px 16px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, color: '#C0C0C0', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
+                      📋 Copy brief
+                    </button>
+                    <button onClick={() => { setShortBrief(''); setFolderText(''); setFolderFiles([]); setBriefError('') }}
+                      style={{ padding: '10px 16px', background: 'transparent', border: '1px solid #2A2A2A', borderRadius: 10, color: '#6A6A6A', fontSize: 12, cursor: 'pointer' }}>
+                      ↩ Upload different folder
+                    </button>
+                    <button
+                      onClick={() => { setUploadText(folderText); setShortBrief(''); /* keep folderText so the next step can save the draft */
+                                       handleGenerate() }}
+                      disabled={generating}
+                      style={{ flex: 1, minWidth: 200, padding: '11px 16px', background: generating ? '#1C1C1C' : 'linear-gradient(135deg, #D4A017, #B8860B)', color: generating ? '#5A5A5A' : '#0D0D0D', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: generating ? 'not-allowed' : 'pointer' }}>
+                      {generating ? '⚙ Saving as draft…' : '💾 Save this brief as a draft'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Non CASE_BRIEF — extracted, fall through to form (same UI as upload mode) */
+                <div>
+                  <div style={{ padding: '10px 14px', background: 'rgba(76,175,80,0.08)', border: '1px solid rgba(76,175,80,0.2)', borderRadius: 10, color: '#4CAF50', fontSize: 13, marginBottom: 18 }}>
+                    ✅ Details extracted from folder! Review and edit below before generating.
+                  </div>
+                  {fields.map(field => {
+                    const v = formData[field.name]
+                    const empty = !v || !String(v).trim()
+                    const junk  = !empty && isJunkValue(v)
+                    return (
+                      <div key={field.name} style={{ marginBottom: 14 }}>
+                        <label style={S.label}>
+                          {field.label} <span style={{ color: '#FF6B6B' }}>*</span>
+                        </label>
+                        {field.multi ? (
+                          <textarea value={formData[field.name] || ''} onChange={e => setFormData({ ...formData, [field.name]: e.target.value })}
+                            placeholder={field.ph} rows={4} style={{ ...S.input, borderColor: junk ? '#FF6B6B' : '#2A2A2A' }} />
+                        ) : (
+                          <input type="text" value={formData[field.name] || ''} onChange={e => setFormData({ ...formData, [field.name]: e.target.value })}
+                            placeholder={field.ph} style={{ ...S.input, resize: 'none', borderColor: junk ? '#FF6B6B' : '#2A2A2A' }} />
+                        )}
+                        {junk && (
+                          <div style={{ fontSize: 11, color: '#FF6B6B', marginTop: 4 }}>
+                            Please give a real answer — placeholders like "NA" or "no" aren't accepted.
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                  <button onClick={() => { setExtracted(false); setFormData({}); setFolderText(''); setFolderFiles([]) }} style={{ marginBottom: 10, padding: '9px 14px', background: 'transparent', border: '1px solid #2A2A2A', borderRadius: 8, color: '#6A6A6A', fontSize: 12, cursor: 'pointer' }}>↩ Upload different folder</button>
                   <GenBtn generating={generating} onClick={handleGenerate} />
                 </div>
               )}

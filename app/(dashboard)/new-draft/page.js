@@ -1163,7 +1163,7 @@ export default function NewDraftPage() {
                   { value: 'form',   icon: '📋', title: 'Fill Form',     desc: 'Fill structured fields' },
                   { value: 'chat',   icon: '💬', title: 'Smart Q&A',     desc: 'AI asks questions one by one' },
                   { value: 'upload', icon: '📤', title: 'Paste Document', desc: 'AI extracts details from pasted doc' },
-                  { value: 'folder', icon: '📁', title: 'Upload Folder', desc: selectedType === 'CASE_BRIEF' ? 'AI reads every file → short brief' : 'AI reads every file in a folder' },
+                  { value: 'folder', icon: '📁', title: 'Upload Folder / File', desc: selectedType === 'CASE_BRIEF' ? 'AI reads a folder or a single file → short brief' : 'AI reads a folder, or a single Word doc / scanned PDF' },
                 ].map(m => (
                   <button key={m.value} onClick={() => setIntakeMethod(m.value)}
                     style={{ background: intakeMethod === m.value ? 'rgba(212,160,23,0.08)' : '#0D0D0D', border: `1px solid ${intakeMethod === m.value ? '#D4A017' : '#2A2A2A'}`, borderRadius: 12, padding: '14px 10px', cursor: 'pointer', textAlign: 'center' }}>
@@ -1199,7 +1199,7 @@ export default function NewDraftPage() {
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
               <button onClick={() => setStep(1)} style={{ padding: '11px 18px', background: 'transparent', border: '1px solid #2A2A2A', borderRadius: 10, color: '#6A6A6A', fontSize: 13, cursor: 'pointer' }}>← Back</button>
               <button onClick={() => setStep(3)} style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #D4A017, #B8860B)', color: '#0D0D0D', borderRadius: 10, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                Continue → {intakeMethod === 'form' ? 'Fill Details' : intakeMethod === 'chat' ? 'Start Q&A' : intakeMethod === 'upload' ? 'Paste Document' : 'Upload Folder'}
+                Continue → {intakeMethod === 'form' ? 'Fill Details' : intakeMethod === 'chat' ? 'Start Q&A' : intakeMethod === 'upload' ? 'Paste Document' : 'Upload Folder / File'}
               </button>
             </div>
           </div>
@@ -1409,7 +1409,7 @@ export default function NewDraftPage() {
               {!extracted && !shortBrief ? (
                 <div>
                   <label style={S.label}>
-                    Upload an entire case folder
+                    Upload a case folder — or a single document
                     {selectedType === 'CASE_BRIEF' && (
                       <span style={{ marginLeft: 8, fontSize: 10, padding: '2px 7px', background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.4)', borderRadius: 6, color: '#93C5FD', letterSpacing: 0.4 }}>
                         SHORT BRIEF MODE
@@ -1418,8 +1418,8 @@ export default function NewDraftPage() {
                   </label>
                   <p style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 14, lineHeight: 1.6 }}>
                     {selectedType === 'CASE_BRIEF'
-                      ? 'AI reads every file in your folder (FIRs, court orders, pleadings, agreements) and produces a 2-minute executive case brief — parties, chronology, issues, strengths, weaknesses, next steps.'
-                      : 'AI reads every file in your folder and uses the combined content to extract details and pre-fill the form below.'}
+                      ? 'AI reads every file in your folder — or a single Word document / scanned PDF (FIR, court order, pleading, agreement) — and produces a 2-minute executive case brief: parties, chronology, issues, strengths, weaknesses, next steps.'
+                      : 'AI reads every file in your folder — or just a single Word document / scanned PDF — and uses the content to extract details and pre-fill the form below.'}
                   </p>
 
                   <FolderUploader
@@ -1438,12 +1438,12 @@ export default function NewDraftPage() {
                       {selectedType === 'CASE_BRIEF' ? (
                         <button onClick={handleFolderBrief} disabled={briefing}
                           style={{ flex: 1, minWidth: 220, padding: '13px', background: briefing ? '#1C1C1C' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', color: briefing ? '#5A5A5A' : '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: briefing ? 'not-allowed' : 'pointer' }}>
-                          {briefing ? '⚙ Reading folder & drafting brief…' : '✨ Generate SHORT case brief'}
+                          {briefing ? '⚙ Reading documents & drafting brief…' : '✨ Generate SHORT case brief'}
                         </button>
                       ) : (
                         <button onClick={handleFolderExtract} disabled={extracting}
                           style={{ flex: 1, minWidth: 220, padding: '13px', background: extracting ? '#1C1C1C' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', color: extracting ? '#5A5A5A' : '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: extracting ? 'not-allowed' : 'pointer' }}>
-                          {extracting ? '⚙ Extracting details from folder…' : '🔍 Extract & Auto-fill Form'}
+                          {extracting ? '⚙ Extracting details…' : '🔍 Extract & Auto-fill Form'}
                         </button>
                       )}
                     </div>
@@ -1470,7 +1470,7 @@ export default function NewDraftPage() {
                     </button>
                     <button onClick={() => { setShortBrief(''); setFolderText(''); setFolderFiles([]); setBriefError('') }}
                       style={{ padding: '10px 16px', background: 'transparent', border: '1px solid #2A2A2A', borderRadius: 10, color: '#6A6A6A', fontSize: 12, cursor: 'pointer' }}>
-                      ↩ Upload different folder
+                      ↩ Upload different folder / file
                     </button>
                     <button
                       onClick={() => { setUploadText(folderText); setShortBrief(''); /* keep folderText so the next step can save the draft */
@@ -1485,7 +1485,7 @@ export default function NewDraftPage() {
                 /* Non CASE_BRIEF — extracted, fall through to form (same UI as upload mode) */
                 <div>
                   <div style={{ padding: '10px 14px', background: 'rgba(76,175,80,0.08)', border: '1px solid rgba(76,175,80,0.2)', borderRadius: 10, color: '#4CAF50', fontSize: 13, marginBottom: 18 }}>
-                    ✅ Details extracted from folder! Review and edit below before generating.
+                    ✅ Details extracted! Review and edit below before generating.
                   </div>
                   {fields.map(field => {
                     const v = formData[field.name]

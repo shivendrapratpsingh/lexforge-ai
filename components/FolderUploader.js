@@ -1,8 +1,9 @@
 'use client'
 // ─────────────────────────────────────────────────────────────────
 //  FolderUploader — reads every supported file inside a chosen folder
-//  on the client, concatenates the text, and hands it back to the
-//  caller via onText(combinedText, fileSummaries[]).
+//  (OR a single chosen file — Word doc, scanned PDF, etc.) on the
+//  client, concatenates the text, and hands it back to the caller via
+//  onText(combinedText, fileSummaries[]).
 //
 //  Supports:  .txt .md .csv .json .html .htm  (native)
 //             .docx                            (mammoth from CDN)
@@ -80,10 +81,12 @@ async function extractOne(file) {
 }
 
 export default function FolderUploader({ onText, hint }) {
-  const inputRef = useRef(null)
+  const inputRef     = useRef(null)   // folder picker
+  const fileInputRef = useRef(null)   // single-file picker
   const [files, setFiles]   = useState([])   // [{name, status, size, preview, error?}]
   const [busy, setBusy]     = useState(false)
   const [combined, setCombined] = useState('')
+  const [mode, setMode]     = useState(null) // 'folder' | 'file' — what was last uploaded
 
   async function handleFiles(fileList) {
     const all = Array.from(fileList || [])
@@ -142,7 +145,9 @@ export default function FolderUploader({ onText, hint }) {
   function clear() {
     setFiles([])
     setCombined('')
-    if (inputRef.current) inputRef.current.value = ''
+    setMode(null)
+    if (inputRef.current)     inputRef.current.value     = ''
+    if (fileInputRef.current) fileInputRef.current.value = ''
     onText && onText('', [])
   }
 
@@ -164,12 +169,13 @@ export default function FolderUploader({ onText, hint }) {
       }}>
         <div style={{ fontSize: 30, marginBottom: 6 }}>📁</div>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#D0D0D0', marginBottom: 4 }}>
-          Upload an entire case folder
+          Upload a case folder — or a single file
         </div>
         <div style={{ fontSize: 11, color: '#5A5A5A', marginBottom: 14, lineHeight: 1.5, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>
-          {hint || 'AI reads every file (.pdf, .docx, .txt, .md, .csv, .html, .json), concatenates the content and uses it to draft your document. Up to ' + MAX_FILES + ' files, 25 MB each.'}
+          {hint || 'AI reads every file (.pdf, .docx, .txt, .md, .csv, .html, .json), concatenates the content and uses it to draft your document. Choose a whole folder, or a single Word document / scanned PDF. Up to ' + MAX_FILES + ' files, 25 MB each.'}
         </div>
 
+        {/* Folder picker (hidden) */}
         <input
           ref={inputRef}
           type="file"
@@ -178,7 +184,15 @@ export default function FolderUploader({ onText, hint }) {
           directory=""
           multiple
           style={{ display: 'none' }}
-          onChange={e => handleFiles(e.target.files)}
+          onChange={e => { setMode('folder'); handleFiles(e.target.files) }}
+        />
+        {/* Single-file picker (hidden) — Word doc, scanned PDF, plain text, etc. */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.docx,.txt,.md,.markdown,.csv,.json,.html,.htm,.rtf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/csv,application/json,text/html"
+          style={{ display: 'none' }}
+          onChange={e => { setMode('file'); handleFiles(e.target.files) }}
         />
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
@@ -194,7 +208,23 @@ export default function FolderUploader({ onText, hint }) {
               cursor: busy ? 'not-allowed' : 'pointer',
             }}
           >
-            {busy ? '⏳ Reading folder…' : '📂 Choose Folder'}
+            {busy && mode === 'folder' ? '⏳ Reading folder…' : '📂 Choose Folder'}
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+            style={{
+              padding: '10px 18px',
+              background: busy ? '#1C1C1C' : 'linear-gradient(135deg, #059669, #047857)',
+              color: busy ? '#5A5A5A' : '#fff',
+              border: 'none', borderRadius: 10,
+              fontSize: 13, fontWeight: 700,
+              cursor: busy ? 'not-allowed' : 'pointer',
+            }}
+            title="Upload a single Word document (.docx), scanned PDF, or any supported document"
+          >
+            {busy && mode === 'file' ? '⏳ Reading file…' : '📄 Choose Single File'}
           </button>
           {files.length > 0 && !busy && (
             <button type="button" onClick={clear}
@@ -203,6 +233,9 @@ export default function FolderUploader({ onText, hint }) {
             </button>
           )}
         </div>
+        <div style={{ marginTop: 10, fontSize: 10, color: '#4A4A4A', lineHeight: 1.5 }}>
+          Single-file accepts: <span style={{ color: '#7A7A7A' }}>.pdf · .docx · .txt · .md · .csv · .html · .json · .rtf</span>
+        </div>
       </div>
 
       {/* File list */}
@@ -210,7 +243,7 @@ export default function FolderUploader({ onText, hint }) {
         <div style={{ marginTop: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: '#6A6A6A', marginBottom: 8 }}>
             <span>
-              {stats.ok} of {stats.total} read
+              {mode === 'file' ? 'Single file' : `${stats.ok} of ${stats.total} read`}
               {stats.err > 0 && <span style={{ color: '#FF6B6B' }}> · {stats.err} failed</span>}
             </span>
             <span style={{ fontFamily: 'monospace', color: '#5A5A5A' }}>

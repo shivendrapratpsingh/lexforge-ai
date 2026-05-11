@@ -645,6 +645,8 @@ export default function NewDraftPage() {
         let pending   = ''        // buffer for incomplete tokens / META tags
         let visible   = ''        // accumulated user-visible brief
         let errFromStream = ''
+        let sawAnyMeta = false    // did the function run at all?
+        let lastMetaKind = null
         const META_RE = /\[\[META\]\](\{.*?\})\[\[\/META\]\]/
 
         while (true) {
@@ -655,12 +657,16 @@ export default function NewDraftPage() {
           // Extract all complete [[META]]…[[/META]] blocks
           let m
           while ((m = META_RE.exec(pending)) !== null) {
+            sawAnyMeta = true
             try {
               const meta = JSON.parse(m[1])
-              // 'ping' is a keepalive — don't disturb the header
-              // 'start' just confirms the server is alive
-              if (meta?.kind && meta.kind !== 'ping') {
-                setBriefProgress(meta)
+              if (meta?.kind) {
+                lastMetaKind = meta.kind
+                // 'ping' is a keepalive — don't disturb the header
+                // 'start' just confirms the server is alive
+                if (meta.kind !== 'ping') {
+                  setBriefProgress(meta)
+                }
               }
             } catch (_) { /* malformed meta — drop */ }
             pending = pending.slice(0, m.index) + pending.slice(m.index + m[0].length)
@@ -695,7 +701,20 @@ export default function NewDraftPage() {
 
         if (errFromStream && !visible) throw new Error(errFromStream)
         if (errFromStream)             setBriefError(errFromStream)
-        if (!visible.trim())           throw new Error('No brief returned. Please try again.')
+        if (!visible.trim()) {
+          // Function ran but never produced visible brief content.
+          // Give the user a specific reason based on the last META we saw.
+          if (lastMetaKind === 'synthesize') {
+            throw new Error('The server reached the final-brief step but the connection was cut before any text streamed back. This is almost always a Vercel Hobby 60s function timeout — try again, or upgrade Vercel to Pro for longer runs.')
+          }
+          if (lastMetaKind === 'extract' || lastMetaKind === 'cooldown' || lastMetaKind === 'wait') {
+            throw new Error('The server was still reading the document when the connection was cut. The file is too large for the free Groq/Vercel quota in one minute. Try a smaller folder/file, or upgrade your plan.')
+          }
+          if (sawAnyMeta) {
+            throw new Error('The server started but produced no brief content. Check the Vercel function logs for /api/case-brief-folder to see the exact error.')
+          }
+          throw new Error('No response from the server. The function may have crashed before it could write anything — check Vercel logs for /api/case-brief-folder.')
+        }
         return
       }
 

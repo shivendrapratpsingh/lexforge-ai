@@ -617,7 +617,7 @@ export default function NewDraftPage() {
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/plain' },
         body: JSON.stringify({
           sourceText: folderText,
-          court,
+          court: selectedCourt,
           language: selectedLang,
           stream: true,
         }),

@@ -17,7 +17,7 @@
 import { useRef, useState } from 'react'
 
 const MAX_FILES        = 60                      // safety cap per folder
-const MAX_FILE_BYTES   = 100 * 1024 * 1024       // 100 MB per file — legal scans can be huge
+const MAX_FILE_BYTES   = 500 * 1024 * 1024       // 500 MB per file — legal scans can be huge
 const MAX_TOTAL_CHARS  = 240_000                 // ~60K tokens — well under model limit
 const PER_FILE_CAP_FOLDER = 30_000               // when many files share the budget
 const TEXT_EXTS = ['txt','md','markdown','csv','json','html','htm','rtf']

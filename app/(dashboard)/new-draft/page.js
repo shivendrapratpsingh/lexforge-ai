@@ -602,21 +602,75 @@ export default function NewDraftPage() {
     finally { setExtracting(false) }
   }
 
-  // Folder upload → SHORT case brief (CASE_BRIEF doc type)
+  // Folder/File upload → SHORT case brief (CASE_BRIEF doc type)
+  // Uses Server-Sent text streaming so the brief renders live in the
+  // same panel as the model writes it.
   async function handleFolderBrief() {
     if (!folderText || folderText.length < 60) {
-      setBriefError('Please choose a folder containing readable documents first.')
+      setBriefError('Please choose a folder or a single readable document first.')
       return
     }
     setBriefing(true); setBriefError(''); setShortBrief('')
     try {
       const res = await fetch('/api/case-brief-folder', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceText: folderText, court, language: selectedLang }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'text/plain' },
+        body: JSON.stringify({
+          sourceText: folderText,
+          court,
+          language: selectedLang,
+          stream: true,
+        }),
       })
+
+      // Non-OK → server returned JSON error
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`
+        try {
+          const j = await res.json()
+          msg = j?.error || msg
+        } catch (_) {
+          try { msg = (await res.text()) || msg } catch (_) {}
+        }
+        throw new Error(msg)
+      }
+
+      const ct = (res.headers.get('content-type') || '').toLowerCase()
+
+      // ── Streaming text response (default) ──
+      if (res.body && ct.startsWith('text/')) {
+        const reader  = res.body.getReader()
+        const decoder = new TextDecoder()
+        let acc       = ''
+        let errFromStream = ''
+
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value, { stream: true })
+          if (!chunk) continue
+          acc += chunk
+
+          // Detect an inline error tag we may have appended on the server
+          if (acc.includes('[ERROR')) {
+            const idx = acc.indexOf('[ERROR')
+            errFromStream = acc.slice(idx).replace(/^\[ERROR(?::\s*REFUSAL)?\]\s*/, '').trim()
+            acc = acc.slice(0, idx).trimEnd()
+            setShortBrief(acc)
+            break
+          }
+          setShortBrief(acc)
+        }
+
+        if (errFromStream && !acc) throw new Error(errFromStream)
+        if (errFromStream)         setBriefError(errFromStream)
+        if (!acc.trim())           throw new Error('No brief returned. Please try again.')
+        return
+      }
+
+      // ── Legacy blocking JSON response ──
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
-      setShortBrief(data.brief || 'No brief returned.')
+      setShortBrief(data?.brief || 'No brief returned.')
     } catch (e) {
       setBriefError(e?.message || 'Failed to generate brief. Please try again.')
     } finally { setBriefing(false) }
@@ -1450,34 +1504,62 @@ export default function NewDraftPage() {
                   )}
                 </div>
               ) : shortBrief ? (
-                /* CASE_BRIEF — show the generated brief */
+                /* CASE_BRIEF — show the (live or completed) generated brief */
                 <div>
-                  <div style={{ padding: '10px 14px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: 10, color: '#93C5FD', fontSize: 12, marginBottom: 14 }}>
-                    ✅ Brief generated from {folderFiles.filter(f => f.status === 'ok').length} file(s) ·
-                    <span style={{ marginLeft: 6, fontFamily: 'monospace', color: '#6EA8E8' }}>
-                      {(folderText.length / 1000).toFixed(1)}K chars analysed
-                    </span>
+                  <div style={{
+                    padding: '10px 14px',
+                    background: briefing ? 'rgba(212,160,23,0.08)' : 'rgba(37,99,235,0.08)',
+                    border: `1px solid ${briefing ? 'rgba(212,160,23,0.35)' : 'rgba(37,99,235,0.3)'}`,
+                    borderRadius: 10,
+                    color: briefing ? '#D4A017' : '#93C5FD',
+                    fontSize: 12,
+                    marginBottom: 14,
+                    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                  }}>
+                    {briefing ? (
+                      <>
+                        <span className="lf-pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4A017', display: 'inline-block' }} />
+                        <span>Generating live from {folderFiles.filter(f => f.status === 'ok').length} document(s)…</span>
+                        <span style={{ fontFamily: 'monospace', color: '#A98019' }}>
+                          · {(shortBrief.length / 1000).toFixed(1)}K chars written
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span>✅ Brief generated from {folderFiles.filter(f => f.status === 'ok').length} document(s)</span>
+                        <span style={{ fontFamily: 'monospace', color: '#6EA8E8' }}>
+                          · {(folderText.length / 1000).toFixed(1)}K chars analysed
+                        </span>
+                      </>
+                    )}
                   </div>
 
                   <div style={{ background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 12, padding: '20px 22px', maxHeight: 540, overflowY: 'auto', whiteSpace: 'pre-wrap', fontSize: 13.5, lineHeight: 1.75, color: '#E0E0E0', fontFamily: 'Georgia, serif' }}>
                     {shortBrief}
+                    {briefing && <span className="lf-caret" style={{ display: 'inline-block', width: 8, height: 16, marginLeft: 2, verticalAlign: 'text-bottom', background: '#D4A017' }} />}
                   </div>
 
+                  {briefError && (
+                    <div style={{ marginTop: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.35)', color: '#EF4444', padding: '10px 14px', borderRadius: 10, fontSize: 12 }}>
+                      ❌ {briefError}
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-                    <button onClick={() => navigator.clipboard.writeText(shortBrief)}
-                      style={{ padding: '10px 16px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, color: '#C0C0C0', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
+                    <button onClick={() => navigator.clipboard.writeText(shortBrief)} disabled={briefing}
+                      style={{ padding: '10px 16px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, color: briefing ? '#4A4A4A' : '#C0C0C0', fontSize: 12, cursor: briefing ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
                       📋 Copy brief
                     </button>
-                    <button onClick={() => { setShortBrief(''); setFolderText(''); setFolderFiles([]); setBriefError('') }}
-                      style={{ padding: '10px 16px', background: 'transparent', border: '1px solid #2A2A2A', borderRadius: 10, color: '#6A6A6A', fontSize: 12, cursor: 'pointer' }}>
+                    <button onClick={() => { setShortBrief(''); setFolderText(''); setFolderFiles([]); setBriefError('') }} disabled={briefing}
+                      style={{ padding: '10px 16px', background: 'transparent', border: '1px solid #2A2A2A', borderRadius: 10, color: briefing ? '#3A3A3A' : '#6A6A6A', fontSize: 12, cursor: briefing ? 'not-allowed' : 'pointer' }}>
                       ↩ Upload different folder / file
                     </button>
                     <button
                       onClick={() => { setUploadText(folderText); setShortBrief(''); /* keep folderText so the next step can save the draft */
                                        handleGenerate() }}
-                      disabled={generating}
-                      style={{ flex: 1, minWidth: 200, padding: '11px 16px', background: generating ? '#1C1C1C' : 'linear-gradient(135deg, #D4A017, #B8860B)', color: generating ? '#5A5A5A' : '#0D0D0D', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: generating ? 'not-allowed' : 'pointer' }}>
-                      {generating ? '⚙ Saving as draft…' : '💾 Save this brief as a draft'}
+                      disabled={generating || briefing}
+                      style={{ flex: 1, minWidth: 200, padding: '11px 16px', background: (generating || briefing) ? '#1C1C1C' : 'linear-gradient(135deg, #D4A017, #B8860B)', color: (generating || briefing) ? '#5A5A5A' : '#0D0D0D', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: (generating || briefing) ? 'not-allowed' : 'pointer' }}>
+                      {generating ? '⚙ Saving as draft…' : briefing ? '⏳ Waiting for brief…' : '💾 Save this brief as a draft'}
                     </button>
                   </div>
                 </div>

@@ -81,3 +81,20 @@ body {
   background: linear-gradient(90deg, #D4A017, #F0C040, #D4A017);
   z-index: -1;
 }
+
+/* Streaming caret — blinks at the end of a live AI brief */
+.lf-caret {
+  animation: lf-blink 1s steps(1) infinite;
+}
+@keyframes lf-blink {
+  50% { opacity: 0; }
+}
+
+/* Pulsing dot — used for the "Generating live…" pill */
+.lf-pulse-dot {
+  animation: lf-pulse 1.2s ease-in-out infinite;
+}
+@keyframes lf-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.75); }
+}

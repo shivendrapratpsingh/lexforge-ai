@@ -16,11 +16,14 @@
 
 import { useRef, useState } from 'react'
 
-const MAX_FILES = 60                      // safety cap per folder
-const MAX_TOTAL_CHARS = 240_000           // ~60K tokens — well under model limit
+const MAX_FILES        = 60                      // safety cap per folder
+const MAX_FILE_BYTES   = 100 * 1024 * 1024       // 100 MB per file — legal scans can be huge
+const MAX_TOTAL_CHARS  = 240_000                 // ~60K tokens — well under model limit
+const PER_FILE_CAP_FOLDER = 30_000               // when many files share the budget
 const TEXT_EXTS = ['txt','md','markdown','csv','json','html','htm','rtf']
 
 function ext(name) { return (name.split('.').pop() || '').toLowerCase() }
+function fmtMB(n)  { return (n / (1024 * 1024)).toFixed(1) + ' MB' }
 
 // Lazy-load pdfjs only when needed.
 let _pdfjs = null
@@ -47,15 +50,22 @@ async function loadMammoth() {
   return (_mammoth = window.mammoth)
 }
 
-async function readPdf(file) {
+async function readPdf(file, onProgress) {
   const pdfjs = await loadPdfjs()
   const buf = await file.arrayBuffer()
   const pdf = await pdfjs.getDocument({ data: buf }).promise
+  const total = pdf.numPages
   let out = ''
-  for (let i = 1; i <= pdf.numPages; i++) {
+  for (let i = 1; i <= total; i++) {
     const page = await pdf.getPage(i)
     const tc = await page.getTextContent()
     out += tc.items.map(it => it.str).join(' ') + '\n\n'
+    if (onProgress) onProgress(i, total)
+    // Stop early once we have plenty of text — keeps very large PDFs snappy.
+    if (out.length > MAX_TOTAL_CHARS * 2) {
+      out += `\n[…stopped reading at page ${i}/${total} — already collected enough text…]\n`
+      break
+    }
   }
   return out.trim()
 }
@@ -71,10 +81,10 @@ async function readPlain(file) {
   return (await file.text()).trim()
 }
 
-async function extractOne(file) {
+async function extractOne(file, onProgress) {
   const e = ext(file.name)
   if (TEXT_EXTS.includes(e))            return readPlain(file)
-  if (e === 'pdf')                      return readPdf(file)
+  if (e === 'pdf')                      return readPdf(file, onProgress)
   if (e === 'docx')                     return readDocx(file)
   if (e === 'doc')                      throw new Error('Legacy .doc not supported — convert to .docx first.')
   throw new Error(`Skipped (unsupported type .${e})`)
@@ -95,12 +105,47 @@ export default function FolderUploader({ onText, hint }) {
     setFiles([])
     setCombined('')
 
-    // Filter out hidden / system files and cap count
-    const usable = all
-      .filter(f => !f.name.startsWith('.') && f.size > 0 && f.size < 25 * 1024 * 1024)
-      .slice(0, MAX_FILES)
-
+    // Pre-filter: drop hidden/empty files, but DON'T silently swallow oversized
+    // ones — surface them in the list so the user knows why they were skipped.
     const results = []
+    const usable = []
+    for (const f of all) {
+      if (!f.name) continue
+      const base = f.webkitRelativePath || f.name
+      if (f.name.startsWith('.') || base.split('/').some(p => p.startsWith('.'))) {
+        continue   // truly hidden system files — silent skip
+      }
+      if (f.size === 0) {
+        results.push({ name: base, size: 0, status: 'error', error: 'Empty file (0 bytes)' })
+        continue
+      }
+      if (f.size > MAX_FILE_BYTES) {
+        results.push({
+          name: base, size: f.size, status: 'error',
+          error: `File is ${fmtMB(f.size)} — too large (max ${fmtMB(MAX_FILE_BYTES)}).`,
+        })
+        continue
+      }
+      usable.push(f)
+    }
+    if (usable.length > MAX_FILES) {
+      // Mark the overflow ones as rejected for visibility.
+      for (let i = MAX_FILES; i < usable.length; i++) {
+        const f = usable[i]
+        results.push({
+          name: f.webkitRelativePath || f.name, size: f.size, status: 'error',
+          error: `Skipped — only the first ${MAX_FILES} files of a folder are read.`,
+        })
+      }
+      usable.length = MAX_FILES
+    }
+    setFiles([...results])
+
+    // When the user uploaded a single file, give it the entire text budget;
+    // when they uploaded a folder, share the budget across files.
+    const singleFile     = usable.length === 1
+    const perFileCharCap = singleFile ? MAX_TOTAL_CHARS : PER_FILE_CAP_FOLDER
+
     let bigText = ''
 
     for (const file of usable) {
@@ -114,11 +159,14 @@ export default function FolderUploader({ onText, hint }) {
       setFiles([...results])
 
       try {
-        let text = await extractOne(file)
-        if (!text) throw new Error('Empty file')
+        let text = await extractOne(file, (page, total) => {
+          rec.preview = `Reading page ${page} / ${total}…`
+          setFiles([...results])
+        })
+        if (!text) throw new Error('No readable text found in file (may be a scanned image — needs OCR).')
 
         // Trim per-file to keep total reasonable
-        if (text.length > 30_000) text = text.slice(0, 30_000) + '\n[…truncated…]'
+        if (text.length > perFileCharCap) text = text.slice(0, perFileCharCap) + '\n[…truncated…]'
         rec.status = 'ok'
         rec.preview = text.slice(0, 120).replace(/\s+/g, ' ').trim() + '…'
 
@@ -172,7 +220,7 @@ export default function FolderUploader({ onText, hint }) {
           Upload a case folder — or a single file
         </div>
         <div style={{ fontSize: 11, color: '#5A5A5A', marginBottom: 14, lineHeight: 1.5, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>
-          {hint || 'AI reads every file (.pdf, .docx, .txt, .md, .csv, .html, .json), concatenates the content and uses it to draft your document. Choose a whole folder, or a single Word document / scanned PDF. Up to ' + MAX_FILES + ' files, 25 MB each.'}
+          {hint || 'AI reads every file (.pdf, .docx, .txt, .md, .csv, .html, .json), concatenates the content and uses it to draft your document. Choose a whole folder, or a single Word document / scanned PDF. Up to ' + MAX_FILES + ' files, ' + fmtMB(MAX_FILE_BYTES) + ' each.'}
         </div>
 
         {/* Folder picker (hidden) */}
@@ -250,28 +298,42 @@ export default function FolderUploader({ onText, hint }) {
               {(stats.chars / 1000).toFixed(1)}K chars extracted
             </span>
           </div>
-          <div style={{ background: '#0D0D0D', border: '1px solid #1A1A1A', borderRadius: 10, maxHeight: 220, overflowY: 'auto' }}>
+          <div style={{ background: '#0D0D0D', border: '1px solid #1A1A1A', borderRadius: 10, maxHeight: 260, overflowY: 'auto' }}>
             {files.map((f, i) => (
               <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
+                display: 'flex', flexDirection: 'column', gap: 4,
                 padding: '8px 12px',
                 borderBottom: i < files.length - 1 ? '1px solid #1A1A1A' : 'none',
                 fontSize: 11.5,
               }}>
-                <span style={{ width: 16, textAlign: 'center' }}>
-                  {f.status === 'reading' ? '⏳' :
-                   f.status === 'ok'      ? '✅' :
-                   f.status === 'partial' ? '✂️' :
-                                            '❌'}
-                </span>
-                <span style={{ flex: 1, color: f.status === 'ok' ? '#C0C0C0' : '#7A7A7A', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {f.name}
-                </span>
-                <span style={{ color: '#4A4A4A', fontFamily: 'monospace', fontSize: 10 }}>
-                  {(f.size / 1024).toFixed(0)} KB
-                </span>
-                {f.error && (
-                  <span style={{ color: '#FF6B6B', fontSize: 10 }}>{f.error}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ width: 16, textAlign: 'center' }}>
+                    {f.status === 'reading' ? '⏳' :
+                     f.status === 'ok'      ? '✅' :
+                     f.status === 'partial' ? '✂️' :
+                                              '❌'}
+                  </span>
+                  <span style={{ flex: 1, color: f.status === 'ok' ? '#C0C0C0' : f.status === 'reading' ? '#D4A017' : '#7A7A7A', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {f.name}
+                  </span>
+                  <span style={{ color: '#4A4A4A', fontFamily: 'monospace', fontSize: 10 }}>
+                    {f.size > 1024 * 1024 ? fmtMB(f.size) : (f.size / 1024).toFixed(0) + ' KB'}
+                  </span>
+                </div>
+                {f.status === 'reading' && f.preview && (
+                  <div style={{ marginLeft: 26, color: '#A98019', fontSize: 10.5, fontFamily: 'monospace' }}>
+                    {f.preview}
+                  </div>
+                )}
+                {f.status === 'error' && f.error && (
+                  <div style={{ marginLeft: 26, color: '#FF6B6B', fontSize: 10.5, lineHeight: 1.5 }}>
+                    {f.error}
+                  </div>
+                )}
+                {f.status === 'partial' && (
+                  <div style={{ marginLeft: 26, color: '#D4A017', fontSize: 10.5 }}>
+                    Truncated — file exceeded the combined-text budget.
+                  </div>
                 )}
               </div>
             ))}

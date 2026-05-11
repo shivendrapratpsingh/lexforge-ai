@@ -657,7 +657,11 @@ export default function NewDraftPage() {
           while ((m = META_RE.exec(pending)) !== null) {
             try {
               const meta = JSON.parse(m[1])
-              setBriefProgress(meta)
+              // 'ping' is a keepalive — don't disturb the header
+              // 'start' just confirms the server is alive
+              if (meta?.kind && meta.kind !== 'ping') {
+                setBriefProgress(meta)
+              }
             } catch (_) { /* malformed meta — drop */ }
             pending = pending.slice(0, m.index) + pending.slice(m.index + m[0].length)
           }
@@ -1555,8 +1559,12 @@ export default function NewDraftPage() {
                             `Waiting ${briefProgress.seconds || ''}s — rate-limit cooldown…`
                           ) : briefProgress?.kind === 'synthesize' ? (
                             'Drafting final brief from full-document ledger…'
+                          ) : briefProgress?.kind === 'budget' ? (
+                            briefProgress.message || 'Time budget reached — synthesising now…'
                           ) : briefProgress?.kind === 'init' && briefProgress?.mode === 'chunked' ? (
                             `Reading the entire document in ${briefProgress.total} parts…`
+                          ) : briefProgress?.kind === 'start' ? (
+                            'Connected — preparing the AI…'
                           ) : (
                             `Generating live from ${folderFiles.filter(f => f.status === 'ok').length} document(s)…`
                           )}

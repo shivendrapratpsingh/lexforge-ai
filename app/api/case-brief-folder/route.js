@@ -21,10 +21,13 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { hasProAccess } from '@/lib/admin'
 
-// AI route — chunked map-reduce + paced extractions can take ~75s on long
-// documents. Vercel Hobby caps at 60s; Pro/Enterprise honour 300.
-export const maxDuration = 90
+// AI route — chunked map-reduce + paced extractions are tuned to finish in
+// ≤55s. Vercel Hobby caps at 60s; Pro/Enterprise honour up to 300.
+// Set explicit `dynamic` so Next never tries to pre-render or cache this.
+export const maxDuration = 60
 export const runtime = 'nodejs'
+export const dynamic  = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 function errorStatus(err) {
   if (err?.code === 'GROQ_AUTH' || err?.message?.includes('GROQ_API_KEY')) return 503
@@ -44,14 +47,28 @@ function errorMessage(err) {
 }
 
 export async function POST(req) {
+  const tStart = Date.now()
+  console.log('[case-brief-folder] POST received')
+
+  // Fail-fast configuration check — surfaces a clear error in Vercel logs
+  // when the GROQ_API_KEY env var hasn't been set up on the deploy.
+  if (!process.env.GROQ_API_KEY) {
+    console.error('[case-brief-folder] FATAL: GROQ_API_KEY env var is missing on this deployment')
+    return NextResponse.json({
+      error: 'Server is missing GROQ_API_KEY. Set it in Vercel → Settings → Environment Variables and redeploy.',
+    }, { status: 503 })
+  }
+
   let session
   try {
     session = await auth()
     if (!session?.user?.id || !session?.user?.email) {
+      console.warn('[case-brief-folder] no session — returning 401')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
   } catch (err) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    console.error('[case-brief-folder] auth() threw:', err?.message)
+    return NextResponse.json({ error: 'Unauthorized (auth failed)' }, { status: 401 })
   }
 
   const body = await req.json().catch(() => null)
@@ -70,6 +87,7 @@ export async function POST(req) {
   const isPro = await hasProAccess(session.user.email, session.user.tier)
   const opts  = { court: body.court || null, language: body.language || 'english', isPro }
   const wantStream = body.stream !== false
+  console.log(`[case-brief-folder] user=${session.user.email} isPro=${isPro} chars=${text.length} stream=${wantStream}`)
 
   // ── Blocking JSON path (legacy / debug) ──
   if (!wantStream) {
@@ -108,16 +126,33 @@ export async function POST(req) {
           closed = true
         }
       }
+
+      // Emit a primer so the client knows the connection is alive even
+      // before the first model token arrives.  This also forces Vercel's
+      // edge layer to commit to streaming mode instead of buffering.
+      safeEnqueue('[[META]]{"kind":"start"}[[/META]]')
+
+      // Heartbeat: keep the connection warm during the early Groq calls
+      // (which can take 3-5s with no output). 200-byte spaces are emitted
+      // every 5s and filtered by the client.
+      const heartbeat = setInterval(() => {
+        safeEnqueue('[[META]]{"kind":"ping"}[[/META]]')
+      }, 5000)
+
       try {
         await generateShortCaseBriefStream(text, opts, (delta) => safeEnqueue(delta))
+        clearInterval(heartbeat)
+        const tEnd = Date.now()
+        console.log(`[case-brief-folder] OK in ${tEnd - tStart}ms`)
         closed = true
         controller.close()
       } catch (err) {
+        clearInterval(heartbeat)
         const tag = err?.code === 'AI_REFUSAL' ? '\n\n[ERROR: REFUSAL] ' : '\n\n[ERROR] '
         safeEnqueue(tag + (err?.message || 'brief generation failed.'))
         closed = true
         try { controller.close() } catch (_e) { /* already closed */ }
-        console.error('[POST /api/case-brief-folder] (stream)', err)
+        console.error('[case-brief-folder] stream FAILED:', err?.message, err)
       }
     },
     cancel() {
@@ -129,9 +164,11 @@ export async function POST(req) {
     status: 200,
     headers: {
       'Content-Type':      'text/plain; charset=utf-8',
-      'Cache-Control':     'no-cache, no-transform',
+      'Cache-Control':     'no-cache, no-transform, no-store',
       'X-Accel-Buffering': 'no',
+      'X-Content-Type-Options': 'nosniff',
       'Connection':        'keep-alive',
+      'Transfer-Encoding': 'chunked',
     },
   })
 }

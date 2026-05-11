@@ -491,6 +491,7 @@ export default function NewDraftPage() {
   const [briefing, setBriefing]             = useState(false)
   const [shortBrief, setShortBrief]         = useState('')
   const [briefError, setBriefError]         = useState('')
+  const [briefProgress, setBriefProgress]   = useState(null)  // { kind, current, total, label, ... }
 
   const [generating, setGenerating]         = useState(false)
   const [error, setError]                   = useState('')
@@ -610,7 +611,7 @@ export default function NewDraftPage() {
       setBriefError('Please choose a folder or a single readable document first.')
       return
     }
-    setBriefing(true); setBriefError(''); setShortBrief('')
+    setBriefing(true); setBriefError(''); setShortBrief(''); setBriefProgress(null)
     try {
       const res = await fetch('/api/case-brief-folder', {
         method: 'POST',
@@ -641,30 +642,56 @@ export default function NewDraftPage() {
       if (res.body && ct.startsWith('text/')) {
         const reader  = res.body.getReader()
         const decoder = new TextDecoder()
-        let acc       = ''
+        let pending   = ''        // buffer for incomplete tokens / META tags
+        let visible   = ''        // accumulated user-visible brief
         let errFromStream = ''
+        const META_RE = /\[\[META\]\](\{.*?\})\[\[\/META\]\]/
 
         while (true) {
           const { value, done } = await reader.read()
           if (done) break
-          const chunk = decoder.decode(value, { stream: true })
-          if (!chunk) continue
-          acc += chunk
+          pending += decoder.decode(value, { stream: true })
 
-          // Detect an inline error tag we may have appended on the server
-          if (acc.includes('[ERROR')) {
-            const idx = acc.indexOf('[ERROR')
-            errFromStream = acc.slice(idx).replace(/^\[ERROR(?::\s*REFUSAL)?\]\s*/, '').trim()
-            acc = acc.slice(0, idx).trimEnd()
-            setShortBrief(acc)
+          // Extract all complete [[META]]…[[/META]] blocks
+          let m
+          while ((m = META_RE.exec(pending)) !== null) {
+            try {
+              const meta = JSON.parse(m[1])
+              setBriefProgress(meta)
+            } catch (_) { /* malformed meta — drop */ }
+            pending = pending.slice(0, m.index) + pending.slice(m.index + m[0].length)
+          }
+
+          // Handle inline server error tag
+          if (pending.includes('[ERROR')) {
+            const idx = pending.indexOf('[ERROR')
+            errFromStream = pending.slice(idx).replace(/^\[ERROR(?::\s*REFUSAL)?\]\s*/, '').trim()
+            const headPart = pending.slice(0, idx).trimEnd()
+            visible += headPart
+            pending = ''
+            setShortBrief(visible)
             break
           }
-          setShortBrief(acc)
+
+          // Flush everything in `pending` up to the last safe split point
+          // (avoid splitting an incomplete "[[META" tag).
+          const partial = pending.lastIndexOf('[[')
+          const safe    = partial === -1 ? pending.length : partial
+          if (safe > 0) {
+            visible += pending.slice(0, safe)
+            pending  = pending.slice(safe)
+            setShortBrief(visible)
+          }
+        }
+        // Flush any remaining safe text
+        if (pending && !pending.startsWith('[[')) {
+          visible += pending
+          setShortBrief(visible)
         }
 
-        if (errFromStream && !acc) throw new Error(errFromStream)
-        if (errFromStream)         setBriefError(errFromStream)
-        if (!acc.trim())           throw new Error('No brief returned. Please try again.')
+        if (errFromStream && !visible) throw new Error(errFromStream)
+        if (errFromStream)             setBriefError(errFromStream)
+        if (!visible.trim())           throw new Error('No brief returned. Please try again.')
         return
       }
 
@@ -673,7 +700,7 @@ export default function NewDraftPage() {
       setShortBrief(data?.brief || 'No brief returned.')
     } catch (e) {
       setBriefError(e?.message || 'Failed to generate brief. Please try again.')
-    } finally { setBriefing(false) }
+    } finally { setBriefing(false); setBriefProgress(null) }
   }
 
   // Folder upload → extract details + pre-fill form (any non-CASE_BRIEF doc)
@@ -1519,7 +1546,21 @@ export default function NewDraftPage() {
                     {briefing ? (
                       <>
                         <span className="lf-pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4A017', display: 'inline-block' }} />
-                        <span>Generating live from {folderFiles.filter(f => f.status === 'ok').length} document(s)…</span>
+                        <span>
+                          {briefProgress?.kind === 'extract' ? (
+                            `Reading section ${briefProgress.current} of ${briefProgress.total}…`
+                          ) : briefProgress?.kind === 'cooldown' ? (
+                            `Cooling down ${briefProgress.seconds || ''}s before final brief…`
+                          ) : briefProgress?.kind === 'wait' ? (
+                            `Waiting ${briefProgress.seconds || ''}s — rate-limit cooldown…`
+                          ) : briefProgress?.kind === 'synthesize' ? (
+                            'Drafting final brief from full-document ledger…'
+                          ) : briefProgress?.kind === 'init' && briefProgress?.mode === 'chunked' ? (
+                            `Reading the entire document in ${briefProgress.total} parts…`
+                          ) : (
+                            `Generating live from ${folderFiles.filter(f => f.status === 'ok').length} document(s)…`
+                          )}
+                        </span>
                         <span style={{ fontFamily: 'monospace', color: '#A98019' }}>
                           · {(shortBrief.length / 1000).toFixed(1)}K chars written
                         </span>

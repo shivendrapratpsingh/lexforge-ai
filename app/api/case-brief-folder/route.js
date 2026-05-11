@@ -21,8 +21,9 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { hasProAccess } from '@/lib/admin'
 
-// AI route — Llama 3.3 70B can take 20–40s on a long folder.
-export const maxDuration = 60
+// AI route — chunked map-reduce + paced extractions can take ~75s on long
+// documents. Vercel Hobby caps at 60s; Pro/Enterprise honour 300.
+export const maxDuration = 90
 export const runtime = 'nodejs'
 
 function errorStatus(err) {

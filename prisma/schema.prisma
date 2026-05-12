@@ -157,6 +157,45 @@ model EmailPromo {
   @@index([email])
 }
 
+// ─────────────────────────────────────────────────────────────────
+//  BriefJob — queued, multi-step brief generation that runs across
+//  several Vercel function invocations.  Used when ENABLE_BRIEF_JOBS=1
+//  to bypass the 60s Hobby-plan function cap for very long documents.
+//  When upgrading to Vercel Pro you can simply unset the env var; the
+//  app reverts to streaming briefs and nothing else needs to change.
+//
+//  State machine:
+//    queued     → ready for the next worker tick
+//    extracting → a worker is mid-extraction (transient lock)
+//    reducing   → a worker is mid-final-synthesis
+//    done       → result is final; brief field populated
+//    failed     → error field populated; client surfaces error
+// ─────────────────────────────────────────────────────────────────
+model BriefJob {
+  id           String   @id @default(cuid())
+  userId       String
+  state        String   @default("queued")
+  // Source content + brief context
+  sourceText   String
+  court        String?
+  language     String   @default("english")
+  // Pipeline progress
+  totalWindows Int      @default(0)
+  doneWindows  Int      @default(0)
+  ledger       String   @default("")    // accumulated fact-ledger from completed windows
+  brief        String   @default("")    // final synthesized brief
+  error        String?
+  // Lock so two cron ticks don't race the same job
+  lockedAt     DateTime?
+  lockedBy     String?
+  // House-keeping
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([state, updatedAt])
+  @@index([userId])
+}
+
 // Singleton config row (id = "default") that the admin can toggle at runtime
 // from the Admin Console.
 //

@@ -603,15 +603,86 @@ export default function NewDraftPage() {
     finally { setExtracting(false) }
   }
 
+  // Queued-brief flow: create a BriefJob then poll until it's done.
+  // Runs entirely server-side across multiple Vercel invocations, so it
+  // doesn't share the 60s function-cap problem of the streaming path.
+  // Lives behind NEXT_PUBLIC_ENABLE_BRIEF_JOBS for easy disable later.
+  async function runQueuedBrief() {
+    setBriefProgress({ kind: 'queue', label: 'Queuing your document for full-file analysis…' })
+
+    const createRes = await fetch('/api/brief-jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sourceText: folderText,
+        court: selectedCourt,
+        language: selectedLang,
+      }),
+    })
+    if (!createRes.ok) {
+      let msg = `HTTP ${createRes.status}`
+      try { const j = await createRes.json(); msg = j?.error || msg } catch (_) {}
+      throw new Error(msg)
+    }
+    const { jobId } = await createRes.json()
+    if (!jobId) throw new Error('Server did not return a job id.')
+
+    // Poll every 4 seconds for up to ~15 minutes.
+    const POLL_MS = 4_000
+    const MAX_POLLS = (15 * 60 * 1000) / POLL_MS
+    for (let i = 0; i < MAX_POLLS; i++) {
+      await new Promise(r => setTimeout(r, POLL_MS))
+      const res = await fetch(`/api/brief-jobs/${jobId}`, { cache: 'no-store' })
+      if (!res.ok) continue
+      const job = await res.json()
+
+      const total = job.totalWindows || 0
+      const done  = job.doneWindows  || 0
+      if (job.state === 'queued') {
+        setBriefProgress({ kind: 'queue', label: 'Queued — worker will pick up within a minute…' })
+      } else if (job.state === 'extracting') {
+        setBriefProgress({ kind: 'extract', current: done, total, label: `Reading section ${done} of ${total}…` })
+      } else if (job.state === 'reducing') {
+        setBriefProgress({ kind: 'synthesize', label: 'Drafting final brief from full-document ledger…' })
+      } else if (job.state === 'done') {
+        setShortBrief(job.brief || '')
+        setBriefProgress({ kind: 'done' })
+        return
+      } else if (job.state === 'failed') {
+        throw new Error(job.error || 'The brief job failed on the server.')
+      }
+    }
+    throw new Error('Brief is still running on the server. Reload the page in a minute to see the result.')
+  }
+
   // Folder/File upload → SHORT case brief (CASE_BRIEF doc type)
   // Uses Server-Sent text streaming so the brief renders live in the
   // same panel as the model writes it.
+  //
+  // For very long documents we automatically switch to the "queued" path
+  // (POST /api/brief-jobs + polling) which runs across multiple Vercel
+  // function invocations and processes the ENTIRE document.  The queued
+  // path activates when (a) the public env flag is on, and (b) the
+  // document is larger than the per-call streaming budget.
   async function handleFolderBrief() {
     if (!folderText || folderText.length < 60) {
       setBriefError('Please choose a folder or a single readable document first.')
       return
     }
     setBriefing(true); setBriefError(''); setShortBrief(''); setBriefProgress(null)
+
+    // ── Queued (background) path — full-document brief on Vercel Hobby ──
+    if (process.env.NEXT_PUBLIC_ENABLE_BRIEF_JOBS === '1' && folderText.length > 30_000) {
+      try {
+        await runQueuedBrief()
+      } catch (e) {
+        setBriefError(e?.message || 'Failed to queue brief job.')
+      } finally {
+        setBriefing(false); setBriefProgress(null)
+      }
+      return
+    }
+
     try {
       const res = await fetch('/api/case-brief-folder', {
         method: 'POST',
@@ -1570,7 +1641,9 @@ export default function NewDraftPage() {
                       <>
                         <span className="lf-pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4A017', display: 'inline-block' }} />
                         <span>
-                          {briefProgress?.kind === 'extract' ? (
+                          {briefProgress?.kind === 'queue' ? (
+                            briefProgress.label || 'Queued for full-document analysis…'
+                          ) : briefProgress?.kind === 'extract' ? (
                             `Reading section ${briefProgress.current} of ${briefProgress.total}…`
                           ) : briefProgress?.kind === 'cooldown' ? (
                             `Cooling down ${briefProgress.seconds || ''}s before final brief…`

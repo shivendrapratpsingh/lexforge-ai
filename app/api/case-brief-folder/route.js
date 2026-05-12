@@ -127,13 +127,9 @@ export async function POST(req) {
         }
       }
 
-      // Emit a primer so the client knows the connection is alive even
-      // before the first model token arrives.  Vercel's edge layer holds
-      // small payloads in a buffer until ~4KB accumulates; this padded
-      // META block forces an immediate flush so the connection is fully
-      // streaming from byte zero.  The client filters all META blocks.
-      const PAD = ' '.repeat(4096)
-      safeEnqueue(`[[META]]{"kind":"start","pad":"${PAD}"}[[/META]]`)
+      // Emit a small primer so the client knows the connection is alive
+      // before the first model token arrives.  The client filters META.
+      safeEnqueue('[[META]]{"kind":"start"}[[/META]]')
 
       // Heartbeat: keep the connection warm during the early Groq calls
       // (which can take 3-5s with no output). 200-byte spaces are emitted

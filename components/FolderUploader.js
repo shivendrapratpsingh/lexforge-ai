@@ -18,8 +18,15 @@ import { useRef, useState } from 'react'
 
 const MAX_FILES        = 60                      // safety cap per folder
 const MAX_FILE_BYTES   = 500 * 1024 * 1024       // 500 MB per file — legal scans can be huge
-const MAX_TOTAL_CHARS  = 240_000                 // ~60K tokens — well under model limit
-const PER_FILE_CAP_FOLDER = 30_000               // when many files share the budget
+
+// Text-budget caps.  When queued-brief mode is enabled we ship the WHOLE
+// document text to the server (up to 2 MB ≈ 600-800 pages) so the
+// background pipeline can process every page.  In the streaming-only
+// mode we keep the old 240 KB cap so we don't waste time extracting
+// pages the model would never see.
+const QUEUE_MODE      = process.env.NEXT_PUBLIC_ENABLE_BRIEF_JOBS === '1'
+const MAX_TOTAL_CHARS = QUEUE_MODE ? 2_000_000 : 240_000
+const PER_FILE_CAP_FOLDER = QUEUE_MODE ? 400_000 : 30_000   // when many files share the budget
 const TEXT_EXTS = ['txt','md','markdown','csv','json','html','htm','rtf']
 
 function ext(name) { return (name.split('.').pop() || '').toLowerCase() }
@@ -61,8 +68,10 @@ async function readPdf(file, onProgress) {
     const tc = await page.getTextContent()
     out += tc.items.map(it => it.str).join(' ') + '\n\n'
     if (onProgress) onProgress(i, total)
-    // Stop early once we have plenty of text — keeps very large PDFs snappy.
-    if (out.length > MAX_TOTAL_CHARS * 2) {
+    // Stop only when we've collected more text than we can ever send.
+    // The queue path uses MAX_TOTAL_CHARS = 2_000_000, so the early-exit
+    // only fires on absurdly long PDFs.
+    if (out.length > MAX_TOTAL_CHARS * 1.2) {
       out += `\n[…stopped reading at page ${i}/${total} — already collected enough text…]\n`
       break
     }

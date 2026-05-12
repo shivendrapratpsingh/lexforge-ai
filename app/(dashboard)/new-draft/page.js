@@ -672,7 +672,10 @@ export default function NewDraftPage() {
     setBriefing(true); setBriefError(''); setShortBrief(''); setBriefProgress(null)
 
     // ── Queued (background) path — full-document brief on Vercel Hobby ──
-    if (process.env.NEXT_PUBLIC_ENABLE_BRIEF_JOBS === '1' && folderText.length > 30_000) {
+    // When the queue is enabled we use it for every document — the
+    // background pipeline always reads 100% of the file, vs. the
+    // streaming path which is capped at a small slice.
+    if (process.env.NEXT_PUBLIC_ENABLE_BRIEF_JOBS === '1') {
       try {
         await runQueuedBrief()
       } catch (e) {

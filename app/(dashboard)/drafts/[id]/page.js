@@ -7,7 +7,7 @@ import DraftControls from '@/components/DraftControls'
 import VersionHistoryPanel from '@/components/VersionHistoryPanel'
 import ParagraphEditor from '@/components/ParagraphEditor'
 import CloneButton from '@/components/CloneButton'
-import EmailCopyButton from '@/components/EmailCopyButton'
+import DocumentCopyButton from '@/components/DocumentCopyButton'
 import Link from 'next/link'
 
 export default async function DraftPage({ params }) {
@@ -147,10 +147,15 @@ export default async function DraftPage({ params }) {
             ))}
           </div>
 
-          {/* Email copy button - only for LEGAL_EMAIL drafts */}
-          {draft.documentType === 'LEGAL_EMAIL' && (
-            <EmailCopyButton content={draft.content || ''} />
-          )}
+          {/* Copy to clipboard — available for every one of the 20
+              document services, with per-service framing + format options */}
+          <DocumentCopyButton
+            content={draft.content || ''}
+            documentType={draft.documentType}
+            title={draft.title}
+            courtLabel={court?.short || ''}
+            dateLabel={formatDate(draft.createdAt)}
+          />
 
           {/* Export */}
           <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 14, padding: 18 }}>

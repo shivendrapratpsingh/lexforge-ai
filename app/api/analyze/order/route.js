@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { auth } from '@/lib/auth'
 import { hasProAccess } from '@/lib/admin'
 
@@ -11,6 +12,9 @@ export async function POST(req) {
     const session = await auth()
     if (!session?.user?.id || !session?.user?.email)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const rl = checkRateLimit(session.user.id, 'analyze')
+    if (!rl.ok) return NextResponse.json({ error: rl.message }, { status: 429 })
 
     // Pro-gate: legal tools are a Pro tier feature. hasProAccess respects
     // the global proEnforcementEnabled toggle and any active promos, so

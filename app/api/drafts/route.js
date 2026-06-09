@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { DOCUMENT_TYPES, getRelevantCaseLaws } from '@/lib/utils'
 import { isAdmin, hasProAccess, requiresProDocumentDynamic, getFreeDocsLimit } from '@/lib/admin'
 import { isJunkValue } from '@/lib/validation'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 // AI generation can take 20–40s with 70B models. Vercel's Hobby plan caps
 // serverless functions at 10s by default, which silently kills the request
@@ -68,15 +69,26 @@ function extractClientFromTemplate(documentType, templateData) {
   }
 }
 
-export async function GET() {
+export async function GET(req) {
   try {
     const session = await auth()
     if (!session?.user?.id)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const { searchParams } = new URL(req.url)
+    const q = (searchParams.get('q') || '').trim()
+
     const { prisma } = await import('@/lib/prisma')
+    const where = { userId: session.user.id }
+    if (q) {
+      where.OR = [
+        { title:       { contains: q, mode: 'insensitive' } },
+        { documentType:{ contains: q, mode: 'insensitive' } },
+        { content:     { contains: q, mode: 'insensitive' } },
+      ]
+    }
     const drafts = await prisma.draft.findMany({
-      where: { userId: session.user.id },
+      where,
       orderBy: { updatedAt: 'desc' },
     })
     return NextResponse.json({ drafts })
@@ -93,6 +105,9 @@ export async function POST(req) {
     const session = await auth()
     if (!session?.user?.id)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const rl = checkRateLimit(session.user.id, 'drafts')
+    if (!rl.ok) return NextResponse.json({ error: rl.message }, { status: 429 })
 
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })

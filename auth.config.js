@@ -1,7 +1,10 @@
 import Credentials from 'next-auth/providers/credentials'
 
-// DEV FALLBACK: if AUTH_SECRET is missing, use this so the app never crashes
-// Replace with a real secret in .env.local for production
+// In production AUTH_SECRET MUST be set — crash fast if not.
+if (process.env.NODE_ENV === 'production' && !process.env.AUTH_SECRET) {
+  throw new Error('AUTH_SECRET env var is not set. Set it in your Vercel environment variables before deploying.')
+}
+
 const DEV_SECRET = 'lexforge-dev-secret-v1-change-before-deployment-!!'
 
 export const authConfig = {
@@ -27,13 +30,15 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user
       const tier = auth?.user?.tier || 'free'
       const email = auth?.user?.email || ''
-      const ADMIN = 'pratapsinghshivendra21@gmail.com'
-      const isAdminUser = email.toLowerCase() === ADMIN
+      const ADMIN = (process.env.ADMIN_EMAIL || '').toLowerCase()
+      const isAdminUser = !!ADMIN && email.toLowerCase() === ADMIN
       const userIsPro = tier === 'pro' || isAdminUser
 
       const isAuthPage =
-        nextUrl.pathname.startsWith('/login') ||
-        nextUrl.pathname.startsWith('/register')
+        nextUrl.pathname.startsWith('/login')            ||
+        nextUrl.pathname.startsWith('/register')         ||
+        nextUrl.pathname.startsWith('/forgot-password')  ||
+        nextUrl.pathname.startsWith('/reset-password')
       const isProtected = ['/dashboard', '/drafts', '/new-draft', '/research', '/clients', '/court-dates', '/tools', '/admin', '/upgrade'].some(
         p => nextUrl.pathname.startsWith(p)
       )

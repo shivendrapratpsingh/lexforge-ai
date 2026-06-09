@@ -8,17 +8,19 @@ datasource db {
 }
 
 model User {
-  id         String      @id @default(cuid())
-  name       String?
-  email      String      @unique
-  password   String?
-  tier       String      @default("free")
-  suspended  Boolean     @default(false)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  clients    Client[]
-  courtDates CourtDate[]
-  drafts     Draft[]
+  id               String      @id @default(cuid())
+  name             String?
+  email            String      @unique
+  password         String?
+  tier             String      @default("free")
+  suspended        Boolean     @default(false)
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  clients          Client[]
+  courtDates       CourtDate[]
+  drafts           Draft[]
 }
 
 model Client {

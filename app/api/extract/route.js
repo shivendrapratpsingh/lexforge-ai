@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 // AI route — needs > 10s on Vercel Hobby plan.
 export const maxDuration = 60
@@ -15,6 +16,9 @@ export async function POST(req) {
     const session = await auth()
     if (!session?.user?.id)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const rl = checkRateLimit(session.user.id, 'extract')
+    if (!rl.ok) return NextResponse.json({ error: rl.message }, { status: 429 })
 
     const body = await req.json().catch(() => null)
     if (!body?.rawText || !body?.documentType)

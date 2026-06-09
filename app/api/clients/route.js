@@ -3,6 +3,7 @@
 // POST /api/clients?bulk=1                                        — bulk import (JSON array from CSV)
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { encrypt, decrypt } from '@/lib/crypto'
 
 export async function GET(req) {
   try {
@@ -23,12 +24,11 @@ export async function GET(req) {
       userId: session.user.id,
       ...(q && {
         OR: [
-          { name:          { contains: q, mode: 'insensitive' } },
-          { aadhaarNumber: { contains: q } },
-          { phone:         { contains: q } },
-          { fatherName:    { contains: q, mode: 'insensitive' } },
-          { city:          { contains: q, mode: 'insensitive' } },
-          { district:      { contains: q, mode: 'insensitive' } },
+          { name:       { contains: q, mode: 'insensitive' } },
+          { phone:      { contains: q } },
+          { fatherName: { contains: q, mode: 'insensitive' } },
+          { city:       { contains: q, mode: 'insensitive' } },
+          { district:   { contains: q, mode: 'insensitive' } },
         ],
       }),
       ...(district && { district: { contains: district, mode: 'insensitive' } }),
@@ -47,7 +47,13 @@ export async function GET(req) {
       include: { _count: { select: { drafts: true, attachments: true, payments: true } } },
     })
 
-    return NextResponse.json({ clients })
+    // Decrypt aadhaarNumber before sending to the client
+    const decrypted = clients.map(c => ({
+      ...c,
+      aadhaarNumber: c.aadhaarNumber ? decrypt(c.aadhaarNumber) : c.aadhaarNumber,
+    }))
+
+    return NextResponse.json({ clients: decrypted })
   } catch (err) {
     console.error('[GET /api/clients]', err)
     return NextResponse.json({ error: 'Failed to fetch clients.' }, { status: 500 })
@@ -98,7 +104,7 @@ export async function POST(req) {
               district:      row.district?.trim()      || null,
               state:         row.state?.trim()         || 'Uttar Pradesh',
               pincode:       row.pincode?.trim()       || null,
-              aadhaarNumber: row.aadhaarNumber?.replace(/\s/g, '') || null,
+              aadhaarNumber: row.aadhaarNumber ? encrypt(row.aadhaarNumber.replace(/\s/g, '')) : null,
               tags:          row.tags?.trim()          || null,
               notes:         row.notes?.trim()         || null,
             },
@@ -130,6 +136,7 @@ export async function POST(req) {
     })
     if (dup) return NextResponse.json({ error: 'A client with this name and phone already exists.', duplicate: true, existingId: dup.id }, { status: 409 })
 
+    const rawAadhaar = body.aadhaarNumber?.replace(/\s|-/g, '') || null
     const client = await prisma.client.create({
       data: {
         userId:        session.user.id,
@@ -144,7 +151,7 @@ export async function POST(req) {
         district:      body.district?.trim()                || null,
         state:         body.state?.trim()                   || 'Uttar Pradesh',
         pincode:       body.pincode?.trim()                 || null,
-        aadhaarNumber: body.aadhaarNumber?.replace(/\s|-/g, '') || null,
+        aadhaarNumber: rawAadhaar ? encrypt(rawAadhaar) : null,
         tags:          body.tags?.trim()                    || null,
         notes:         body.notes?.trim()                   || null,
       },

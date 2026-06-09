@@ -18,9 +18,20 @@ export const maxDuration = 60
 export const runtime     = 'nodejs'
 export const dynamic     = 'force-dynamic'
 
+// In production, CRON_SECRET must be set explicitly — 'dev' is never accepted.
+if (process.env.NODE_ENV === 'production' && process.env.ENABLE_BRIEF_JOBS === '1') {
+  if (!process.env.CRON_SECRET) {
+    throw new Error('CRON_SECRET env var is not set. Set it in Vercel environment variables before enabling brief jobs in production.')
+  }
+}
+
 function isAuthorised(req) {
   if (process.env.ENABLE_BRIEF_JOBS !== '1') return false
-  const expected = process.env.CRON_SECRET || 'dev'
+  const expected = process.env.CRON_SECRET
+  // Never fall back to 'dev' in production
+  if (!expected) {
+    return process.env.NODE_ENV !== 'production'
+  }
   const fromHeader = req.headers.get('x-cron-secret')
                   || (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '')
   return fromHeader === expected

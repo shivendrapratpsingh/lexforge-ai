@@ -4,6 +4,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { hasProAccess } from '@/lib/admin'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 // AI route — needs > 10s on Vercel Hobby plan.
 export const maxDuration = 60
@@ -15,6 +16,9 @@ export async function POST(req) {
     if (!session?.user?.id || !session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const rl = checkRateLimit(session.user.id, 'assistant')
+    if (!rl.ok) return NextResponse.json({ error: rl.message }, { status: 429 })
 
     // Gate by Pro access (admin / pro tier / active promo / global Pro mode).
     const userIsPro = await hasProAccess(session.user.email, session.user.tier)

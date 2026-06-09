@@ -114,6 +114,8 @@ export default function AdminConsole() {
 
   // All Drafts filter
   const [draftFilter, setDraftFilter] = useState('')
+  // Session refresh notice after tier change
+  const [tierChangeNotice, setTierChangeNotice] = useState(null)
 
   async function loadAll() {
     setLoading(true)
@@ -271,6 +273,11 @@ export default function AdminConsole() {
       const j = await r.json()
       if (!r.ok) throw new Error(j.error || 'Update failed')
       await loadAll()
+      // Inform admin that the user must re-login to see their new tier in-session
+      if ('tier' in patch || 'suspended' in patch) {
+        setTierChangeNotice(`Tier/status updated. Ask the user to sign out and sign back in — JWT sessions don't auto-refresh until re-login.`)
+        setTimeout(() => setTierChangeNotice(null), 10_000)
+      }
     } catch (e) {
       alert(e.message)
     } finally {
@@ -313,6 +320,48 @@ export default function AdminConsole() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+      {/* ── Pro Enforcement OFF warning ── */}
+      {sysConfig && !sysConfig.proEnforcementEnabled && (
+        <div style={{
+          background: 'rgba(212,160,23,0.12)',
+          border: '1px solid rgba(212,160,23,0.5)',
+          borderRadius: 10,
+          padding: '14px 18px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 12,
+        }}>
+          <span style={{ fontSize: 20, lineHeight: 1 }}>⚠️</span>
+          <div>
+            <div style={{ fontSize: 13, color: '#D4A017', fontWeight: 700, marginBottom: 4 }}>
+              Pro Enforcement is OFF — all users currently have free Pro access
+            </div>
+            <div style={{ fontSize: 12, color: '#A08020', lineHeight: 1.55 }}>
+              Every signed-in user is getting the full Pro experience (unlimited drafts, 70B model, Case Assistant, all routes).
+              Monthly quotas and tier checks are bypassed. Turn Pro Mode OFF in System Settings below to re-enable free-tier limits.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tier change notice ── */}
+      {tierChangeNotice && (
+        <div style={{
+          background: 'rgba(96,165,250,0.12)',
+          border: '1px solid rgba(96,165,250,0.4)',
+          borderRadius: 10,
+          padding: '12px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 13,
+          color: '#93C5FD',
+        }}>
+          <span style={{ fontSize: 16 }}>ℹ️</span>
+          {tierChangeNotice}
+        </div>
+      )}
+
       {/* ── Stats ── */}
       {stats && (
         <section>

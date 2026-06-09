@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { formatDate, DOCUMENT_TYPES, ALL_COURTS } from '@/lib/utils'
+import { stripMarkdown } from '@/lib/markdown'
 import { DraftActions } from '@/components/DraftActions'
 import PositivePointsPanel from '@/components/PositivePointsPanel'
 import DraftControls from '@/components/DraftControls'
@@ -85,7 +86,7 @@ export default async function DraftPage({ params }) {
           <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 28, marginBottom: 18 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#3A3A3A', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 18 }}>Document Content</div>
             <div style={{ background: '#0D0D0D', border: '1px solid #1C1C1C', borderRadius: 12, padding: 26, fontFamily: 'Georgia, serif', fontSize: 14, lineHeight: 2, color: '#C0C0C0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-              {draft.content}
+              {stripMarkdown(draft.content)}
             </div>
           </div>
 

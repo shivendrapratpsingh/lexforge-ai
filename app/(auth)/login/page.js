@@ -38,6 +38,7 @@ function LoginForm() {
 
   useEffect(() => {
     if (searchParams.get('registered')) setSuccess('Account created! Sign in below.')
+    if (searchParams.get('reset'))      setSuccess('Password updated! Sign in with your new password.')
   }, [searchParams])
 
   const handleSubmit = async (e) => {
@@ -166,7 +167,10 @@ function LoginForm() {
             </button>
           </form>
 
-          <p style={{ textAlign: 'center', marginTop: 20, fontSize: 14, color: '#5A5A5A' }}>
+          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: '#5A5A5A' }}>
+            <Link href="/forgot-password" style={{ color: '#8A8A8A', textDecoration: 'none' }}>Forgot password?</Link>
+          </p>
+          <p style={{ textAlign: 'center', marginTop: 8, fontSize: 14, color: '#5A5A5A' }}>
             No account?{' '}
             <Link href="/register" style={{ color: '#D4A017', fontWeight: 600, textDecoration: 'none' }}>Create one free</Link>
           </p>

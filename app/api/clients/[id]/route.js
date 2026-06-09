@@ -3,6 +3,7 @@
 // DELETE /api/clients/[id]  — delete client
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { encrypt, decrypt } from '@/lib/crypto'
 
 export async function GET(req, { params }) {
   try {
@@ -31,9 +32,15 @@ export async function GET(req, { params }) {
 
     if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
 
+    // Decrypt aadhaarNumber before sending to client
+    const safeClient = {
+      ...client,
+      aadhaarNumber: client.aadhaarNumber ? decrypt(client.aadhaarNumber) : client.aadhaarNumber,
+    }
+
     // Total paid
     const totalPaid = client.payments.reduce((s, p) => s + p.amount, 0)
-    return NextResponse.json({ client, totalPaid })
+    return NextResponse.json({ client: safeClient, totalPaid })
   } catch (err) {
     console.error('[GET client]', err)
     return NextResponse.json({ error: 'Failed to fetch client.' }, { status: 500 })
@@ -73,14 +80,18 @@ export async function PUT(req, { params }) {
         district:      'district'      in body ? (body.district?.trim()      || null) : existing.district,
         state:         'state'         in body ? (body.state?.trim()         || null) : existing.state,
         pincode:       'pincode'       in body ? (body.pincode?.trim()       || null) : existing.pincode,
-        aadhaarNumber: 'aadhaarNumber' in body ? (body.aadhaarNumber?.replace(/\s|-/g, '') || null) : existing.aadhaarNumber,
+        aadhaarNumber: 'aadhaarNumber' in body
+          ? (body.aadhaarNumber ? encrypt(body.aadhaarNumber.replace(/\s|-/g, '')) : null)
+          : existing.aadhaarNumber,
         tags:          'tags'          in body ? (body.tags?.trim()          || null) : existing.tags,
         notes:         'notes'         in body ? (body.notes?.trim()         || null) : existing.notes,
         photo:         'photo'         in body ? (body.photo                 || null) : existing.photo,
       },
     })
 
-    return NextResponse.json({ client })
+    return NextResponse.json({
+      client: { ...client, aadhaarNumber: client.aadhaarNumber ? decrypt(client.aadhaarNumber) : client.aadhaarNumber },
+    })
   } catch (err) {
     console.error('[PUT client]', err)
     return NextResponse.json({ error: 'Failed to update client.' }, { status: 500 })

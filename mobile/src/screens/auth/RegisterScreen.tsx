@@ -50,22 +50,4 @@ export default function RegisterScreen({ navigation }: AuthScreenProps<'Register
       <Text style={styles.title}>{t('auth.createAccountTitle')}</Text>
       <Text style={styles.sub}>{t('auth.registerSub')}</Text>
 
-      <View style={styles.card}>
-        <Field label={t('auth.fullName')} placeholder="Aditi Sharma" value={name} onChangeText={setName} />
-        <Field label={t('auth.email')} placeholder="you@lawfirm.in" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-        <Field label={t('auth.password')} placeholder="••••••••" secureTextEntry value={password} onChangeText={setPassword} />
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        <Button label={t('auth.createAccount')} onPress={handleCreate} loading={loading} fullWidth />
-      </View>
-    </ScrollView>
-  );
-}
-
-const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, padding: 26, paddingTop: 40, backgroundColor: colors.base },
-  back: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.inkMuted, marginBottom: 22 },
-  title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink, marginBottom: 6 },
-  sub: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.inkMuted, marginBottom: 26 },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.modal, padding: 22 },
-  errorText: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.danger, marginBottom: 12 },
-});
+ 

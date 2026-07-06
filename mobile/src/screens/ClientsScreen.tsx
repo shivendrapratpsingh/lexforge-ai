@@ -59,36 +59,4 @@ export default function ClientsScreen({ navigation }: RootScreenProps<'Clients'>
         <FlatList
           data={clients}
           keyExtractor={(c) => c.id}
-          contentContainerStyle={{ padding: 20, gap: 10, flexGrow: 1 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
-          ListEmptyComponent={<EmptyState title={query ? 'No matches' : 'No clients yet'} description={query ? 'Try a different search.' : 'Clients are added automatically when you draft a document, or add one from the web app.'} />}
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.row}
-              onPress={() => navigation.navigate('ClientDetail', { clientId: item.id })}
-            >
-              <View style={styles.avatar}><Text style={styles.avatarText}>{initials(item.name)}</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.meta}>{item._count?.drafts ?? 0} case{item._count?.drafts === 1 ? '' : 's'} · {item.phone || item.city || '—'}</Text>
-              </View>
-            </Pressable>
-          )}
-        />
-      )}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 20 },
-  backBtn: { paddingRight: 4 },
-  back: { color: colors.inkMuted, fontSize: 18 },
-  title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink },
-  search: { marginHorizontal: 20, marginTop: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.input, paddingHorizontal: 14, paddingVertical: 11, color: colors.ink, fontFamily: fonts.body, fontSize: fontSizes.base },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 14 },
-  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.gold },
-  name: { fontFamily: fonts.bodyMedium, fontSize: 13.5, color: colors.ink },
-  meta: { fontFamily: fonts.body, fontSize: 11, color: colors.inkFaint, marginTop: 2 },
-});
+          contentContainerStyle={{ padding: 20

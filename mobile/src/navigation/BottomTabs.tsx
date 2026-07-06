@@ -197,18 +197,4 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   fabWrap: {
-    position: 'absolute',
-    top: -26,
-    left: '50%',
-    marginLeft: -29,
-  },
-  fab: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 5,
-    borderColor: colors.base,
-  },
-});
+    p

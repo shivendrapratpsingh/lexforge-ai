@@ -40,9 +40,4 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
-    "babel-preset-expo": "~57.0.1",
-    "typescript": "~5.9.3"
-  },
-  "private": true
-}
+    "@types/reac

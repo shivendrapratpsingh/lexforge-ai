@@ -78,19 +78,4 @@ export default function GeneratingScreen({ route, navigation }: RootScreenProps<
         <Text style={styles.paperEyebrow}>In the Court of the District Judge</Text>
         <Text style={styles.paperTitle}>{docType?.name}</Text>
         {!failed && <StreamingText text={previewText} reducedMotion={reducedMotion} color="#2a2a24" />}
-        {failed && <Text style={styles.failedHint}>Go back and try again — your answers are still filled in.</Text>}
-      </View>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base, padding: 20, paddingTop: 44, alignItems: 'center' },
-  progressTrack: { width: '100%', height: 6, backgroundColor: colors.surface3, borderRadius: 999, overflow: 'hidden', marginTop: 22, marginBottom: 8 },
-  progressFill: { height: '100%', borderRadius: 999 },
-  progressLabel: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.inkFaint, marginBottom: 20 },
-  paper: { width: '100%', backgroundColor: '#F5F5F0', borderRadius: radii.card, padding: 22, minHeight: 340 },
-  paperEyebrow: { textAlign: 'center', fontFamily: fonts.documentSerif, fontSize: 10, letterSpacing: 1.5, color: '#6b6b60', textTransform: 'uppercase', marginBottom: 4 },
-  paperTitle: { textAlign: 'center', fontFamily: fonts.documentSerif, fontWeight: '700', fontSize: 15, color: '#1a1a16', marginBottom: 16 },
-  failedHint: { fontFamily: fonts.body, fontSize: 12.5, color: '#8a5a3a', textAlign: 'center', marginTop: 12 },
-});
+        {failed && <Text style={styles.failedHint}>Go back and try again — your answers are 

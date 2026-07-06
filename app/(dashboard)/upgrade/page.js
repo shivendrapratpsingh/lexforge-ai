@@ -144,5 +144,3 @@ export default async function UpgradePage() {
         </Link>
       </div>
     </div>
-  )
-}

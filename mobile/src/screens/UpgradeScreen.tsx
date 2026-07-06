@@ -137,10 +137,4 @@ const styles = StyleSheet.create({
   price: { fontFamily: fonts.serifBold, fontSize: 36, color: colors.ink },
   priceSuffix: { fontFamily: fonts.body, fontSize: 14, color: colors.inkFaint },
   table: { paddingHorizontal: 20, paddingBottom: 32 },
-  tableHeaderRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
-  tableHeaderCell: { fontFamily: fonts.bodySemiBold, fontSize: 11, color: colors.inkFaint },
-  tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surface2 },
-  tableCell: { fontFamily: fonts.body, fontSize: 12, color: colors.ink },
-  tableCellMuted: { fontFamily: fonts.body, fontSize: 12, color: colors.inkFaint },
-  tableCellPro: { fontFamily: fonts.bodySemiBold, fontSize: 12, color: colors.goldLight },
-});
+  tableHeaderRow: { flexDirection: 'row', paddingVertical: 1

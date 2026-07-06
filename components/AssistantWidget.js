@@ -489,23 +489,4 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
           }}>
             <span>Press Esc or click below to dismiss the assistant.</span>
             <button
-              onClick={() => setOpen(false)}
-              style={{
-                background: 'transparent',
-                border: `1px solid ${COLORS.border}`,
-                color: '#F48080',
-                fontSize: 11,
-                fontWeight: 700,
-                padding: '4px 10px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                letterSpacing: '0.4px',
-              }}>
-              Cancel / Close
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
+    

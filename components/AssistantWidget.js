@@ -70,35 +70,23 @@ function detectIntent(text) {
 }
 
 // ─── Floating action button ─────────────────────────────────────
+// Anchored above the mobile bottom tab bar (h-16) so it never overlaps
+// it; reverts to a standard bottom-right position from md: up where
+// there is no tab bar. See redesign spec §3.2.
 function FAB({ onClick, open }) {
   return (
     <button
       aria-label={open ? 'Close case assistant' : 'Open case assistant'}
       onClick={onClick}
-      style={{
-        position: 'fixed',
-        right: 22,
-        bottom: 22,
-        width: 56,
-        height: 56,
-        borderRadius: '50%',
-        border: '1px solid rgba(212,160,23,0.4)',
-        background: open
-          ? 'linear-gradient(135deg, #1C1C1C, #0D0D0D)'
-          : 'linear-gradient(135deg, #D4A017, #B8860B)',
-        color: open ? COLORS.accent : '#0D0D0D',
-        fontSize: 24,
-        fontWeight: 800,
-        cursor: 'pointer',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.5), 0 2px 6px rgba(212,160,23,0.25)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 60,
-        transition: 'transform 0.15s',
-      }}
-      onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.06)')}
-      onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+      className={
+        'fixed right-4 md:right-5 z-[60] size-14 rounded-full border flex items-center justify-center ' +
+        'text-2xl font-extrabold shadow-[0_8px_24px_rgba(0,0,0,0.5),0_2px_6px_rgba(212,160,23,0.25)] ' +
+        'transition-transform duration-150 hover:scale-105 ' +
+        'bottom-[calc(4rem+1rem)] md:bottom-6 ' +
+        (open
+          ? 'bg-gradient-to-br from-surface-2 to-base border-gold/40 text-gold-light'
+          : 'bg-gradient-to-br from-gold to-gold-dim border-gold/40 text-base lf-pulse-dot-slow')
+      }
     >
       {open ? '×' : '✦'}
     </button>
@@ -341,33 +329,27 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
         <div
           role="dialog"
           aria-label="Case Assistant"
-          style={{
-            position: 'fixed',
-            right: 22,
-            bottom: 90,
-            width: 400,
-            maxWidth: 'calc(100vw - 32px)',
-            height: 600,
-            maxHeight: 'calc(100vh - 120px)',
-            background: COLORS.bg,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 14,
-            boxShadow: '0 16px 48px rgba(0,0,0,0.55)',
-            display: 'flex',
-            flexDirection: 'column',
-            zIndex: 60,
-            overflow: 'hidden',
-          }}
+          className={
+            'fixed z-[60] flex flex-col overflow-hidden border border-border ' +
+            /* mobile: full-screen frosted-glass sheet (matches the native app's
+               glass panel) using dvh so the on-screen keyboard doesn't cut off
+               the input */
+            'inset-0 rounded-none backdrop-blur-2xl bg-surface/85 ' +
+            /* desktop: unchanged — classic solid bottom-right anchored panel */
+            'md:inset-auto md:right-5 md:bottom-24 md:w-[400px] md:h-[600px] md:max-h-[70dvh] md:rounded-2xl md:shadow-[0_16px_48px_rgba(0,0,0,0.55)] md:backdrop-blur-none md:bg-base'
+          }
         >
-          {/* Header */}
-          <div style={{
-            padding: '14px 16px',
-            borderBottom: `1px solid ${COLORS.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            background: 'linear-gradient(180deg, #141414, #0D0D0D)',
-          }}>
+          {/* Header — translucent on mobile (glass effect), solid gradient on desktop (unchanged) */}
+          <div
+            className="bg-surface/60 md:[background-image:linear-gradient(180deg,#141414,#0D0D0D)]"
+            style={{
+              padding: '14px 16px',
+              borderBottom: `1px solid ${COLORS.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
             <div style={{
               width: 32, height: 32, borderRadius: 8,
               background: 'linear-gradient(135deg, #D4A017, #B8860B)',
@@ -396,12 +378,11 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
             >×</button>
           </div>
 
-          {/* Body */}
-          <div ref={listRef} style={{
+          {/* Body — transparent on mobile so the panel's glass blur shows through; solid on desktop (unchanged) */}
+          <div ref={listRef} className="bg-transparent md:bg-base" style={{
             flex: 1,
             overflowY: 'auto',
             padding: '14px 14px 4px',
-            background: COLORS.bg,
           }}>
             {messages.map((m, i) => (
               <MessageBubble key={i} role={m.role} content={m.content}>
@@ -446,11 +427,10 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
             )}
           </div>
 
-          {/* Input */}
-          <div style={{
+          {/* Input — translucent on mobile (glass), solid on desktop (unchanged) */}
+          <div className="bg-surface/70 md:bg-surface" style={{
             padding: 12,
             borderTop: `1px solid ${COLORS.border}`,
-            background: COLORS.card,
             display: 'flex',
             gap: 8,
             alignItems: 'flex-end',
@@ -497,10 +477,9 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
             </button>
           </div>
 
-          {/* Cancel / dismiss bar - always visible at the bottom */}
-          <div style={{
+          {/* Cancel / dismiss bar - always visible at the bottom (translucent on mobile, solid on desktop, unchanged) */}
+          <div className="bg-surface/60 md:bg-base" style={{
             padding: '8px 12px',
-            background: COLORS.bg,
             borderTop: `1px solid ${COLORS.border}`,
             display: 'flex',
             justifyContent: 'space-between',

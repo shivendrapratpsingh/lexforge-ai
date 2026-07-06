@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { DOCUMENT_TYPES, COURTS, ALL_COURTS, LANGUAGES } from '@/lib/utils'
 import { isJunkValue, validateTemplateData, buildValidationError } from '@/lib/validation'
@@ -261,7 +261,8 @@ const S = {
 }
 
 export default function NewDraftPage() {
-  const router = useRouter()
+  const router       = useRouter()
+  const searchParams = useSearchParams()
 
   const [step, setStep]                     = useState(1)
   const [selectedType, setSelectedType]     = useState(null)
@@ -320,6 +321,22 @@ export default function NewDraftPage() {
       .then(d => d && setMe(d))
       .catch(() => {})
   }, [])
+
+  // ── Pre-fill from parent draft (?from=draftId&type=DOC_TYPE&prefill={...}) ──
+  useEffect(() => {
+    const type    = searchParams.get('type')
+    const prefill = searchParams.get('prefill')
+    if (type) {
+      setSelectedType(type)
+      setStep(2)
+    }
+    if (prefill) {
+      try {
+        const data = JSON.parse(prefill)
+        if (data && typeof data === 'object') setFormData(data)
+      } catch {}
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chatStep])
 
@@ -814,8 +831,9 @@ export default function NewDraftPage() {
           </div>
         </div>
 
-        {/* Split Screen */}
-        <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 18, alignItems: 'start' }}>
+        {/* Split Screen — stacks to a single column below lg: so the input
+            summary doesn't get crushed into a 380px column on phones/tablets. */}
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-4 lg:gap-[18px] items-start">
 
           {/* ── Left: Input Summary ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -969,36 +987,34 @@ export default function NewDraftPage() {
             )
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))', gap: 12 }}>
+          {/* Capped at 4 columns max (not auto-fill) so every card stays wide
+              enough for icon + title + description at every breakpoint —
+              see redesign spec §4.3 worst-offender #4. */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {DOCUMENT_TYPES.map(type => {
               const proExtras = getProFeatureList(type.value)
               const tip = proExtras.length
                 ? `Pro adds: ${proExtras.slice(0, 4).join(' · ')}${proExtras.length > 4 ? '…' : ''}`
                 : PRO_TAGLINE
               return (
-                <button key={type.value} onClick={() => selectType(type.value)}
+                <button
+                  key={type.value}
+                  onClick={() => selectType(type.value)}
                   title={tip}
-                  style={{ background: '#141414', border: '2px solid #2A2A2A', borderRadius: 14, padding: '18px 16px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A017'; e.currentTarget.style.boxShadow = '0 0 16px rgba(212,160,23,0.1)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2A2A'; e.currentTarget.style.boxShadow = 'none' }}>
-                  <span style={{
-                    position: 'absolute',
-                    top: 10,
-                    right: 10,
-                    padding: '2px 7px',
-                    borderRadius: 5,
-                    background: me?.isPro ? 'rgba(212,160,23,0.18)' : 'rgba(212,160,23,0.08)',
-                    color: '#D4A017',
-                    fontSize: 9,
-                    fontWeight: 800,
-                    letterSpacing: '0.6px',
-                    border: `1px solid rgba(212,160,23,${me?.isPro ? 0.5 : 0.25})`,
-                  }}>
+                  className="relative text-left min-h-[112px] bg-surface border-2 border-border rounded-card p-4 transition-all duration-200 hover:border-border-gold hover:shadow-gold-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                >
+                  <span
+                    className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded text-gold text-[9px] font-extrabold tracking-wide border"
+                    style={{
+                      background: me?.isPro ? 'rgba(212,160,23,0.18)' : 'rgba(212,160,23,0.08)',
+                      borderColor: `rgba(212,160,23,${me?.isPro ? 0.5 : 0.25})`,
+                    }}
+                  >
                     {me?.isPro ? '★ PRO' : 'PRO'}
                   </span>
-                  <div style={{ fontSize: 28, marginBottom: 10 }}>{type.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#D0D0D0', marginBottom: 5 }}>{type.label}</div>
-                  <div style={{ fontSize: 11, color: '#4A4A4A', lineHeight: 1.4 }}>{type.description}</div>
+                  <div className="text-2xl sm:text-[28px] mb-2.5">{type.icon}</div>
+                  <div className="text-[13px] font-bold text-ink-muted mb-1">{type.label}</div>
+                  <div className="text-[11px] text-ink-faint leading-snug line-clamp-2">{type.description}</div>
                 </button>
               )
             })}
@@ -1159,15 +1175,21 @@ export default function NewDraftPage() {
             {/* Intake Method */}
             <div style={{ marginBottom: 8 }}>
               <label style={S.label}>How to provide case details?</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+              {/* Fixed 4-col grid used to break on phones — now 2-col on
+                  mobile, 4-col from sm: up. */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {[
                   { value: 'form',   icon: '📋', title: 'Fill Form',     desc: 'Fill structured fields' },
                   { value: 'chat',   icon: '💬', title: 'Smart Q&A',     desc: 'AI asks questions one by one' },
                   { value: 'upload', icon: '📤', title: 'Paste Document', desc: 'AI extracts details from pasted doc' },
                   { value: 'folder', icon: '📁', title: 'Upload Folder / File', desc: selectedType === 'CASE_BRIEF' ? 'AI reads a folder or a single file → short brief' : 'AI reads a folder, or a single Word doc / scanned PDF' },
                 ].map(m => (
-                  <button key={m.value} onClick={() => setIntakeMethod(m.value)}
-                    style={{ background: intakeMethod === m.value ? 'rgba(212,160,23,0.08)' : '#0D0D0D', border: `1px solid ${intakeMethod === m.value ? '#D4A017' : '#2A2A2A'}`, borderRadius: 12, padding: '14px 10px', cursor: 'pointer', textAlign: 'center' }}>
+                  <button
+                    key={m.value}
+                    onClick={() => setIntakeMethod(m.value)}
+                    className="min-h-[96px] rounded-card p-3.5 text-center transition-colors"
+                    style={{ background: intakeMethod === m.value ? 'rgba(212,160,23,0.08)' : '#0D0D0D', border: `1px solid ${intakeMethod === m.value ? '#D4A017' : '#2A2A2A'}` }}
+                  >
                     <div style={{ fontSize: 22, marginBottom: 6 }}>{m.icon}</div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: intakeMethod === m.value ? '#D4A017' : '#C0C0C0', marginBottom: 3 }}>{m.title}</div>
                     <div style={{ fontSize: 10, color: '#4A4A4A', lineHeight: 1.4 }}>{m.desc}</div>

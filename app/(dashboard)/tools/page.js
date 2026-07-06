@@ -141,7 +141,7 @@ function OrderAnalyzer() {
             </div>
           )}
           {/* Favorable / Adverse */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
             {result.favorablePoints?.length > 0 && (
               <MiniSection title="✅ Favorable" items={result.favorablePoints} color="#4CAF50" />
             )}
@@ -209,7 +209,7 @@ function AmendmentTool() {
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-2.5">
         <select value={docType} onChange={e => setDocType(e.target.value)} style={selBox}>
           {DOC_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
         </select>
@@ -268,7 +268,7 @@ function FreshApplication() {
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-2.5">
         <select value={docType} onChange={e => setDocType(e.target.value)} style={selBox}>
           {DOC_TYPES.filter(d => ['BAIL_APPLICATION','STAY_APPLICATION','PETITION','WRIT_PETITION'].includes(d.value)).map(d =>
             <option key={d.value} value={d.value}>{d.label}</option>
@@ -329,7 +329,7 @@ function AppealGenerator() {
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-2.5">
         <select value={appealType} onChange={e => setAppealType(e.target.value)} style={selBox}>
           {APPEAL_TYPES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
         </select>
@@ -388,7 +388,7 @@ function CounterReply() {
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-2.5">
         <select value={docType} onChange={e => setDocType(e.target.value)} style={selBox}>
           {DOC_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
         </select>
@@ -446,7 +446,7 @@ function ComplianceReport() {
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
         <select value={court} onChange={e => setCourt(e.target.value)} style={selBox}>
           {COURTS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>

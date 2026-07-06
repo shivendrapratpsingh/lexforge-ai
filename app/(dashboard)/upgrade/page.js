@@ -17,7 +17,7 @@ export default async function UpgradePage() {
   const freeDocsLimit = await getFreeDocsLimit()
 
   return (
-    <div style={{ maxWidth: 920, margin: '20px auto 60px' }}>
+    <div className="px-4 sm:px-0" style={{ maxWidth: 920, margin: '20px auto 60px' }}>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
         <div style={{ fontSize: 11, color: '#D4A017', letterSpacing: '2px', fontWeight: 700 }}>MEMBERSHIP</div>
         <h1 style={{ fontSize: 32, color: '#F0F0F0', fontWeight: 800, marginTop: 6 }}>
@@ -30,7 +30,7 @@ export default async function UpgradePage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Free */}
         <div style={{ background: '#141414', border: '1px solid #1C1C1C', borderRadius: 12, padding: 24 }}>
           <div style={{ fontSize: 12, color: '#6A6A6A', letterSpacing: '2px', fontWeight: 700, textTransform: 'uppercase' }}>

@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getTranslations, getLocale } from 'next-intl/server'
 import { formatDate, DOCUMENT_TYPES } from '@/lib/utils'
+import { Card } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 
 async function getDashboardData(userId) {
   try {
@@ -18,9 +21,14 @@ async function getDashboardData(userId) {
       prisma.draft.count({ where: { userId, status: 'finalized' } }),
       prisma.client.count({ where: { userId } }).catch(() => 0),
       prisma.courtDate.findMany({
-        where: { userId, completed: false, date: { gte: now } },
+        where: {
+          userId,
+          completed: false,
+          // Show upcoming + recently overdue (last 30 days) so follow-up alerts appear
+          date: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+        },
         orderBy: { date: 'asc' },
-        take: 5,
+        take: 10,
         include: {
           client: { select: { id: true, name: true } },
           draft:  { select: { id: true, title: true } },
@@ -57,119 +65,141 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <style>{`.draft-row:hover { background: #1C1C1C !important; }`}</style>
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#F0F0F0', marginBottom: 6 }}>
-          {t('greeting', { name: firstName })}
-        </h1>
-        <p style={{ color: '#5A5A5A', fontSize: 15 }}>{t('subtitle')}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-extrabold text-ink mb-1.5">{t('greeting', { name: firstName })}</h1>
+          <p className="text-ink-faint text-[15px]">{t('subtitle')}</p>
+        </div>
+        <Link href="/new-draft" className="w-full sm:w-auto">
+          <Button variant="primary" className="w-full sm:w-auto">✦ {tNav('generateDocument')}</Button>
+        </Link>
       </div>
 
       {/* DB error banner */}
       {error && (
-        <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 24, color: '#EF4444', fontSize: 14 }}>
+        <div className="bg-danger-bg border border-danger/20 rounded-xl px-4 py-3.5 mb-6 text-danger text-sm">
           {t('dbError', { error })}
         </div>
       )}
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
-        {stats.map(s => (
-          s.href ? (
-            <Link key={s.label} href={s.href} style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 14, padding: 20, textDecoration: 'none', display: 'block', transition: 'border-color 0.2s' }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>{s.icon}</div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: '#5A5A5A', marginTop: 6 }}>{s.label}</div>
+      {/* Stats — fixed: was a hard-coded 4-col grid with no breakpoints */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {stats.map(s => {
+          const content = (
+            <>
+              <div className="text-2xl sm:text-[28px] mb-3">{s.icon}</div>
+              <div className="text-2xl sm:text-3xl font-extrabold leading-none" style={{ color: s.color }}>{s.value}</div>
+              <div className="text-[13px] text-ink-faint mt-1.5">{s.label}</div>
+            </>
+          )
+          return s.href ? (
+            <Link key={s.label} href={s.href}>
+              <Card interactive className="block">{content}</Card>
             </Link>
           ) : (
-            <div key={s.label} style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 14, padding: 20 }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>{s.icon}</div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: '#5A5A5A', marginTop: 6 }}>{s.label}</div>
-            </div>
+            <Card key={s.label}>{content}</Card>
           )
-        ))}
+        })}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
+      {/* ── Action Required banner (overdue follow-ups) ─────────────── */}
+      {(() => {
+        const overdueItems = upcomingDates.filter(d => d.type === 'deadline' && new Date(d.date) < new Date())
+        if (overdueItems.length === 0) return null
+        return (
+          <div className="bg-danger-bg border border-danger/25 rounded-2xl px-4 sm:px-5 py-3.5 mb-6">
+            <div className="flex items-center gap-2 mb-2.5">
+              <span className="text-base">🚨</span>
+              <span className="text-[13px] font-bold text-danger">Action Required — {overdueItems.length} overdue follow-up{overdueItems.length > 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {overdueItems.map(d => (
+                <Link key={d.id} href={d.draft ? `/drafts/${d.draft.id}` : '/court-dates'}
+                  className="flex justify-between items-center gap-3 px-3 py-2 bg-danger/[0.05] border border-danger/10 rounded-lg no-underline">
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-danger">{d.title}</div>
+                    {d.draft && <div className="text-[11px] text-ink-faint mt-0.5 truncate">{d.draft.title?.substring(0, 50)}</div>}
+                  </div>
+                  <span className="text-[11px] text-danger font-semibold shrink-0">View →</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
         {/* Recent Documents */}
-        <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#F0F0F0' }}>{t('recentDocuments')}</h2>
-            <Link href="/drafts" style={{ fontSize: 13, color: '#D4A017', textDecoration: 'none', fontWeight: 600 }}>{t('viewAll')}</Link>
+        <Card className="p-5 sm:p-6">
+          <div className="flex justify-between items-center mb-5">
+            <h2 className="text-[17px] font-bold text-ink">{t('recentDocuments')}</h2>
+            <Link href="/drafts" className="text-[13px] text-gold no-underline font-semibold">{t('viewAll')}</Link>
           </div>
 
           {drafts.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 0' }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
-              <p style={{ color: '#5A5A5A', marginBottom: 16 }}>{t('noDocuments')}</p>
-              <Link href="/new-draft" style={{ background: 'linear-gradient(135deg, #D4A017, #B8860B)', color: '#0D0D0D', padding: '10px 20px', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
-                {t('createFirst')}
+            <div className="text-center py-12">
+              <div className="text-5xl mb-3">📄</div>
+              <p className="text-ink-faint mb-4">{t('noDocuments')}</p>
+              <Link href="/new-draft">
+                <Button variant="primary">{t('createFirst')}</Button>
               </Link>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div className="flex flex-col gap-1">
               {drafts.map(draft => {
                 const dt = DOCUMENT_TYPES.find(t => t.value === draft.documentType)
                 return (
                   <Link key={draft.id} href={`/drafts/${draft.id}`}
-                    className="draft-row"
-                    style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 12px', borderRadius: 10, textDecoration: 'none' }}
+                    className="flex items-center gap-3.5 px-3 py-3.5 rounded-btn no-underline hover:bg-surface-2 transition-colors"
                   >
-                    <div style={{ fontSize: 22, width: 40, height: 40, background: '#1C1C1C', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div className="size-10 bg-surface-2 rounded-btn flex items-center justify-center shrink-0 text-xl">
                       {dt?.icon || '📄'}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#D0D0D0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{draft.title}</div>
-                      <div style={{ fontSize: 12, color: '#5A5A5A', marginTop: 2 }}>{dt?.label} · {formatDate(draft.updatedAt)}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-ink truncate">{draft.title}</div>
+                      <div className="text-xs text-ink-faint mt-0.5">{dt?.label} · {formatDate(draft.updatedAt)}</div>
                     </div>
-                    <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 100, fontWeight: 600, flexShrink: 0, background: draft.status === 'finalized' ? 'rgba(76,175,80,0.1)' : 'rgba(212,160,23,0.1)', color: draft.status === 'finalized' ? '#4CAF50' : '#D4A017' }}>
-                      {draft.status}
-                    </span>
+                    <Badge tone={draft.status === 'finalized' ? 'success' : 'warning'} className="shrink-0">{draft.status}</Badge>
                   </Link>
                 )
               })}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Quick Actions + Upcoming Dates */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#F0F0F0', marginBottom: 14 }}>{t('quickActions')}</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Link href="/new-draft" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'linear-gradient(135deg, #D4A017, #B8860B)', borderRadius: 10, textDecoration: 'none', color: '#0D0D0D', fontWeight: 700, fontSize: 14 }}>
+        <div className="flex flex-col gap-4">
+          <Card className="p-5">
+            <h3 className="text-[15px] font-bold text-ink mb-3.5">{t('quickActions')}</h3>
+            <div className="flex flex-col gap-2">
+              <Link href="/new-draft" className="flex items-center gap-2.5 px-3.5 py-3 bg-gradient-to-br from-gold to-gold-dim rounded-btn no-underline text-base font-bold text-sm">
                 <span>✦</span> {tNav('generateDocument')}
               </Link>
-              <Link href="/clients" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#8B5CF6' }}>👤</span> {t('manageClients')}
-              </Link>
-              <Link href="/court-dates" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#60A5FA' }}>📅</span> {tNav('courtDates')}
-              </Link>
-              <Link href="/tools" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#F97316' }}>⚒️</span> {tNav('legalTools')}
-              </Link>
-              <Link href="/research" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#D4A017' }}>◎</span> {t('researchCaseLaws')}
-              </Link>
-              <Link href="/drafts" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, textDecoration: 'none', color: '#A0A0A0', fontSize: 14 }}>
-                <span style={{ color: '#D4A017' }}>◉</span> {t('viewAllDocuments')}
-              </Link>
+              {[
+                ['/clients', '👤', t('manageClients'), '#8B5CF6'],
+                ['/court-dates', '📅', tNav('courtDates'), '#60A5FA'],
+                ['/tools', '⚒️', tNav('legalTools'), '#F97316'],
+                ['/research', '◎', t('researchCaseLaws'), '#D4A017'],
+                ['/drafts', '◉', t('viewAllDocuments'), '#D4A017'],
+              ].map(([href, icon, label, color]) => (
+                <Link key={href} href={href} className="flex items-center gap-2.5 px-3.5 py-3 bg-surface-2 border border-border rounded-btn no-underline text-ink-muted text-sm">
+                  <span style={{ color }}>{icon}</span> {label}
+                </Link>
+              ))}
             </div>
-          </div>
+          </Card>
 
           {/* Upcoming Court Dates widget */}
-          <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#F0F0F0' }}>{t('upcomingDates')}</h3>
-              <Link href="/court-dates" style={{ fontSize: 12, color: '#D4A017', textDecoration: 'none', fontWeight: 600 }}>{t('viewAll')}</Link>
+          <Card className="p-5">
+            <div className="flex justify-between items-center mb-3.5">
+              <h3 className="text-sm font-bold text-ink">{t('upcomingDates')}</h3>
+              <Link href="/court-dates" className="text-xs text-gold no-underline font-semibold">{t('viewAll')}</Link>
             </div>
             {upcomingDates.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '16px 0', color: '#3A3A3A', fontSize: 13 }}>
+              <div className="text-center py-4 text-ink-faint text-[13px]">
                 {t('noUpcomingDates')}{' '}
-                <Link href="/court-dates" style={{ color: '#D4A017', textDecoration: 'none' }}>{t('addOne')}</Link>
+                <Link href="/court-dates" className="text-gold no-underline">{t('addOne')}</Link>
               </div>
             ) : (
               upcomingDates.map(d => {
@@ -177,36 +207,35 @@ export default async function DashboardPage() {
                 const typeColors = { hearing: '#60A5FA', compliance: '#F97316', filing: '#8B5CF6', order: '#D4A017', deadline: '#F87171' }
                 const color = typeColors[d.type] || '#5A5A5A'
                 return (
-                  <Link key={d.id} href="/court-dates"
-                    style={{ display: 'block', padding: '10px 0', borderBottom: '1px solid #1A1A1A', textDecoration: 'none' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#C0C0C0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</div>
-                        <div style={{ fontSize: 11, color: '#4A4A4A', marginTop: 2 }}>
+                  <Link key={d.id} href="/court-dates" className="block py-2.5 border-b border-[#1A1A1A] no-underline last:border-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-semibold text-ink-muted truncate">{d.title}</div>
+                        <div className="text-[11px] text-ink-faint mt-0.5">
                           {new Date(d.date).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short' })}
-                          {d.client && <span style={{ color: '#8B5CF6', marginLeft: 6 }}>· {d.client.name}</span>}
+                          {d.client && <span className="text-[#8B5CF6] ml-1.5">· {d.client.name}</span>}
                         </div>
                       </div>
-                      <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 100, background: `${color}1A`, color }}>
-                          {diff === 0 ? t('today') : diff === 1 ? t('tomorrow') : `${diff}d`}
-                        </span>
-                      </div>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ background: `${color}1A`, color }}>
+                        {diff === 0 ? t('today') : diff === 1 ? t('tomorrow') : `${diff}d`}
+                      </span>
                     </div>
                   </Link>
                 )
               })
             )}
-          </div>
+          </Card>
 
-          <div style={{ background: 'linear-gradient(135deg, #1A1200, #141414)', border: '1px solid rgba(212,160,23,0.15)', borderRadius: 16, padding: 20 }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#D4A017', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('documentTypes')}</h3>
-            {DOCUMENT_TYPES.map(t => (
-              <div key={t.value} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: '#7A7A7A' }}>
-                <span>{t.icon}</span> {t.label}
-              </div>
-            ))}
-          </div>
+          <Card className="bg-gradient-to-br from-[#1A1200] to-surface border-gold/15 p-5">
+            <h3 className="text-xs font-bold text-gold mb-3 uppercase tracking-wide">{t('documentTypes')}</h3>
+            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+              {DOCUMENT_TYPES.map(dtype => (
+                <div key={dtype.value} className="flex items-center gap-2 text-[13px] text-ink-muted">
+                  <span>{dtype.icon}</span> {dtype.label}
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
       </div>
     </div>

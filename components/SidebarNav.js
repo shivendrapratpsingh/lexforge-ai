@@ -1,17 +1,16 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { NavItem } from '@/components/ui/NavItem'
 
-// Renders the sidebar nav with an active-state highlight based on the
-// current pathname. Lives in its own client component so the surrounding
-// dashboard layout can stay a server component (and keep doing the auth
-// check + Pro/admin gating server-side).
+// Renders the sidebar / icon-rail nav list with an active-state highlight
+// based on the current pathname. Lives in its own client component so the
+// surrounding dashboard layout can stay a server component (and keep doing
+// the auth check + Pro/admin gating server-side).
 //
-// Each link is now expected to carry an already-translated `label` and
-// optional `proLockText` (passed from the parent server component which
-// has access to next-intl's getTranslations).
-export default function SidebarNav({ links }) {
+// `railOnly` renders icon-only rows (used at the md: collapsed-rail
+// breakpoint); the full sidebar (lg:+) passes railOnly=false to show labels.
+export default function SidebarNav({ links, railOnly = false }) {
   const pathname = usePathname() || ''
 
   function isActive(href) {
@@ -21,74 +20,32 @@ export default function SidebarNav({ links }) {
   }
 
   return (
-    <nav style={{
-      flex: 1,
-      minHeight: 0,
-      overflowY: 'auto',
-      padding: '14px 10px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 3,
-    }}>
+    <nav className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3.5 flex flex-col gap-0.5">
       {links.map((link, idx) => {
-        // Section header rows are non-clickable labels that visually split
-        // the nav into groups. Pass `{ type: 'header', label: 'Lawyer' }`
-        // from the parent layout.
         if (link.type === 'header') {
+          if (railOnly) return <div key={`hdr-${idx}`} className="h-px bg-border my-2 mx-2" />
           return (
             <div
               key={`hdr-${idx}`}
-              style={{
-                fontSize: 10,
-                color: '#5A5A5A',
-                letterSpacing: '2px',
-                textTransform: 'uppercase',
-                fontWeight: 700,
-                padding: '14px 14px 6px',
-                marginTop: idx === 0 ? 0 : 8,
-              }}
+              className="text-[10px] text-ink-faint tracking-[2px] uppercase font-bold px-3.5"
+              style={{ paddingTop: idx === 0 ? 0 : 14, paddingBottom: 6, marginTop: idx === 0 ? 0 : 8 }}
             >
               {link.label}
             </div>
           )
         }
         const active = isActive(link.href)
-        const baseColor  = link.admin ? '#D4A017' : (active ? '#F0F0F0' : '#6A6A6A')
-        const baseBg     = active ? '#1C1C1C' : 'transparent'
-        const baseBorder = link.admin
-          ? '1px solid rgba(212,160,23,0.3)'
-          : (active ? '1px solid #2A2A2A' : '1px solid transparent')
-
         return (
-          <Link
+          <NavItem
             key={`${link.href}-${idx}`}
             href={link.href}
-            className="nav-link"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '11px 14px',
-              borderRadius: 10,
-              textDecoration: 'none',
-              color: baseColor,
-              fontSize: 14,
-              fontWeight: link.admin ? 700 : (active ? 700 : 500),
-              transition: 'all 0.15s',
-              border: baseBorder,
-              background: baseBg,
-            }}
-          >
-            <span style={{ color: '#D4A017', fontSize: 15, width: 18, textAlign: 'center', flexShrink: 0 }}>
-              {link.icon}
-            </span>
-            <span style={{ flex: 1 }}>{link.label}</span>
-            {link.locked && (
-              <span style={{ fontSize: 10, color: '#D4A017', opacity: 0.7 }}>
-                {link.proLockText || '🔒 PRO'}
-              </span>
-            )}
-          </Link>
+            icon={link.icon}
+            label={link.label}
+            active={active}
+            railOnly={railOnly}
+            badge={link.locked ? (link.proLockText || 'PRO') : undefined}
+            className={link.admin ? 'text-gold border border-border-gold' : undefined}
+          />
         )
       })}
     </nav>

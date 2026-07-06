@@ -4,6 +4,7 @@ import { DOCUMENT_TYPES, getRelevantCaseLaws } from '@/lib/utils'
 import { isAdmin, hasProAccess, requiresProDocumentDynamic, getFreeDocsLimit } from '@/lib/admin'
 import { isJunkValue } from '@/lib/validation'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { getFollowUp, buildFollowUpCourtDate } from '@/lib/followup'
 
 // AI generation can take 20–40s with 70B models. Vercel's Hobby plan caps
 // serverless functions at 10s by default, which silently kills the request
@@ -312,7 +313,21 @@ export async function POST(req) {
       },
     })
 
-    return NextResponse.json({ ...draft, autoClientAction }, { status: 201 })
+    // ── Auto-save follow-up deadline to CourtDate ──────────────────
+    let followUpSaved = false
+    try {
+      const followUp   = getFollowUp(documentType, cleanTemplateData, draft.createdAt)
+      const courtDateData = buildFollowUpCourtDate(followUp, draft.id, session.user.id, documentType)
+      if (courtDateData) {
+        await prisma.courtDate.create({ data: courtDateData })
+        followUpSaved = true
+      }
+    } catch (fuErr) {
+      console.error('[FollowUp auto-save]', fuErr)
+      // Non-fatal — draft is already saved
+    }
+
+    return NextResponse.json({ ...draft, autoClientAction, followUpSaved }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/drafts]', err)
     // Always return a descriptive error so the user knows what failed

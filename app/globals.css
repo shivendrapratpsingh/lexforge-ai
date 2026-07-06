@@ -1,23 +1,98 @@
 @import "tailwindcss";
 
 @theme inline {
+  /* brand gold — unchanged from original build */
   --color-gold: #D4A017;
   --color-gold-light: #F0C040;
   --color-gold-dim: #A07810;
+  --color-gold-muted: #6B5518;
+
+  /* surfaces */
+  --color-base: #0D0D0D;
   --color-surface: #141414;
   --color-surface-2: #1C1C1C;
   --color-surface-3: #242424;
   --color-border: #2A2A2A;
   --color-border-gold: #3A3010;
+
+  /* text */
+  --color-ink: #F5F5F2;
+  --color-ink-muted: #A3A39C;
+  --color-ink-faint: #6E6E68;
+
+  /* semantic status — desaturated for dark surfaces */
+  --color-success: #3FA66B;
+  --color-success-bg: #12261A;
+  --color-danger: #E1584B;
+  --color-danger-bg: #2A1512;
+  --color-warning: #C98A2E;
+  --color-warning-bg: #2A1D0D;
+  --color-info: #4C8DD9;
+  --color-info-bg: #0F1E2E;
+
+  /* radius */
+  --radius-btn: 0.625rem;
+  --radius-input: 0.625rem;
+  --radius-card: 1rem;
+  --radius-modal: 1.25rem;
+
+  /* shadow */
+  --shadow-card: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -8px rgba(0,0,0,.5);
+  --shadow-gold-sm: 0 0 0 1px rgba(212,160,23,.25), 0 4px 16px -4px rgba(212,160,23,.35);
+  --shadow-gold-md: 0 0 0 1px rgba(212,160,23,.3), 0 8px 32px -10px rgba(212,160,23,.4);
+  --shadow-modal: 0 24px 64px -12px rgba(0,0,0,.6);
+
+  /* fonts — fall back gracefully if the Google Fonts imports below are
+     blocked by network policy; system fonts still render correctly. */
+  --font-display: 'Source Serif 4', 'Noto Serif Devanagari', Georgia, serif;
+  --font-sans: 'Hind', 'Hind Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 * { box-sizing: border-box; }
 
 body {
-  background: #0D0D0D;
-  color: #F0F0F0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--color-base);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Reduced motion — disables shimmer/pulse/slide animations globally */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes fadeScale {
+  from { transform: scale(0.98); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.lf-shimmer {
+  background: linear-gradient(90deg, var(--color-surface-2) 25%, var(--color-surface-3) 50%, var(--color-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s linear infinite;
+}
+
+/* Collapsed-FAB idle affordance — very subtle, signals "available" not
+   "notification". 3s loop, ±8% opacity only. */
+@keyframes lf-breathe {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.92; }
+}
+.lf-pulse-dot-slow {
+  animation: lf-breathe 3s ease-in-out infinite;
 }
 
 /* Scrollbar */

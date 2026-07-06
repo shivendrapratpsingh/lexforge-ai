@@ -6,7 +6,9 @@ import { SignOutButton } from '@/components/SignOutButton'
 import { isAdmin, hasProAccessForSession } from '@/lib/admin'
 import AssistantWidget from '@/components/AssistantWidget'
 import SidebarNav from '@/components/SidebarNav'
+import BottomNav from '@/components/BottomNav'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { cn } from '@/lib/cn'
 
 export default async function DashboardLayout({ children }) {
   const session = await auth()
@@ -80,107 +82,65 @@ export default async function DashboardLayout({ children }) {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0D0D0D', display: 'flex' }}>
-      <style>{`.nav-link:hover { background: #1C1C1C !important; color: #D0D0D0 !important; }`}</style>
-
-      {/* ── Sidebar ── */}
-      <aside style={{
-        width: 240,
-        background: '#090909',
-        borderRight: '1px solid #1C1C1C',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        height: '100vh',
-        overflow: 'hidden',
-        zIndex: 40,
-        flexShrink: 0,
-      }}>
-
+    <div className="min-h-screen bg-base flex">
+      {/* ── Sidebar (lg:+ full, md: icon rail, hidden below md) ── */}
+      <aside className="hidden md:flex md:w-18 lg:w-64 bg-[#090909] border-r border-border flex-col fixed top-0 left-0 h-screen overflow-hidden z-40 shrink-0 transition-[width] duration-200">
         {/* Logo */}
-        <div style={{ padding: '22px 20px', borderBottom: '1px solid #1C1C1C', flexShrink: 0 }}>
-          <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg, #D4A017, #F0C040)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span style={{ color: '#0D0D0D', fontWeight: 900, fontSize: 13 }}>LF</span>
+        <div className="p-3 lg:px-5 lg:py-[22px] border-b border-border shrink-0 flex justify-center lg:justify-start">
+          <Link href="/dashboard" className="no-underline flex items-center gap-2.5">
+            <div className="size-8 lg:size-[34px] bg-gradient-to-br from-gold to-gold-light rounded-lg flex items-center justify-center shrink-0">
+              <span className="text-base font-black text-[13px]">LF</span>
             </div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#F0F0F0', lineHeight: 1.1 }}>LexForge</div>
-              <div style={{ fontSize: 10, color: '#D4A017', fontWeight: 700, letterSpacing: '1.5px' }}>AI LEGAL</div>
+            <div className="hidden lg:block">
+              <div className="text-[15px] font-extrabold text-ink leading-tight">LexForge</div>
+              <div className="text-[10px] text-gold font-bold tracking-[1.5px]">AI LEGAL</div>
             </div>
           </Link>
         </div>
 
         {/* Nav (active-state highlight + click handling lives in SidebarNav). */}
-        <SidebarNav links={navLinks} />
+        <div className="hidden lg:block flex-1 min-h-0">
+          <SidebarNav links={navLinks} />
+        </div>
+        <div className="lg:hidden flex-1 min-h-0">
+          <SidebarNav links={navLinks} railOnly />
+        </div>
 
         {/* Generate Document CTA */}
-        <div style={{ padding: '0 10px 12px', flexShrink: 0 }}>
-          <Link href="/new-draft" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '11px 14px',
-            background: 'linear-gradient(135deg, rgba(212,160,23,0.12), rgba(212,160,23,0.06))',
-            border: '1px solid rgba(212,160,23,0.2)',
-            borderRadius: 10,
-            textDecoration: 'none',
-            color: '#D4A017',
-            fontSize: 13,
-            fontWeight: 700,
-          }}>
-            <span>✦</span> {t('nav.generateDocument')}
+        <div className="px-2.5 pb-3 shrink-0">
+          <Link
+            href="/new-draft"
+            title={t('nav.generateDocument')}
+            className="flex items-center justify-center lg:justify-start gap-2 h-11 px-3 bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/20 rounded-btn no-underline text-gold text-[13px] font-bold"
+          >
+            <span>✦</span> <span className="hidden lg:inline">{t('nav.generateDocument')}</span>
           </Link>
         </div>
 
         {/* Language switcher + User info + Sign Out */}
-        <div style={{ padding: '12px 10px 16px', borderTop: '1px solid #1C1C1C', flexShrink: 0, background: '#090909' }}>
+        <div className="hidden lg:block px-2.5 pt-3 pb-4 border-t border-border shrink-0 bg-[#090909]">
           <LanguageSwitcher />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: '#141414', marginBottom: 6 }}>
-            <div style={{
-              width: 32, height: 32,
-              background: 'linear-gradient(135deg, #D4A017, #B8860B)',
-              borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <span style={{ color: '#0D0D0D', fontWeight: 800, fontSize: 13 }}>{initial}</span>
+          <div className="flex items-center gap-2.5 p-2.5 rounded-btn bg-surface mb-1.5">
+            <div className="size-8 rounded-full bg-gradient-to-br from-gold to-gold-dim flex items-center justify-center shrink-0">
+              <span className="text-base font-extrabold text-[13px]">{initial}</span>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#C0C0C0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.user?.name || t('common.user')}</span>
-                <span style={{
-                  fontSize: 9,
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  background: tier === 'free' ? '#1C1C1C' : 'rgba(212,160,23,0.15)',
-                  color: tier === 'free' ? '#6A6A6A' : '#D4A017',
-                  fontWeight: 800,
-                  letterSpacing: '0.5px',
-                  flexShrink: 0,
-                }}>{tierLbl}</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold text-ink-muted flex items-center gap-1.5">
+                <span className="truncate">{session.user?.name || t('common.user')}</span>
+                <span className={cn(
+                  'text-[9px] px-1.5 py-0.5 rounded font-extrabold tracking-wide shrink-0',
+                  tier === 'free' ? 'bg-surface-2 text-ink-faint' : 'bg-gold/15 text-gold'
+                )}>{tierLbl}</span>
               </div>
-              <div style={{ fontSize: 11, color: '#4A4A4A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {session.user?.email}
-              </div>
+              <div className="text-[11px] text-ink-faint truncate">{session.user?.email}</div>
             </div>
           </div>
           {!pro && (
-            <Link href="/upgrade" style={{
-              display: 'block',
-              textAlign: 'center',
-              padding: '8px 12px',
-              marginBottom: 6,
-              background: 'linear-gradient(135deg, rgba(212,160,23,0.15), rgba(212,160,23,0.05))',
-              border: '1px solid rgba(212,160,23,0.3)',
-              borderRadius: 10,
-              textDecoration: 'none',
-              color: '#D4A017',
-              fontSize: 12,
-              fontWeight: 700,
-            }}>
+            <Link
+              href="/upgrade"
+              className="block text-center py-2 px-3 mb-1.5 bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/30 rounded-btn no-underline text-gold text-xs font-bold"
+            >
               {t('nav.upgradeToPro')}
             </Link>
           )}
@@ -189,9 +149,15 @@ export default async function DashboardLayout({ children }) {
       </aside>
 
       {/* ── Main Content ── */}
-      <main style={{ marginLeft: 240, flex: 1, padding: '32px 36px', minHeight: '100vh', minWidth: 0 }}>
+      <main className="flex-1 min-w-0 min-h-screen p-4 pb-24 sm:p-6 md:ml-18 lg:ml-64 md:pb-6">
         {children}
       </main>
+
+      {/* ── Mobile bottom tab bar (hidden md:+) ── */}
+      <BottomNav
+        moreLinks={navLinks}
+        upgradeHref={!pro ? '/upgrade' : null}
+      />
 
       {/* ── Floating Pro Case Assistant (visible on every dashboard page) ── */}
       <AssistantWidget

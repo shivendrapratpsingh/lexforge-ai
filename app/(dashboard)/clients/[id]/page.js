@@ -253,7 +253,7 @@ export default function ClientDetailPage() {
           {editMode ? (
             <div>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: '#D0D0D0', marginBottom: 18 }}>Edit Client Details</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {[
                   { k: 'name',          label: 'Full Name *'          },
                   { k: 'fatherName',    label: "Father's / Husband's Name" },
@@ -290,7 +290,7 @@ export default function ClientDetailPage() {
               </div>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-[18px]">
               {[
                 { label: 'Full Name',        v: client.name },
                 { label: "Father's Name",    v: client.fatherName },
@@ -364,7 +364,7 @@ export default function ClientDetailPage() {
 
           {/* Upload */}
           <div style={{ background: '#0D0D0D', border: '1px dashed #2A2A2A', borderRadius: 10, padding: 16, marginBottom: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
               <div>
                 <label style={S.label}>Document Type</label>
                 <select value={attDocType} onChange={e => setAttDocType(e.target.value)} style={{ ...S.input, cursor: 'pointer' }}>
@@ -417,7 +417,7 @@ export default function ClientDetailPage() {
 
           {addingPay && (
             <div style={{ background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 10, padding: 16, marginBottom: 18 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-2.5">
                 <div>
                   <label style={S.label}>Amount (₹) *</label>
                   <input type="number" value={payForm.amount} onChange={e => setPayForm({...payForm, amount: e.target.value})} placeholder="e.g. 5000" style={S.input} min="1" />

@@ -148,7 +148,7 @@ export default function CourtDatesPage() {
           <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F0F0', marginBottom: 16 }}>
             {editId ? 'Edit Court Date' : 'Add Court Date'}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr] gap-2.5 mb-2.5">
             <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))}
               placeholder="Title / Case Name *" style={iBox} />
             <input type="datetime-local" value={form.date} onChange={e => setForm(f => ({...f, date: e.target.value}))} style={iBox} />
@@ -156,7 +156,7 @@ export default function CourtDatesPage() {
               {DATE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
             <input value={form.caseNumber} onChange={e => setForm(f => ({...f, caseNumber: e.target.value}))}
               placeholder="Case Number" style={iBox} />
             <input value={form.draftId} onChange={e => setForm(f => ({...f, draftId: e.target.value}))}

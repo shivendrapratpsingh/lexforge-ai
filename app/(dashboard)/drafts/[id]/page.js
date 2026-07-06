@@ -9,7 +9,9 @@ import VersionHistoryPanel from '@/components/VersionHistoryPanel'
 import ParagraphEditor from '@/components/ParagraphEditor'
 import CloneButton from '@/components/CloneButton'
 import DocumentCopyButton from '@/components/DocumentCopyButton'
+import WhatsNextCard from '@/components/WhatsNextCard'
 import Link from 'next/link'
+import { getFollowUp } from '@/lib/followup'
 
 export default async function DraftPage({ params }) {
   const session = await auth()
@@ -37,6 +39,9 @@ export default async function DraftPage({ params }) {
   const dt    = DOCUMENT_TYPES.find(t => t.value === draft.documentType)
   const court = ALL_COURTS.find(c => c.value === draft.court)
 
+  // Compute follow-up nudge for this draft
+  const followUp = getFollowUp(draft.documentType, draft.templateData || {}, draft.createdAt)
+
   // Build case details string for positive analysis
   const caseDetails = draft.templateData
     ? Object.entries(draft.templateData).filter(([,v]) => v).map(([k,v]) => `${k}: ${v}`).join('\n')
@@ -45,7 +50,7 @@ export default async function DraftPage({ params }) {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16 }}>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 gap-4">
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
           <Link href="/drafts" style={{ color: '#5A5A5A', textDecoration: 'none', fontSize: 13, marginTop: 5, flexShrink: 0, fontWeight: 500 }}>← Back</Link>
           <div>
@@ -71,13 +76,13 @@ export default async function DraftPage({ params }) {
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+        <div className="flex gap-2 items-center overflow-x-auto shrink-0">
           <CloneButton draftId={draft.id} />
           <DraftActions draft={draft} />
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 18 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 lg:gap-[18px]">
         {/* ── Document Content ── */}
         <div>
           {/* Paragraph Editor (client component) */}
@@ -122,6 +127,9 @@ export default async function DraftPage({ params }) {
 
         {/* ── Sidebar ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+          {/* What's Next — follow-up nudge */}
+          <WhatsNextCard followUp={followUp} draftId={draft.id} />
 
           {/* Case Status + Client Link */}
           <DraftControls

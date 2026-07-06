@@ -244,7 +244,7 @@ export default function ClientsPage() {
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
                 { k: 'name',       l: 'Full Name *' },
                 { k: 'fatherName', l: "Father's Name" },

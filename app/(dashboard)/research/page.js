@@ -31,7 +31,7 @@ export default function ResearchPage() {
         <p style={{ color: '#5A5A5A', fontSize: 15 }}>Search landmark Indian case laws and analyze legal issues with AI</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Case Law Search */}
         <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 24 }}>
           <h2 style={{ fontSize: 17, fontWeight: 700, color: '#F0F0F0', marginBottom: 16 }}>Case Law Database</h2>

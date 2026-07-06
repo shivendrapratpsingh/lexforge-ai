@@ -20,7 +20,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 function DashboardStackNav() {
   const Stack = createNativeStackNavigator();
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.base } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.base }, animation: 'slide_from_right', gestureEnabled: true, fullScreenGestureEnabled: true }}>
       <Stack.Screen name="DashboardHome" component={DashboardScreen} />
       <Stack.Screen name="DraftDetail" component={DraftDetailScreen} />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} />
@@ -31,7 +31,7 @@ function DashboardStackNav() {
 function DraftsStackNav() {
   const Stack = createNativeStackNavigator();
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.base } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.base }, animation: 'slide_from_right', gestureEnabled: true, fullScreenGestureEnabled: true }}>
       <Stack.Screen name="DraftsHome" component={DraftsListScreen} />
       <Stack.Screen name="DraftDetail" component={DraftDetailScreen} />
     </Stack.Navigator>
@@ -41,7 +41,7 @@ function DraftsStackNav() {
 function CourtDatesStackNav() {
   const Stack = createNativeStackNavigator();
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.base } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.base }, animation: 'slide_from_right', gestureEnabled: true, fullScreenGestureEnabled: true }}>
       <Stack.Screen name="CourtDatesHome" component={CourtDatesScreen} />
     </Stack.Navigator>
   );

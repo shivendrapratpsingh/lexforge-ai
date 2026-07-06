@@ -26,6 +26,7 @@ import './src/i18n'; // side-effect: initializes i18next
 import { colors } from './src/theme/theme';
 import { ToastProvider } from './src/components/Toast';
 import RootNavigator from './src/navigation/RootNavigator';
+import { useAppStore } from './src/store/useAppStore';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -43,12 +44,18 @@ export default function App() {
     Hind_600SemiBold,
     Hind_700Bold,
   });
+  const hydrated = useAppStore((s) => s.hydrated);
+  const hydrate = useAppStore((s) => s.hydrate);
+
+  React.useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   const onLayout = React.useCallback(async () => {
-    if (fontsLoaded || fontError) await SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
+    await SplashScreen.hideAsync();
+  }, []);
 
-  if (!fontsLoaded && !fontError) return null;
+  if ((!fontsLoaded && !fontError) || !hydrated) return null;
 
   return (
     <SafeAreaProvider onLayout={onLayout} style={{ backgroundColor: colors.base }}>

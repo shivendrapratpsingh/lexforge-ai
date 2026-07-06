@@ -13,7 +13,7 @@ export type RootStackParamList = {
   NewDraftPicker: undefined;
   NewDraftIntake: { docTypeId: string };
   NewDraftGenerating: { docTypeId: string; formData: Record<string, string> };
-  NewDraftResult: { docTypeId: string; generatedText: string };
+  NewDraftResult: { docTypeId: string; generatedText: string; draftId: string };
   DraftDetail: { draftId: string };
   ClientDetail: { clientId: string };
   Clients: undefined;
@@ -34,7 +34,7 @@ export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
-  ResetPassword: { token?: string };
+  ResetPassword: { token?: string; email?: string };
 };
 
 export type MainTabParamList = {

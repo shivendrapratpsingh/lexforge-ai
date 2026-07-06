@@ -2,25 +2,40 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import Button from '../components/Button';
 import { colors, fonts, fontSizes, radii } from '../theme/theme';
+import { useToast } from '../components/Toast';
+import { apiAnalyzeTool, ApiError } from '../lib/api';
 import type { RootScreenProps } from '../navigation/types';
 
-const SAMPLE_OUTPUT = `\u2022 The proposed amendment introduces a new limitation period under Section 5, which conflicts with the existing Section 3 timeline.
-
-\u2022 Recommend cross-referencing with the 2023 amendment to avoid a repugnancy challenge.
-
-\u2022 Suggested strengthening clause 4(b) with explicit retrospective effect language to withstand judicial scrutiny.`;
-
-/** Generic Legal Tool detail — paste text, analyze, view AI-generated result.
- *  Wire `onAnalyze` to your actual Llama 3.x analysis endpoint per toolId. */
+/** Generic Legal Tool detail — paste text, analyze via the matching /api/analyze/* route, view result. */
 export default function LegalToolDetailScreen({ route, navigation }: RootScreenProps<'LegalToolDetail'>) {
+  const toast = useToast();
+  const { toolId } = route.params;
   const [text, setText] = useState('');
-  const [analyzed, setAnalyzed] = useState(false);
+  const [result, setResult] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAnalyze = async () => {
+    if (text.trim().length < 20) {
+      toast.show('Paste more text — at least a couple of sentences.', 'danger');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await apiAnalyzeTool(toolId, text.trim());
+      setResult(res.content);
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Analysis failed. Please try again.';
+      toast.show(msg, 'danger');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView style={{ backgroundColor: colors.base }} contentContainerStyle={{ padding: 20 }}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}><Text style={styles.back}>{'\u2190'}</Text></Pressable>
-        <Text style={styles.title}>{route.params.toolId}</Text>
+        <Pressable onPress={() => navigation.goBack()}><Text style={styles.back}>{'←'}</Text></Pressable>
+        <Text style={styles.title}>{toolId}</Text>
       </View>
       <Text style={styles.label}>Paste the document or order text</Text>
       <TextInput
@@ -28,19 +43,19 @@ export default function LegalToolDetailScreen({ route, navigation }: RootScreenP
         numberOfLines={6}
         value={text}
         onChangeText={setText}
-        placeholder="Paste the relevant text here for analysis\u2026"
+        placeholder="Paste the relevant text here for analysis…"
         placeholderTextColor={colors.inkFaint}
         style={styles.textarea}
       />
-      <Button label="Analyze" fullWidth style={{ marginVertical: 16 }} onPress={() => setAnalyzed(true)} />
-      {analyzed && (
+      <Button label="Analyze" loading={loading} fullWidth style={{ marginVertical: 16 }} onPress={handleAnalyze} />
+      {result ? (
         <>
           <Text style={styles.label}>Analysis result</Text>
           <View style={styles.paper}>
-            <Text style={styles.paperText}>{SAMPLE_OUTPUT}</Text>
+            <Text style={styles.paperText}>{result}</Text>
           </View>
         </>
-      )}
+      ) : null}
     </ScrollView>
   );
 }

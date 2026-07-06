@@ -62,17 +62,22 @@ export default function DocTypePickerScreen({ navigation }: RootScreenProps<'New
         numColumns={2}
         columnWrapperStyle={{ gap: 10, paddingHorizontal: 20 }}
         contentContainerStyle={{ gap: 10, paddingBottom: 40, paddingTop: 6 }}
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.card}
-            onPress={() => navigation.navigate('NewDraftIntake', { docTypeId: item.id })}
-          >
-            {item.pro ? <Badge label="PRO" tone="pro" style={styles.proBadge} /> : null}
-            <View style={styles.mono}><Text style={styles.monoText}>{item.mono}</Text></View>
-            <Text style={styles.cardName}>{item.name}</Text>
-            <Text style={styles.cardCategory}>{docCategories.find((c) => c.key === item.category)?.label}</Text>
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const disabled = !item.backendType;
+          return (
+            <Pressable
+              style={[styles.card, disabled && styles.cardDisabled]}
+              disabled={disabled}
+              onPress={() => navigation.navigate('NewDraftIntake', { docTypeId: item.id })}
+            >
+              {item.pro ? <Badge label="PRO" tone="pro" style={styles.proBadge} /> : null}
+              {disabled ? <Badge label="SOON" tone="neutral" style={styles.proBadge} /> : null}
+              <View style={styles.mono}><Text style={styles.monoText}>{item.mono}</Text></View>
+              <Text style={styles.cardName}>{item.name}</Text>
+              <Text style={styles.cardCategory}>{docCategories.find((c) => c.key === item.category)?.label}</Text>
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
@@ -100,6 +105,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   proBadge: { position: 'absolute', top: 10, right: 10 },
+  cardDisabled: { opacity: 0.45 },
   mono: { width: 36, height: 36, borderRadius: 9, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, alignItems: 'center', justifyContent: 'center' },
   monoText: { fontFamily: fonts.bodyBold, fontSize: 11, color: colors.gold },
   cardName: { fontFamily: fonts.bodySemiBold, fontSize: 12.5, color: colors.ink, lineHeight: 17 },

@@ -9,7 +9,7 @@ import type { RootScreenProps } from '../../navigation/types';
 
 export default function ResultScreen({ route, navigation }: RootScreenProps<'NewDraftResult'>) {
   const { t } = useTranslation();
-  const { docTypeId, generatedText } = route.params;
+  const { docTypeId, generatedText, draftId } = route.params;
   const docType = docTypes.find((d) => d.id === docTypeId);
 
   return (
@@ -22,7 +22,7 @@ export default function ResultScreen({ route, navigation }: RootScreenProps<'New
         </View>
         <View>
           <Text style={styles.readyTitle}>{t('newDraft.draftReady')}</Text>
-          <Text style={styles.readySub}>Generated in 24 seconds \u00b7 review before finalizing</Text>
+          <Text style={styles.readySub}>Review before finalizing</Text>
         </View>
       </View>
 
@@ -35,7 +35,7 @@ export default function ResultScreen({ route, navigation }: RootScreenProps<'New
       <View style={styles.actions}>
         <Button
           label={t('newDraft.openEditor')}
-          onPress={() => navigation.replace('DraftDetail', { draftId: 'new' })}
+          onPress={() => navigation.replace('DraftDetail', { draftId })}
           style={{ flex: 1 }}
         />
         <Button

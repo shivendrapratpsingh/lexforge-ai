@@ -1,29 +1,32 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import Badge from '../components/Badge';
 import Card from '../components/Card';
+import SkeletonLoader from '../components/SkeletonLoader';
+import EmptyState from '../components/EmptyState';
 import { colors, fonts, fontSizes, radii, shadows } from '../theme/theme';
+import { labelForBackendType } from '../data/docTypes';
 import { useAppStore } from '../store/useAppStore';
-import type { MainTabScreenProps } from '../navigation/types';
-
-const RECENT_DRAFTS = [
-  { id: '1', title: 'Legal Notice — Property Dispute (Mehta vs. Kapoor)', date: '2 hours ago', status: 'DRAFT' as const },
-  { id: '2', title: 'Bail Application — Sessions Court, Pune', date: 'Yesterday', status: 'FINALIZED' as const },
-  { id: '3', title: 'Vakalatnama — Sharma & Associates', date: '3 days ago', status: 'LOCKED' as const },
-];
-
-const COURT_DATES = [
-  { id: '1', day: '14', month: 'Jul', title: 'Mehta vs. Kapoor — Hearing', court: 'Bombay High Court, Court 4' },
-  { id: '2', day: '22', month: 'Jul', title: 'State vs. R. Verma — Bail Review', court: 'Sessions Court, Pune' },
-];
+import { useToast } from '../components/Toast';
+import { apiListDrafts, apiListCourtDates, Draft, CourtDate, ApiError } from '../lib/api';
 
 const statusTone: Record<string, 'warning' | 'success' | 'neutral'> = {
-  DRAFT: 'warning',
-  FINALIZED: 'success',
-  LOCKED: 'neutral',
+  draft: 'warning',
+  finalized: 'success',
+  locked: 'neutral',
 };
+
+function relativeDate(iso: string): string {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${Math.max(mins, 0)} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? 'Yesterday' : `${days} days ago`;
+}
 
 /** Dashboard — stats overview, upsell/Pro banner, quick actions, recent drafts, court-date reminders. */
 // NOTE: typed loosely (`any`) because this screen is mounted inside a nested
@@ -35,16 +38,56 @@ const statusTone: Record<string, 'warning' | 'success' | 'neutral'> = {
 export default function DashboardScreen({ navigation }: { navigation: any }) {
   const { t } = useTranslation();
   const { isPro, userName } = useAppStore();
+  const toast = useToast();
+
+  const [drafts, setDrafts] = useState<Draft[] | null>(null);
+  const [courtDates, setCourtDates] = useState<CourtDate[] | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const [draftsRes, courtDatesRes] = await Promise.all([
+        apiListDrafts(),
+        apiListCourtDates({ upcoming: true }),
+      ]);
+      setDrafts(draftsRes.drafts);
+      setCourtDates(courtDatesRes.courtDates);
+    } catch (e) {
+      toast.show(e instanceof ApiError ? e.message : 'Could not load your dashboard.', 'danger');
+      setDrafts((p) => p ?? []);
+      setCourtDates((p) => p ?? []);
+    }
+  }, [toast]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
+
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  const draftsThisMonth = (drafts || []).filter((d) => new Date(d.createdAt) >= startOfMonth).length;
+  const activeCases = new Set((drafts || []).filter((d) => d.caseStatus === 'active' && d.clientId).map((d) => d.clientId)).size;
+  const recentDrafts = (drafts || []).slice(0, 3);
+  const upcomingCourtDates = (courtDates || []).slice(0, 2);
 
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 110 }} style={{ backgroundColor: colors.base }}>
+    <ScrollView
+      contentContainerStyle={{ paddingBottom: 110 }}
+      style={{ backgroundColor: colors.base }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
+    >
       <View style={styles.header}>
         <View>
           <Text style={styles.welcome}>{t('dashboard.welcomeBack')}</Text>
-          <Text style={styles.name}>{userName || 'Aditi Sharma'}</Text>
+          <Text style={styles.name}>{userName || '—'}</Text>
         </View>
         <Pressable onPress={() => navigation.getParent()?.navigate('Settings' as never)} style={styles.avatar}>
-          <Text style={styles.avatarText}>AS</Text>
+          <Text style={styles.avatarText}>{(userName || '?').slice(0, 2).toUpperCase()}</Text>
         </Pressable>
       </View>
 
@@ -60,9 +103,9 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
       )}
 
       <View style={styles.statsRow}>
-        <StatCard value="12" label={t('dashboard.draftsThisMonth')} />
-        <StatCard value="4" label={t('dashboard.activeCases')} />
-        <StatCard value="2" label={t('dashboard.courtDatesSoon')} />
+        <StatCard value={drafts === null ? '—' : String(draftsThisMonth)} label={t('dashboard.draftsThisMonth')} />
+        <StatCard value={drafts === null ? '—' : String(activeCases)} label={t('dashboard.activeCases')} />
+        <StatCard value={courtDates === null ? '—' : String(courtDates.length)} label={t('dashboard.courtDatesSoon')} />
       </View>
 
       <View style={styles.actionsRow}>
@@ -83,23 +126,29 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
         viewAllLabel={t('common.viewAll')}
       />
       <View style={{ paddingHorizontal: 20, gap: 10 }}>
-        {RECENT_DRAFTS.map((d) => (
-          <Card key={d.id} onPress={() => navigation.navigate('DraftDetail' as never, { draftId: d.id } as never)}>
-            <View style={styles.draftRow}>
-              <View style={styles.draftIcon}>
-                <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
-                  <Path d="M6 2h9l5 5v15a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" stroke={colors.gold} strokeWidth={1.6} />
-                  <Path d="M9 12h6M9 16h6M9 8h3" stroke={colors.gold} strokeWidth={1.6} strokeLinecap="round" />
-                </Svg>
+        {drafts === null ? (
+          [0, 1, 2].map((i) => <SkeletonLoader key={i} height={56} borderRadius={radii.card} />)
+        ) : recentDrafts.length === 0 ? (
+          <EmptyState title="No drafts yet" description="Generate your first document from the + button below." />
+        ) : (
+          recentDrafts.map((d) => (
+            <Card key={d.id} onPress={() => navigation.navigate('DraftDetail' as never, { draftId: d.id } as never)}>
+              <View style={styles.draftRow}>
+                <View style={styles.draftIcon}>
+                  <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
+                    <Path d="M6 2h9l5 5v15a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" stroke={colors.gold} strokeWidth={1.6} />
+                    <Path d="M9 12h6M9 16h6M9 8h3" stroke={colors.gold} strokeWidth={1.6} strokeLinecap="round" />
+                  </Svg>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={1} style={styles.draftTitle}>{d.title}</Text>
+                  <Text style={styles.draftDate}>{labelForBackendType(d.documentType)} · {relativeDate(d.updatedAt)}</Text>
+                </View>
+                <Badge label={(d.status || 'draft').toUpperCase()} tone={statusTone[d.status?.toLowerCase()] || 'neutral'} />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text numberOfLines={1} style={styles.draftTitle}>{d.title}</Text>
-                <Text style={styles.draftDate}>{d.date}</Text>
-              </View>
-              <Badge label={d.status} tone={statusTone[d.status]} />
-            </View>
-          </Card>
-        ))}
+            </Card>
+          ))
+        )}
       </View>
 
       <SectionHeader
@@ -108,20 +157,29 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
         viewAllLabel={t('common.viewAll')}
       />
       <View style={{ paddingHorizontal: 20, gap: 10, marginBottom: 24 }}>
-        {COURT_DATES.map((c) => (
-          <Card key={c.id}>
-            <View style={styles.draftRow}>
-              <View style={styles.dateBadge}>
-                <Text style={styles.dateDay}>{c.day}</Text>
-                <Text style={styles.dateMonth}>{c.month}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.draftTitle}>{c.title}</Text>
-                <Text style={styles.draftDate}>{c.court}</Text>
-              </View>
-            </View>
-          </Card>
-        ))}
+        {courtDates === null ? (
+          [0, 1].map((i) => <SkeletonLoader key={i} height={56} borderRadius={radii.card} />)
+        ) : upcomingCourtDates.length === 0 ? (
+          <EmptyState title="No upcoming court dates" description="Add one from the Court Dates tab." />
+        ) : (
+          upcomingCourtDates.map((c) => {
+            const d = new Date(c.date);
+            return (
+              <Card key={c.id}>
+                <View style={styles.draftRow}>
+                  <View style={styles.dateBadge}>
+                    <Text style={styles.dateDay}>{d.getDate()}</Text>
+                    <Text style={styles.dateMonth}>{d.toLocaleString('en', { month: 'short' })}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.draftTitle}>{c.title}</Text>
+                    <Text style={styles.draftDate}>{c.client?.name || c.caseNumber || '—'}</Text>
+                  </View>
+                </View>
+              </Card>
+            );
+          })
+        )}
       </View>
     </ScrollView>
   );

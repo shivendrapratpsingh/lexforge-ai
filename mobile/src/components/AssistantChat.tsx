@@ -10,6 +10,8 @@ import GlassPanel from './GlassPanel';
 import Button from './Button';
 import { colors, fonts, fontSizes, gradients, shadows } from '../theme/theme';
 import { useAppStore } from '../store/useAppStore';
+import { apiAssistantChat, ApiError } from '../lib/api';
+import { useToast } from './Toast';
 
 type Message = { id: number; role: 'user' | 'assistant'; text: string };
 
@@ -25,28 +27,34 @@ export default function AssistantChat() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { isPro, reducedMotion } = useAppStore();
+  const { isPro, reducedMotion, userName } = useAppStore();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: 0, role: 'assistant', text: 'Hello Aditi — I can help you find clauses, check deadlines, or explain procedure for any of your active matters. What do you need?' },
+    { id: 0, role: 'assistant', text: `Hello${userName ? ` ${userName.split(' ')[0]}` : ''} — I can help you find clauses, check deadlines, or explain procedure for any of your active matters. What do you need?` },
   ]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
 
-  const send = () => {
+  const send = async () => {
     const text = input.trim();
-    if (!text) return;
-    setMessages((m) => [...m, { id: Date.now(), role: 'user', text }]);
+    if (!text || typing) return;
+    const history = [...messages, { id: Date.now(), role: 'user' as const, text }];
+    setMessages(history);
     setInput('');
     setTyping(true);
-    setTimeout(() => {
-      setMessages((m) => [...m, {
-        id: Date.now() + 1,
-        role: 'assistant',
-        text: 'Based on the Mehta vs. Kapoor notice, the 15-day compliance window ends on 21 Jul. I’d suggest preparing the follow-up petition draft by 18 Jul so there’s buffer to file if there’s no response.',
-      }]);
+    try {
+      const { reply } = await apiAssistantChat(
+        history.map((m) => ({ role: m.role, content: m.text }))
+      );
+      setMessages((m) => [...m, { id: Date.now() + 1, role: 'assistant', text: reply }]);
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'The assistant is temporarily unavailable.';
+      toast.show(msg, 'danger');
+      setMessages((m) => [...m, { id: Date.now() + 1, role: 'assistant', text: `Sorry — ${msg}` }]);
+    } finally {
       setTyping(false);
-    }, 1400);
+    }
   };
 
   if (!open) {

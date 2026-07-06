@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import Field from '../../components/Field';
@@ -7,6 +7,8 @@ import Button from '../../components/Button';
 import GradientText from '../../components/GradientText';
 import { colors, fonts, fontSizes, radii, shadows } from '../../theme/theme';
 import { useAppStore } from '../../store/useAppStore';
+import { useToast } from '../../components/Toast';
+import { getApiBaseUrl, setApiBaseUrl, guessDefaultApiBaseUrl, ApiError } from '../../lib/api';
 import type { AuthScreenProps } from '../../navigation/types';
 
 /**
@@ -17,8 +19,45 @@ import type { AuthScreenProps } from '../../navigation/types';
 export default function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   const { t } = useTranslation();
   const login = useAppStore((s) => s.login);
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [serverUrl, setServerUrl] = useState('');
+  const [showServerField, setShowServerField] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const current = await getApiBaseUrl();
+      setServerUrl(current || guessDefaultApiBaseUrl());
+      setShowServerField(!current);
+    })();
+  }, []);
+
+  const handleSignIn = async () => {
+    setError('');
+    if (!email.trim() || !password) {
+      setError('Enter your email and password.');
+      return;
+    }
+    if (!serverUrl.trim()) {
+      setError('Enter the server URL first (see below).');
+      setShowServerField(true);
+      return;
+    }
+    setLoading(true);
+    try {
+      await setApiBaseUrl(serverUrl);
+      await login(email.trim(), password);
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Sign in failed. Please try again.';
+      setError(msg);
+      toast.show(msg, 'danger');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -58,6 +97,8 @@ export default function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
             onChangeText={setPassword}
           />
 
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
           <Text
             onPress={() => navigation.navigate('ForgotPassword')}
             style={styles.forgotLink}
@@ -65,7 +106,7 @@ export default function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
             {t('auth.forgotLink')}
           </Text>
 
-          <Button label={t('auth.signIn')} onPress={() => login(email || 'aditi.sharma@lawfirm.in')} fullWidth />
+          <Button label={t('auth.signIn')} onPress={handleSignIn} loading={loading} fullWidth />
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
@@ -79,6 +120,22 @@ export default function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
             onPress={() => navigation.navigate('Register')}
             fullWidth
           />
+
+          <Pressable onPress={() => setShowServerField((v) => !v)} style={styles.serverToggle}>
+            <Text style={styles.serverToggleText}>
+              {showServerField ? 'Hide server settings' : 'Connecting to a different server?'}
+            </Text>
+          </Pressable>
+          {showServerField && (
+            <Field
+              label="Server URL"
+              placeholder="http://192.168.1.23:3000"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={serverUrl}
+              onChangeText={setServerUrl}
+            />
+          )}
         </View>
 
         <Text style={styles.footer}>{t('auth.legalFooter')}</Text>
@@ -124,6 +181,12 @@ const styles = StyleSheet.create({
     color: colors.ink,
     marginBottom: 18,
   },
+  errorText: {
+    fontFamily: fonts.body,
+    fontSize: fontSizes.sm,
+    color: colors.danger,
+    marginBottom: 12,
+  },
   forgotLink: {
     textAlign: 'right',
     fontFamily: fonts.body,
@@ -134,6 +197,8 @@ const styles = StyleSheet.create({
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 18 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerText: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.inkFaint },
+  serverToggle: { alignItems: 'center', marginTop: 18 },
+  serverToggleText: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.inkFaint, textDecorationLine: 'underline' },
   footer: {
     textAlign: 'center',
     fontFamily: fonts.body,

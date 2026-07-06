@@ -13,7 +13,10 @@ const MODULES = [
 export default function FutureLawyerScreen({ navigation }: RootScreenProps<'FutureLawyer'>) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.base }}>
-      <Text style={styles.title}>Future Lawyer</Text>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={{ paddingRight: 4 }}><Text style={styles.back}>{'\u2190'}</Text></Pressable>
+        <Text style={styles.title}>Future Lawyer</Text>
+      </View>
       <Text style={styles.sub}>Prepare for practice \u2014 one module at a time</Text>
       <View style={{ padding: 20, gap: 12 }}>
         {MODULES.map((m) => (
@@ -31,7 +34,9 @@ export default function FutureLawyerScreen({ navigation }: RootScreenProps<'Futu
 }
 
 const styles = StyleSheet.create({
-  title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink, paddingHorizontal: 20, paddingTop: 20 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 20 },
+  back: { color: colors.inkMuted, fontSize: 18 },
+  title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink },
   sub: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.inkMuted, paddingHorizontal: 20, marginTop: 4 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 16 },
   iconWrap: { width: 46, height: 46, borderRadius: 12, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold },

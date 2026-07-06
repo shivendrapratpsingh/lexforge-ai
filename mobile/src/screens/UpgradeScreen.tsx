@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
 import GradientText from '../components/GradientText';
 import Button from '../components/Button';
+import { useToast } from '../components/Toast';
 import { colors, fonts, fontSizes, gradients, radii } from '../theme/theme';
 import { useAppStore } from '../store/useAppStore';
 import type { RootScreenProps } from '../navigation/types';
@@ -26,7 +27,7 @@ const ROWS = [
 export default function UpgradeScreen({ navigation }: RootScreenProps<'Upgrade'>) {
   const { t } = useTranslation();
   const reducedMotion = useAppStore((s) => s.reducedMotion);
-  const setPro = useAppStore((s) => s.setPro);
+  const toast = useToast();
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
 
   return (
@@ -38,6 +39,9 @@ export default function UpgradeScreen({ navigation }: RootScreenProps<'Upgrade'>
           end={{ x: 0.5, y: 0.6 }}
           style={StyleSheet.absoluteFill}
         />
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Text style={styles.back}>{'←'}</Text>
+        </Pressable>
         <View style={styles.kicker}>
           <Text style={styles.kickerText}>LEXFORGE PRO</Text>
         </View>
@@ -68,7 +72,7 @@ export default function UpgradeScreen({ navigation }: RootScreenProps<'Upgrade'>
           label={t('upgrade.upgradeNow')}
           fullWidth
           style={{ marginTop: 16 }}
-          onPress={() => { setPro(true); navigation.goBack(); }}
+          onPress={() => toast.show('Self-serve billing isn’t wired up yet — contact the administrator to upgrade your account to Pro.', 'default')}
         />
       </GradientBorderCard>
 
@@ -113,6 +117,8 @@ function GradientBorderCard({ children, reducedMotion }: { children: React.React
 
 const styles = StyleSheet.create({
   hero: { padding: 26, paddingTop: 40, alignItems: 'center' },
+  backBtn: { position: 'absolute', top: 44, left: 20, zIndex: 1, width: 32, height: 32, borderRadius: 9, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  back: { color: colors.ink, fontSize: 16 },
   kicker: { backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 6, marginBottom: 16 },
   kickerText: { fontFamily: fonts.bodyBold, fontSize: 10.5, color: colors.goldLight, letterSpacing: 0.4 },
   heroLine: { fontFamily: fonts.serifBold, fontSize: 27, lineHeight: 34, color: colors.ink, textAlign: 'center' },

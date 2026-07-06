@@ -1,25 +1,49 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import Field from '../components/Field';
+import Button from '../components/Button';
 import { colors, fonts, fontSizes, radii } from '../theme/theme';
 import { useAppStore } from '../store/useAppStore';
 import { setAppLanguage } from '../i18n';
+import { useToast } from '../components/Toast';
+import { getApiBaseUrl, setApiBaseUrl } from '../lib/api';
 import type { RootScreenProps } from '../navigation/types';
 
-/** Settings — account, language switcher (EN/HI), reduced-motion, plan, sign out. */
+/** Settings — account, language switcher (EN/HI), reduced-motion, plan, server URL, sign out. */
 export default function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
   const { t, i18n } = useTranslation();
   const { isPro, userName, userEmail, reducedMotion, setReducedMotion, logout } = useAppStore();
+  const toast = useToast();
+  const [serverUrl, setServerUrl] = useState('');
+  const [savingServer, setSavingServer] = useState(false);
+
+  useEffect(() => {
+    getApiBaseUrl().then(setServerUrl);
+  }, []);
+
+  const handleSaveServer = async () => {
+    setSavingServer(true);
+    try {
+      await setApiBaseUrl(serverUrl);
+      toast.show('Server URL saved.', 'success');
+    } finally {
+      setSavingServer(false);
+    }
+  };
 
   return (
     <ScrollView style={{ backgroundColor: colors.base }} contentContainerStyle={{ paddingBottom: 40 }}>
-      <Text style={styles.title}>{t('settings.title')}</Text>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={{ paddingRight: 4 }}><Text style={styles.back}>{'←'}</Text></Pressable>
+        <Text style={styles.title}>{t('settings.title')}</Text>
+      </View>
 
       <View style={styles.profileRow}>
-        <View style={styles.avatar}><Text style={styles.avatarText}>AS</Text></View>
+        <View style={styles.avatar}><Text style={styles.avatarText}>{(userName || '?').slice(0, 2).toUpperCase()}</Text></View>
         <View>
-          <Text style={styles.name}>{userName || 'Aditi Sharma'}</Text>
-          <Text style={styles.email}>{userEmail || 'aditi.sharma@lawfirm.in'}</Text>
+          <Text style={styles.name}>{userName || '—'}</Text>
+          <Text style={styles.email}>{userEmail || '—'}</Text>
         </View>
       </View>
 
@@ -46,9 +70,22 @@ export default function SettingsScreen({ navigation }: RootScreenProps<'Settings
 
       <Text style={styles.sectionLabel}>{t('settings.plan')}</Text>
       <Pressable onPress={() => navigation.navigate('Upgrade')} style={styles.row}>
-        <Text style={styles.rowTitle}>{isPro ? 'Pro plan \u2014 active' : 'Free plan'}</Text>
+        <Text style={styles.rowTitle}>{isPro ? 'Pro plan — active' : 'Free plan'}</Text>
         <Text style={styles.manage}>Manage ›</Text>
       </Pressable>
+
+      <Text style={styles.sectionLabel}>Server</Text>
+      <View style={styles.serverCard}>
+        <Field
+          label="Server URL"
+          placeholder="http://192.168.1.23:3000"
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={serverUrl}
+          onChangeText={setServerUrl}
+        />
+        <Button label="Save" size="sm" loading={savingServer} onPress={handleSaveServer} />
+      </View>
 
       <Pressable onPress={logout} style={styles.signOut}>
         <Text style={styles.signOutText}>{t('common.signOut')}</Text>
@@ -58,7 +95,9 @@ export default function SettingsScreen({ navigation }: RootScreenProps<'Settings
 }
 
 const styles = StyleSheet.create({
-  title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink, padding: 20, paddingBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 20, paddingBottom: 8 },
+  back: { color: colors.inkMuted, fontSize: 18 },
+  title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20 },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.gold },
@@ -78,6 +117,7 @@ const styles = StyleSheet.create({
   toggleActive: { backgroundColor: colors.gold },
   knob: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.ink },
   knobActive: { alignSelf: 'flex-end' },
+  serverCard: { marginHorizontal: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 14 },
   signOut: { marginHorizontal: 20, marginTop: 28, alignItems: 'center', padding: 13, borderRadius: radii.button, borderWidth: 1, borderColor: '#3A1A16' },
   signOutText: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: colors.danger },
 });

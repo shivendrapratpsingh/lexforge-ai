@@ -17,7 +17,9 @@ export default function AuthStack() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.base },
-        animation: 'fade',
+        animation: 'slide_from_right',
+        gestureEnabled: true,
+        fullScreenGestureEnabled: true,
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />

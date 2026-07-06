@@ -6,6 +6,10 @@ export type DocType = {
   mono: string; // short monogram shown in the picker card
   category: DocCategory;
   pro?: boolean;
+  /** The backend's Prisma `documentType` enum value this generates as. `null`
+   *  means the backend has no matching document type yet — the picker disables
+   *  these rather than letting a generation request fail with a 400. */
+  backendType: string | null;
 };
 
 export const docCategories: { key: DocCategory | 'all'; label: string }[] = [
@@ -21,23 +25,34 @@ export const docCategories: { key: DocCategory | 'all'; label: string }[] = [
 
 /** All 19 document types LexForge AI can draft. */
 export const docTypes: DocType[] = [
-  { id: 'legalNotice', name: 'Legal Notice', mono: 'LN', category: 'litigation' },
-  { id: 'petition', name: 'Petition', mono: 'PT', category: 'litigation' },
-  { id: 'writPetition', name: 'Writ Petition', mono: 'WP', category: 'litigation', pro: true },
-  { id: 'bailApplication', name: 'Bail Application', mono: 'BA', category: 'litigation' },
-  { id: 'firDraft', name: 'FIR Draft', mono: 'FIR', category: 'litigation' },
-  { id: 'chequeBounce', name: 'Cheque Bounce Complaint', mono: 'CB', category: 'litigation' },
-  { id: 'consumerComplaint', name: 'Consumer Complaint', mono: 'CC', category: 'litigation' },
-  { id: 'divorcePetition', name: 'Divorce Petition', mono: 'DP', category: 'family' },
-  { id: 'will', name: 'Will & Testament', mono: 'WL', category: 'family' },
-  { id: 'giftDeed', name: 'Gift Deed', mono: 'GD', category: 'family' },
-  { id: 'saleDeed', name: 'Sale Deed', mono: 'SD', category: 'property' },
-  { id: 'rentAgreement', name: 'Rent / Lease Agreement', mono: 'RA', category: 'property' },
-  { id: 'poa', name: 'Power of Attorney', mono: 'POA', category: 'property' },
-  { id: 'contract', name: 'Contract / Agreement', mono: 'CT', category: 'business' },
-  { id: 'partnershipDeed', name: 'Partnership Deed', mono: 'PD', category: 'business' },
-  { id: 'rti', name: 'RTI Application', mono: 'RTI', category: 'government' },
-  { id: 'affidavit', name: 'Affidavit', mono: 'AF', category: 'practice' },
-  { id: 'vakalatnama', name: 'Vakalatnama', mono: 'VK', category: 'practice' },
-  { id: 'legalOpinion', name: 'Legal Opinion', mono: 'LO', category: 'advisory', pro: true },
+  { id: 'legalNotice', name: 'Legal Notice', mono: 'LN', category: 'litigation', backendType: 'LEGAL_NOTICE' },
+  { id: 'petition', name: 'Petition', mono: 'PT', category: 'litigation', backendType: 'PETITION' },
+  { id: 'writPetition', name: 'Writ Petition', mono: 'WP', category: 'litigation', pro: true, backendType: 'WRIT_PETITION' },
+  { id: 'bailApplication', name: 'Bail Application', mono: 'BA', category: 'litigation', backendType: 'BAIL_APPLICATION' },
+  { id: 'firDraft', name: 'FIR Draft', mono: 'FIR', category: 'litigation', backendType: 'FIR_COMPLAINT' },
+  { id: 'chequeBounce', name: 'Cheque Bounce Complaint', mono: 'CB', category: 'litigation', backendType: 'CHEQUE_BOUNCE' },
+  { id: 'consumerComplaint', name: 'Consumer Complaint', mono: 'CC', category: 'litigation', backendType: 'CONSUMER_COMPLAINT' },
+  { id: 'divorcePetition', name: 'Divorce Petition', mono: 'DP', category: 'family', backendType: 'DIVORCE_PETITION' },
+  { id: 'will', name: 'Will & Testament', mono: 'WL', category: 'family', backendType: null },
+  { id: 'giftDeed', name: 'Gift Deed', mono: 'GD', category: 'family', backendType: null },
+  { id: 'saleDeed', name: 'Sale Deed', mono: 'SD', category: 'property', backendType: 'SALE_DEED' },
+  { id: 'rentAgreement', name: 'Rent / Lease Agreement', mono: 'RA', category: 'property', backendType: 'RENT_AGREEMENT' },
+  { id: 'poa', name: 'Power of Attorney', mono: 'POA', category: 'property', backendType: null },
+  { id: 'contract', name: 'Contract / Agreement', mono: 'CT', category: 'business', backendType: 'CONTRACT' },
+  { id: 'partnershipDeed', name: 'Partnership Deed', mono: 'PD', category: 'business', backendType: null },
+  { id: 'rti', name: 'RTI Application', mono: 'RTI', category: 'government', backendType: 'RTI_APPLICATION' },
+  { id: 'affidavit', name: 'Affidavit', mono: 'AF', category: 'practice', backendType: 'AFFIDAVIT' },
+  { id: 'vakalatnama', name: 'Vakalatnama', mono: 'VK', category: 'practice', backendType: 'VAKALATNAMA' },
+  { id: 'legalOpinion', name: 'Legal Opinion', mono: 'LO', category: 'advisory', pro: true, backendType: 'LEGAL_OPINION' },
 ];
+
+/** Human label for a backend `documentType` enum value (e.g. "LEGAL_NOTICE" -> "Legal Notice"). */
+export function labelForBackendType(backendType: string): string {
+  const match = docTypes.find((d) => d.backendType === backendType);
+  if (match) return match.name;
+  return backendType
+    .toLowerCase()
+    .split('_')
+    .map((w) => w[0]?.toUpperCase() + w.slice(1))
+    .join(' ');
+}

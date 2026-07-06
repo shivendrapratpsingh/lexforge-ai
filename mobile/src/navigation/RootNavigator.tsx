@@ -57,7 +57,15 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.base } }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.base },
+          animation: 'slide_from_right',
+          gestureEnabled: true,
+          fullScreenGestureEnabled: true, // iOS: allow the swipe-back gesture from anywhere on screen, not just the edge
+        }}
+      >
         {!isAuthed ? (
           <Stack.Screen name="Auth" component={AuthStack} />
         ) : (
@@ -66,8 +74,9 @@ export default function RootNavigator() {
               {() => <BottomTabs onOpenMoreSheet={() => setMoreOpen(true)} />}
             </Stack.Screen>
 
-            <Stack.Screen name="NewDraftPicker" component={NewDraftPickerScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="NewDraftPicker" component={NewDraftPickerScreen} />
             <Stack.Screen name="NewDraftIntake" component={NewDraftIntakeScreen} />
+            {/* Generation is in flight here — swiping back would abandon a request with no way to cancel it cleanly, so this is the one screen that opts out of the gesture. */}
             <Stack.Screen name="NewDraftGenerating" component={NewDraftGeneratingScreen} options={{ gestureEnabled: false }} />
             <Stack.Screen name="NewDraftResult" component={NewDraftResultScreen} />
 
@@ -79,7 +88,7 @@ export default function RootNavigator() {
             <Stack.Screen name="MootCourt" component={MootCourtScreen} />
             <Stack.Screen name="Qna" component={QnaScreen} />
             <Stack.Screen name="Roadmap" component={RoadmapScreen} />
-            <Stack.Screen name="Upgrade" component={UpgradeScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="Upgrade" component={UpgradeScreen} />
             <Stack.Screen name="Admin" component={AdminScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
           </>

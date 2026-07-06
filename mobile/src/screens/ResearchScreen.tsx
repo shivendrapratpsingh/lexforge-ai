@@ -18,6 +18,7 @@ export default function ResearchScreen({ navigation }: RootScreenProps<'Research
   return (
     <View style={{ flex: 1, backgroundColor: colors.base }}>
       <View style={styles.header}>
+        <Pressable onPress={() => navigation.goBack()} style={{ paddingRight: 4 }}><Text style={styles.back}>{'←'}</Text></Pressable>
         <Text style={styles.title}>Research</Text>
         <Badge label="PRO" tone="pro" />
       </View>
@@ -51,6 +52,7 @@ export default function ResearchScreen({ navigation }: RootScreenProps<'Research
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 20 },
+  back: { color: colors.inkMuted, fontSize: 18 },
   title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink },
   search: { marginHorizontal: 20, marginTop: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.input, paddingHorizontal: 14, paddingVertical: 11, color: colors.ink, fontFamily: fonts.body, fontSize: fontSizes.base },
   upsell: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 20, marginTop: 10, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, borderRadius: radii.button, padding: 10 },

@@ -21,12 +21,12 @@ export default async function UpgradePage() {
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
         <div style={{ fontSize: 11, color: '#D4A017', letterSpacing: '2px', fontWeight: 700 }}>MEMBERSHIP</div>
         <h1 style={{ fontSize: 32, color: '#F0F0F0', fontWeight: 800, marginTop: 6 }}>
-          {isPro ? 'You\u2019re on Pro' : 'Upgrade to LexForge Pro'}
+          {isPro ? 'You’re on Pro' : 'Upgrade to LexForge Pro'}
         </h1>
         <div style={{ fontSize: 14, color: '#6A6A6A', marginTop: 8, maxWidth: 560, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
           {isPro
-            ? 'You have full access to every LexForge feature \u2014 unlimited drafts, premium document types, the AI Case Assistant, and the entire research suite.'
-            : 'Unlock the full LexForge toolkit \u2014 longer court-ready drafts, a stronger AI model, the Case Assistant, premium document types, and the Clients / Court Dates / Tools / Research suite.'}
+            ? 'You have full access to every LexForge feature — unlimited drafts, premium document types, the AI Case Assistant, and the entire research suite.'
+            : 'Unlock the full LexForge toolkit — longer court-ready drafts, a stronger AI model, the Case Assistant, premium document types, and the Clients / Court Dates / Tools / Research suite.'}
         </div>
       </div>
 
@@ -88,8 +88,8 @@ export default async function UpgradePage() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
           {[
-            { t: '2\u20133\u00d7 longer drafts',   d: 'Court-ready length with Index of Documents, Annexure list, and detailed verification clause.' },
-            { t: 'Stronger AI model',              d: 'Llama 3.3 70B vs. the standard 8B used on Free \u2014 sharper reasoning, better citations.' },
+            { t: '2–3× longer drafts',   d: 'Court-ready length with Index of Documents, Annexure list, and detailed verification clause.' },
+            { t: 'Stronger AI model',              d: 'Llama 3.3 70B vs. the standard 8B used on Free — sharper reasoning, better citations.' },
             { t: 'Real case-law citations',        d: 'Five or more landmark Supreme Court / High Court precedents woven into each document.' },
             { t: 'AI Case Assistant',              d: 'Floating Pro chatbot that suggests favourable IPC/CrPC sections and counters opposing arguments.' },
             { t: 'Premium document types',         d: 'Writ Petition, PIL, Bail Application, Divorce Petition, Sale Deed, and full Contracts unlock.' },
@@ -144,3 +144,5 @@ export default async function UpgradePage() {
         </Link>
       </div>
     </div>
+  )
+}

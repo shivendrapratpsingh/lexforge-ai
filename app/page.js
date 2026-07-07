@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { DOCUMENT_TYPES } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import LandingSidePanel from '@/components/LandingSidePanel'
 
 const FEATURES = [
   { icon: '🤖', title: 'AI Document Generation', desc: "Llama 3.3 70B generates complete, legally sound documents in seconds — tailored for Indian law." },
@@ -55,10 +56,14 @@ export default async function LandingPage() {
             </Link>
           </div>
 
-          {/* Mobile: single primary CTA only — full nav lives on its own pages */}
-          <Link href="/register" className="lg:hidden">
-            <Button variant="primary" size="sm">Start Drafting</Button>
-          </Link>
+          {/* Mobile: primary CTA + toggle drawer for Features/Document Types/Sign In,
+              which the collapsed row below can't fit (see LandingSidePanel). */}
+          <div className="lg:hidden flex items-center gap-2">
+            <Link href="/register">
+              <Button variant="primary" size="sm">Start Drafting</Button>
+            </Link>
+            <LandingSidePanel />
+          </div>
         </div>
       </nav>
 

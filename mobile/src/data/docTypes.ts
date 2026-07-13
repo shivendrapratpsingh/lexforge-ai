@@ -36,4 +36,23 @@ export const docTypes: DocType[] = [
   { id: 'will', name: 'Will & Testament', mono: 'WL', category: 'family', backendType: null },
   { id: 'giftDeed', name: 'Gift Deed', mono: 'GD', category: 'family', backendType: null },
   { id: 'saleDeed', name: 'Sale Deed', mono: 'SD', category: 'property', backendType: 'SALE_DEED' },
-  { id: 'rentAgreement', name: 'Rent / Lease Agreement', mono: 'RA', category: 'property', backendType: 'R
+  { id: 'rentAgreement', name: 'Rent / Lease Agreement', mono: 'RA', category: 'property', backendType: 'RENT_AGREEMENT' },
+  { id: 'poa', name: 'Power of Attorney', mono: 'POA', category: 'property', backendType: null },
+  { id: 'contract', name: 'Contract / Agreement', mono: 'CT', category: 'business', backendType: 'CONTRACT' },
+  { id: 'partnershipDeed', name: 'Partnership Deed', mono: 'PD', category: 'business', backendType: null },
+  { id: 'rti', name: 'RTI Application', mono: 'RTI', category: 'government', backendType: 'RTI_APPLICATION' },
+  { id: 'affidavit', name: 'Affidavit', mono: 'AF', category: 'practice', backendType: 'AFFIDAVIT' },
+  { id: 'vakalatnama', name: 'Vakalatnama', mono: 'VK', category: 'practice', backendType: 'VAKALATNAMA' },
+  { id: 'legalOpinion', name: 'Legal Opinion', mono: 'LO', category: 'advisory', pro: true, backendType: 'LEGAL_OPINION' },
+];
+
+/** Human label for a backend `documentType` enum value (e.g. "LEGAL_NOTICE" -> "Legal Notice"). */
+export function labelForBackendType(backendType: string): string {
+  const match = docTypes.find((d) => d.backendType === backendType);
+  if (match) return match.name;
+  return backendType
+    .toLowerCase()
+    .split('_')
+    .map((w) => w[0]?.toUpperCase() + w.slice(1))
+    .join(' ');
+}

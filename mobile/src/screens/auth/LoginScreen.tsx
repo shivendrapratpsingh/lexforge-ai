@@ -124,4 +124,87 @@ export default function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
           <Pressable onPress={() => setShowServerField((v) => !v)} style={styles.serverToggle}>
             <Text style={styles.serverToggleText}>
               {showServerField ? 'Hide server settings' : 'Connecting to a different server?'}
-            </
+            </Text>
+          </Pressable>
+          {showServerField && (
+            <Field
+              label="Server URL"
+              placeholder="http://192.168.1.23:3000"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={serverUrl}
+              onChangeText={setServerUrl}
+            />
+          )}
+        </View>
+
+        <Text style={styles.footer}>{t('auth.legalFooter')}</Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 26,
+    paddingVertical: 40,
+    backgroundColor: colors.base,
+  },
+  brandBlock: { alignItems: 'center', marginBottom: 40 },
+  brandText: {
+    fontFamily: fonts.serifBold,
+    fontSize: fontSizes.hero,
+    color: colors.ink,
+  },
+  brandTextInline: {
+    fontFamily: fonts.serifBold,
+    fontSize: fontSizes.hero,
+  },
+  tagline: {
+    fontFamily: fonts.body,
+    fontSize: fontSizes.base,
+    color: colors.inkMuted,
+    marginTop: 8,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.modal,
+    padding: 22,
+  },
+  cardTitle: {
+    fontFamily: fonts.serif,
+    fontSize: fontSizes.xl + 2,
+    color: colors.ink,
+    marginBottom: 18,
+  },
+  errorText: {
+    fontFamily: fonts.body,
+    fontSize: fontSizes.sm,
+    color: colors.danger,
+    marginBottom: 12,
+  },
+  forgotLink: {
+    textAlign: 'right',
+    fontFamily: fonts.body,
+    fontSize: fontSizes.sm,
+    color: colors.gold,
+    marginBottom: 18,
+  },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 18 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.inkFaint },
+  serverToggle: { alignItems: 'center', marginTop: 18 },
+  serverToggleText: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.inkFaint, textDecorationLine: 'underline' },
+  footer: {
+    textAlign: 'center',
+    fontFamily: fonts.body,
+    fontSize: fontSizes.xs,
+    color: colors.inkFaint,
+    marginTop: 22,
+    lineHeight: 18,
+  },
+});

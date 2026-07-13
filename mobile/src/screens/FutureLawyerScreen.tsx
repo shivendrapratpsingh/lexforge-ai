@@ -39,4 +39,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink },
   sub: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.inkMuted, paddingHorizontal: 20, marginTop: 4 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 16 },
-  iconWrap: { wid
+  iconWrap: { width: 46, height: 46, borderRadius: 12, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold },
+  cardTitle: { fontFamily: fonts.bodySemiBold, fontSize: 14, color: colors.ink },
+  cardDesc: { fontFamily: fonts.body, fontSize: 11.5, color: colors.inkFaint, marginTop: 3, lineHeight: 16 },
+});

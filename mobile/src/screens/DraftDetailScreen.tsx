@@ -186,4 +186,48 @@ export default function DraftDetailScreen({ navigation, route }: { navigation: a
         {[
           { label: t('drafts.exportPdf'), tag: 'PDF', bg: colors.dangerBg, fg: colors.danger },
           { label: t('drafts.exportDocx'), tag: 'DOCX', bg: colors.infoBg, fg: colors.info },
-          { label: t('drafts.exportTxt'
+          { label: t('drafts.exportTxt'), tag: 'TXT', bg: colors.surface3, fg: colors.inkMuted },
+        ].map((opt) => (
+          <Pressable key={opt.tag} style={styles.exportRow} onPress={() => handleExport(opt.tag.toLowerCase() as 'pdf' | 'docx' | 'txt')} disabled={exporting}>
+            <View style={[styles.exportTag, { backgroundColor: opt.bg }]}>
+              <Text style={[styles.exportTagText, { color: opt.fg }]}>{opt.tag}</Text>
+            </View>
+            <Text style={styles.exportRowLabel}>{opt.label}</Text>
+            {exporting && opt.tag === 'TXT' ? <ActivityIndicator color={colors.gold} style={{ marginLeft: 'auto' }} /> : null}
+          </Pressable>
+        ))}
+      </BottomSheet>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+  back: { color: colors.inkMuted, fontSize: 18 },
+  headerTitle: { fontFamily: fonts.bodySemiBold, fontSize: fontSizes.md + 0.5, color: colors.ink },
+  headerMeta: { fontFamily: fonts.body, fontSize: 10.5, color: colors.inkFaint, marginTop: 1 },
+  exportBtn: { width: 32, height: 32, borderRadius: 9, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  tabRow: { flexDirection: 'row', gap: 6, padding: 16, paddingBottom: 0 },
+  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.surface2 },
+  tabActive: { backgroundColor: colors.gold },
+  tabText: { fontFamily: fonts.bodySemiBold, fontSize: fontSizes.sm, color: colors.inkMuted },
+  tabTextActive: { color: colors.base },
+  paper: { backgroundColor: '#F5F5F0', borderRadius: radii.card, padding: 22 },
+  paperEyebrow: { textAlign: 'center', fontFamily: fonts.documentSerif, fontSize: 11, letterSpacing: 1.5, color: '#6b6b60', textTransform: 'uppercase', marginBottom: 4 },
+  paperTitle: { textAlign: 'center', fontFamily: fonts.documentSerif, fontWeight: '700', fontSize: 16, color: '#1a1a16', marginBottom: 18 },
+  paragraphWrap: { marginBottom: 4 },
+  paragraph: { fontFamily: fonts.documentSerif, fontSize: 13.5, lineHeight: 25.6, color: '#2a2a24' },
+  actions: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  versionRow: { flexDirection: 'row', gap: 12 },
+  versionRail: { width: 16, alignItems: 'center' },
+  versionDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
+  versionLine: { width: 1.5, flex: 1, backgroundColor: colors.border, marginTop: 2 },
+  versionLabel: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: colors.ink },
+  versionMeta: { fontFamily: fonts.body, fontSize: 11, color: colors.inkFaint, marginTop: 2 },
+  versionNote: { fontFamily: fonts.body, fontSize: 11.5, color: colors.inkMuted, marginTop: 6 },
+  sheetTitle: { fontFamily: fonts.bodySemiBold, fontSize: 14, color: colors.ink, marginBottom: 12 },
+  exportRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 10, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
+  exportTag: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  exportTagText: { fontFamily: fonts.bodyBold, fontSize: 9.5 },
+  exportRowLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.ink },
+});

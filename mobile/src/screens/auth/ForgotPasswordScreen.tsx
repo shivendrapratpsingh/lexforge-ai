@@ -39,4 +39,22 @@ export default function ForgotPasswordScreen({ navigation }: AuthScreenProps<'Fo
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Text onPress={() => navigation.goBack()} style={styles.back}>{'← ' + t('common.back')}</Text>
-      <Text style={styles.tit
+      <Text style={styles.title}>{t('auth.forgotTitle')}</Text>
+      <Text style={styles.sub}>{t('auth.forgotSub')}</Text>
+      <View style={styles.card}>
+        <Field label={t('auth.email')} placeholder="you@lawfirm.in" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <Button label={t('auth.sendResetLink')} onPress={handleSend} loading={loading} fullWidth />
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { flexGrow: 1, padding: 26, paddingTop: 40, backgroundColor: colors.base },
+  back: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.inkMuted, marginBottom: 22 },
+  title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink, marginBottom: 6 },
+  sub: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.inkMuted, marginBottom: 26, lineHeight: 20 },
+  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.modal, padding: 22 },
+  errorText: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.danger, marginBottom: 12 },
+});

@@ -35,4 +35,8 @@
         }
       ],
       "expo-font",
-      "expo-localiza
+      "expo-localization",
+      "expo-secure-store"
+    ]
+  }
+}

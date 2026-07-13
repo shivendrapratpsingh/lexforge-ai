@@ -65,4 +65,7 @@ const styles = StyleSheet.create({
   back: { color: colors.inkMuted, fontSize: 18 },
   title: { fontFamily: fonts.bodySemiBold, fontSize: fontSizes.lg, color: colors.ink, textTransform: 'capitalize' },
   label: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.inkMuted, marginBottom: 8 },
-  textarea: { backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, borderRadius: radii.input, padding: 14, color: colors.ink, fontFamily: f
+  textarea: { backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, borderRadius: radii.input, padding: 14, color: colors.ink, fontFamily: fonts.body, fontSize: fontSizes.base, minHeight: 130, textAlignVertical: 'top' },
+  paper: { backgroundColor: '#F5F5F0', borderRadius: radii.card, padding: 18 },
+  paperText: { fontFamily: fonts.documentSerif, fontSize: 13, lineHeight: 22, color: '#2a2a24' },
+});

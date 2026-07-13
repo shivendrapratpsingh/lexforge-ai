@@ -104,4 +104,27 @@ export default function CourtDatesScreen(_: any) {
         />
       )}
 
-      <Bottom
+      <BottomSheet visible={addOpen} onClose={() => setAddOpen(false)}>
+        <Text style={styles.sheetTitle}>Add court date reminder</Text>
+        <Field label="Case title" placeholder="Mehta vs. Kapoor" value={title} onChangeText={setTitle} />
+        <Field label="Date & time" placeholder="2026-07-14 11:00" value={dateTime} onChangeText={setDateTime} autoCapitalize="none" />
+        <Field label="Court name / notes" placeholder="Bombay High Court" value={court} onChangeText={setCourt} />
+        <Button label="Save reminder" fullWidth loading={saving} onPress={handleSave} />
+      </BottomSheet>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingBottom: 8 },
+  title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink },
+  addBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  addBtnText: { fontFamily: fonts.bodyBold, fontSize: 18, color: colors.base, marginTop: -2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 14 },
+  dateBadge: { width: 48, height: 48, borderRadius: 10, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, alignItems: 'center', justifyContent: 'center' },
+  dateDay: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.goldLight },
+  dateMonth: { fontFamily: fonts.body, fontSize: 9, color: colors.goldDim, textTransform: 'uppercase' },
+  rowTitle: { fontFamily: fonts.bodyMedium, fontSize: 13.5, color: colors.ink },
+  rowMeta: { fontFamily: fonts.body, fontSize: 11, color: colors.inkFaint, marginTop: 2 },
+  sheetTitle: { fontFamily: fonts.bodySemiBold, fontSize: 14, color: colors.ink, marginBottom: 14 },
+});

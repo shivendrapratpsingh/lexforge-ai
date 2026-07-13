@@ -62,4 +62,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 14 },
   caseName: { fontFamily: fonts.bodySemiBold, fontSize: 13.5, color: colors.ink, lineHeight: 18 },
   citation: { fontFamily: fonts.body, fontSize: 11, color: colors.gold, marginTop: 4 },
-  courtYear: { fon
+  courtYear: { fontFamily: fonts.body, fontSize: 11, color: colors.inkFaint, marginTop: 2 },
+  snippet: { fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, marginTop: 8, lineHeight: 18 },
+});

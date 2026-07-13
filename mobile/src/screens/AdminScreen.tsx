@@ -97,4 +97,7 @@ const styles = StyleSheet.create({
   sectionHeader: { padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { fontFamily: fonts.bodySemiBold, fontSize: 13.5, color: colors.ink },
   chevron: { color: colors.inkFaint, fontSize: 14 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, bo
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 11 },
+  rowPrimary: { fontFamily: fonts.body, fontSize: 12.5, color: colors.ink },
+  rowSecondary: { fontFamily: fonts.body, fontSize: 10.5, color: colors.inkFaint, marginTop: 2 },
+});

@@ -62,4 +62,6 @@ const styles = StyleSheet.create({
   upsellBtn: { backgroundColor: colors.gold, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   upsellBtnText: { fontFamily: fonts.bodyBold, fontSize: 11, color: colors.base },
   card: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 14, minHeight: 104, gap: 10 },
-  iconWrap: { width: 34, height: 34, borderRadi
+  iconWrap: { width: 34, height: 34, borderRadius: 9, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold },
+  cardName: { fontFamily: fonts.bodySemiBold, fontSize: 12, color: colors.ink, lineHeight: 16 },
+});

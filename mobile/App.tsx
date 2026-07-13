@@ -58,4 +58,11 @@ export default function App() {
   if ((!fontsLoaded && !fontError) || !hydrated) return null;
 
   return (
-    <SafeAreaProvider onLayout={onLayout} s
+    <SafeAreaProvider onLayout={onLayout} style={{ backgroundColor: colors.base }}>
+      <StatusBar style="light" />
+      <ToastProvider>
+        <RootNavigator />
+      </ToastProvider>
+    </SafeAreaProvider>
+  );
+}

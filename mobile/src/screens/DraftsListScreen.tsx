@@ -107,4 +107,31 @@ export default function DraftsListScreen({ navigation }: { navigation: any }) {
             />
           }
           renderItem={({ item }) => (
-      
+            <Card onPress={() => navigation.navigate('DraftDetail', { draftId: item.id } as never)}>
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={1} style={styles.rowTitle}>{item.title}</Text>
+                  <Text style={styles.rowMeta}>{labelForBackendType(item.documentType)} · {relativeDate(item.updatedAt)}</Text>
+                </View>
+                <Badge label={(item.status || 'draft').toUpperCase()} tone={statusTone[item.status?.toLowerCase()] || 'neutral'} />
+              </View>
+            </Card>
+          )}
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  title: { fontFamily: fonts.serif, fontSize: fontSizes.display, color: colors.ink, padding: 20, paddingBottom: 8 },
+  search: { marginHorizontal: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.input, paddingHorizontal: 14, paddingVertical: 11, color: colors.ink, fontFamily: fonts.body, fontSize: fontSizes.base },
+  filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
+  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, backgroundColor: colors.surface2 },
+  chipActive: { backgroundColor: colors.gold },
+  chipText: { fontFamily: fonts.bodySemiBold, fontSize: fontSizes.sm, color: colors.inkMuted },
+  chipTextActive: { color: colors.base },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rowTitle: { fontFamily: fonts.bodyMedium, fontSize: 13.5, color: colors.ink },
+  rowMeta: { fontFamily: fonts.body, fontSize: 11, color: colors.inkFaint, marginTop: 2 },
+});

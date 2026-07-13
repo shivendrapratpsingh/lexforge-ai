@@ -96,4 +96,43 @@ export default function ClientDetailScreen({ navigation, route }: { navigation: 
             )}
           </View>
         )}
-        {tab === 'payment
+        {tab === 'payments' && (
+          <View style={{ gap: 10 }}>
+            {((client as any).payments || []).length === 0 ? (
+              <Text style={styles.placeholder}>No payments recorded yet.</Text>
+            ) : (
+              ((client as any).payments || []).map((p: any) => (
+                <View key={p.id} style={styles.noteCard}>
+                  <Text style={styles.name}>{'₹ ' + Number(p.amount).toLocaleString('en-IN')}</Text>
+                  <Text style={styles.meta}>{new Date(p.date).toLocaleDateString()} {p.description ? `· ${p.description}` : ''}</Text>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+  back: { color: colors.inkMuted, fontSize: 18 },
+  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.gold },
+  name: { fontFamily: fonts.bodySemiBold, fontSize: 14.5, color: colors.ink },
+  meta: { fontFamily: fonts.body, fontSize: 10.5, color: colors.inkFaint },
+  tabRow: { flexDirection: 'row', gap: 6, padding: 16, paddingBottom: 0 },
+  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.surface2 },
+  tabActive: { backgroundColor: colors.gold },
+  tabText: { fontFamily: fonts.bodySemiBold, fontSize: fontSizes.sm, color: colors.inkMuted },
+  tabTextActive: { color: colors.base },
+  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  statCard: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 12 },
+  statValue: { fontFamily: fonts.serifBold, fontSize: 19, color: colors.ink },
+  statLabel: { fontFamily: fonts.body, fontSize: 10.5, color: colors.inkMuted, marginTop: 2 },
+  sectionLabel: { fontFamily: fonts.bodySemiBold, fontSize: fontSizes.sm, color: colors.inkMuted, marginBottom: 8 },
+  noteCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 14, marginBottom: 8 },
+  noteText: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkMuted, lineHeight: 20 },
+  placeholder: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, lineHeight: 20 },
+});

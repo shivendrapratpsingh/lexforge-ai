@@ -106,4 +106,8 @@ const styles = StyleSheet.create({
   },
   proBadge: { position: 'absolute', top: 10, right: 10 },
   cardDisabled: { opacity: 0.45 },
-  mono: { width: 36, height: 36, borderRadius: 9, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, alignItems: 'center', justifyCon
+  mono: { width: 36, height: 36, borderRadius: 9, backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, alignItems: 'center', justifyContent: 'center' },
+  monoText: { fontFamily: fonts.bodyBold, fontSize: 11, color: colors.gold },
+  cardName: { fontFamily: fonts.bodySemiBold, fontSize: 12.5, color: colors.ink, lineHeight: 17 },
+  cardCategory: { fontFamily: fonts.body, fontSize: 10, color: colors.inkFaint, marginTop: -6 },
+});

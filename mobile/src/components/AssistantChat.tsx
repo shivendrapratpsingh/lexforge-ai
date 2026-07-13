@@ -175,4 +175,7 @@ const styles = StyleSheet.create({
   msgUser: { backgroundColor: colors.gold },
   msgAssistant: { backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border },
   typingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.inkMuted },
-  inputRow: { flexDirection: 'row', gap: 8, padding: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.
+  inputRow: { flexDirection: 'row', gap: 8, padding: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
+  input: { flex: 1, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 11, color: colors.ink, fontFamily: fonts.body, fontSize: fontSizes.base },
+  sendBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+});

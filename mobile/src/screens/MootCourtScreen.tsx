@@ -80,4 +80,15 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   back: { color: colors.inkMuted, fontSize: 18 },
   title: { fontFamily: fonts.bodySemiBold, fontSize: fontSizes.lg, color: colors.ink },
-  scenario: { backgro
+  scenario: { backgroundColor: '#1C1608', borderWidth: 1, borderColor: colors.borderGold, borderRadius: radii.card, padding: 14, marginBottom: 16 },
+  scenarioLabel: { fontFamily: fonts.bodySemiBold, fontSize: 11, color: colors.goldDim, textTransform: 'uppercase', marginBottom: 6 },
+  scenarioText: { fontFamily: fonts.body, fontSize: 13, color: colors.goldLight, lineHeight: 20 },
+  oppCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: 14, marginBottom: 12 },
+  oppLabel: { fontFamily: fonts.body, fontSize: 11, color: colors.inkFaint, marginBottom: 6 },
+  oppText: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkMuted, lineHeight: 20 },
+  label: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.inkMuted, marginBottom: 8 },
+  textarea: { backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, borderRadius: radii.input, padding: 14, color: colors.ink, fontFamily: fonts.body, fontSize: fontSizes.base, minHeight: 110, textAlignVertical: 'top' },
+  feedbackCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderGold, borderRadius: radii.card, padding: 14, marginTop: 16 },
+  feedbackLabel: { fontFamily: fonts.bodySemiBold, fontSize: 11, color: colors.goldDim, textTransform: 'uppercase', marginBottom: 6 },
+  feedbackText: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkMuted, lineHeight: 20 },
+});

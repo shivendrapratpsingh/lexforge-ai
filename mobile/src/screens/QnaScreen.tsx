@@ -89,4 +89,26 @@ export default function QnaScreen({ navigation }: RootScreenProps<'Qna'>) {
             </View>
           )}
 
-     
+          {selected !== null && (
+            <Button label={loadingMore ? 'Loading…' : 'Next question'} loading={loadingMore} fullWidth style={{ marginTop: 16 }} onPress={handleNext} />
+          )}
+        </>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 18 },
+  back: { color: colors.inkMuted, fontSize: 18 },
+  title: { fontFamily: fonts.bodySemiBold, fontSize: fontSizes.lg, color: colors.ink },
+  progress: { fontFamily: fonts.body, fontSize: 10.5, color: colors.inkFaint, marginTop: 1 },
+  question: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.ink, lineHeight: 22, marginBottom: 18 },
+  option: { padding: 13, borderRadius: radii.input, borderWidth: 1 },
+  optionDefault: { backgroundColor: colors.surface2, borderColor: colors.border },
+  optionCorrect: { backgroundColor: colors.successBg, borderColor: colors.success },
+  optionWrong: { backgroundColor: colors.dangerBg, borderColor: colors.danger },
+  optionText: { fontFamily: fonts.body, fontSize: 13, color: colors.ink },
+  explanation: { backgroundColor: colors.successBg, borderWidth: 1, borderColor: '#1e3a28', borderRadius: radii.card, padding: 14 },
+  explanationText: { fontFamily: fonts.body, fontSize: 12.5, color: '#8fcaa8', lineHeight: 20 },
+});

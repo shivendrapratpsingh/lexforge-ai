@@ -89,4 +89,14 @@ export default function RootNavigator() {
             <Stack.Screen name="Qna" component={QnaScreen} />
             <Stack.Screen name="Roadmap" component={RoadmapScreen} />
             <Stack.Screen name="Upgrade" component={UpgradeScreen} />
-  
+            <Stack.Screen name="Admin" component={AdminScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+
+      {isAuthed && <MoreSheet visible={moreOpen} onClose={() => setMoreOpen(false)} />}
+      {isAuthed && <AssistantChat />}
+    </NavigationContainer>
+  );
+}

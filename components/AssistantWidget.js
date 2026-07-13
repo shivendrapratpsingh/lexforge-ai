@@ -71,6 +71,7 @@ function FAB({ onClick, hasUnread }) {
       type="button"
       onClick={onClick}
       aria-label="Open Case Assistant"
+      className="lf-assistant-fab"
       style={{
         position: 'fixed',
         bottom: 20,
@@ -289,6 +290,7 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
         <div
           role="dialog"
           aria-label="Case Assistant"
+          className="lf-assistant-panel"
           style={{
             position: 'fixed',
             bottom: 20,

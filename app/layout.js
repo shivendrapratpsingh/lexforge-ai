@@ -11,6 +11,15 @@ export async function generateMetadata() {
   }
 }
 
+// Mobile: edge-to-edge rendering with safe-area insets (viewportFit) and a
+// dark themed browser chrome so the app reads as a native dark app.
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0D0D0D',
+}
+
 export default async function RootLayout({ children }) {
   const locale   = await getLocale()
   const messages = await getMessages()

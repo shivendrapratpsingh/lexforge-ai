@@ -95,8 +95,10 @@ export default async function DashboardLayout({ children }) {
         labels={labels}
       />
 
-      {/* ── Main Content — always full width/height ── */}
-      <main className="min-w-0 min-h-screen p-4 pb-24 sm:p-6 md:pb-6">
+      {/* ── Main Content — always full width/height. On phones the top
+           padding clears the fixed mobile app bar and the bottom padding
+           clears the fixed tab bar (both safe-area aware). ── */}
+      <main className="min-w-0 min-h-screen px-4 sm:px-6 pt-[calc(4.5rem+env(safe-area-inset-top))] md:pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6">
         {children}
       </main>
 

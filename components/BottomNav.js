@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Modal } from '@/components/ui/Modal'
 import { NavItem } from '@/components/ui/NavItem'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { SignOutButton } from '@/components/SignOutButton'
 
 // Fixed bottom tab bar for mobile (<768px). 5 slots: Dashboard, Drafts,
 // New Draft (center, elevated FAB-style), Court Dates, More (opens a
@@ -78,6 +80,13 @@ export default function BottomNav({ moreLinks, upgradeHref }) {
               Upgrade to Pro
             </Link>
           )}
+
+          {/* Account controls — language + sign out, so phone users have
+              everything without needing the side drawer. */}
+          <div className="mt-3 pt-3 border-t border-border">
+            <LanguageSwitcher />
+            <SignOutButton />
+          </div>
         </div>
       </Modal>
     </>

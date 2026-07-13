@@ -50,11 +50,59 @@
 
 * { box-sizing: border-box; }
 
+html {
+  /* Stop mobile browsers from arbitrarily inflating text */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--color-base);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  /* App-like scrolling: no rubber-band chaining behind fixed bars/sheets */
+  overscroll-behavior-y: contain;
+}
+
+/* ── Mobile app polish ─────────────────────────────────────────── */
+
+/* Remove the grey tap-highlight flash on touch */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Kill the 300ms double-tap-zoom delay on interactive elements */
+button, a, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
+}
+
+/* iOS Safari zooms the whole page when focusing an input whose font-size
+   is < 16px. Most LexForge inputs use 13–14px inline styles, so on phones
+   we force 16px — !important beats inline styles here. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* The floating Case Assistant sits above the mobile bottom tab bar
+   (h-16 + safe area) instead of on top of it. */
+@media (max-width: 767px) {
+  .lf-assistant-fab {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom)) !important;
+    right: 16px !important;
+  }
+  .lf-assistant-panel {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom)) !important;
+    right: 12px !important;
+    max-height: calc(100dvh - 5.25rem - env(safe-area-inset-bottom) - 4.5rem - env(safe-area-inset-top)) !important;
+  }
+}
+
+@keyframes lfFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* Reduced motion — disables shimmer/pulse/slide animations globally */

@@ -808,13 +808,14 @@ export default function NewDraftPage() {
           </div>
         )}
 
-        {/* Result Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Result Header — wraps on phones so the action buttons never
+            overflow off-screen */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             <span style={{ fontSize: 28 }}>{dt?.icon}</span>
-            <div>
-              <h1 style={{ fontSize: 20, fontWeight: 800, color: '#F0F0F0', marginBottom: 3 }}>{result.title}</h1>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: '#6A6A6A' }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontSize: 20, fontWeight: 800, color: '#F0F0F0', marginBottom: 3, overflowWrap: 'anywhere' }}>{result.title}</h1>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: '#6A6A6A', flexWrap: 'wrap' }}>
                 <span style={{ padding: '2px 9px', borderRadius: 100, background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontWeight: 700 }}>✓ Generated</span>
                 {courtName && <span>{courtName}</span>}
                 {result.language !== 'english' && <span style={{ color: '#8B5CF6' }}>{result.language === 'hindi' ? 'हिन्दी' : result.language === 'tamil' ? 'தமிழ்' : 'Bilingual'}</span>}
@@ -822,7 +823,7 @@ export default function NewDraftPage() {
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <a href={`/api/export/${result.id}/pdf`} download style={{ padding: '9px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 9, color: '#EF4444', fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>📕 PDF</a>
             <a href={`/api/export/${result.id}/docx`} download style={{ padding: '9px 16px', background: 'rgba(33,150,243,0.1)', border: '1px solid rgba(33,150,243,0.2)', borderRadius: 9, color: '#2196F3', fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>📘 DOCX</a>
             <a href={`/drafts/${result.id}`} style={{ padding: '9px 16px', background: 'linear-gradient(135deg, #D4A017, #B8860B)', border: 'none', borderRadius: 9, color: '#0D0D0D', fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>View Full →</a>

@@ -8,6 +8,16 @@ export async function generateMetadata() {
   return {
     title: t('title'),
     description: t('description'),
+    // Installed-app behavior on iOS (Android reads app/manifest.js).
+    appleWebApp: {
+      capable: true,
+      title: 'LexForge',
+      statusBarStyle: 'black-translucent',
+    },
+    icons: {
+      icon: '/icon.png',
+      apple: '/icon.png',
+    },
   }
 }
 

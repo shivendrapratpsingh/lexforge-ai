@@ -220,6 +220,17 @@ export async function POST(req) {
           hint: 'Please use professional, respectful language in all case details fields and try again.',
         }, { status: 422 })
       }
+      // Rate-limited (free Groq quota exhausted for the minute) — tell the
+      // user to wait and retry rather than saving a raw, undrafted template.
+      if (genErr?.code === 'GROQ_RATE_LIMIT') {
+        return NextResponse.json({
+          error: genErr.message,
+          hint: 'Your inputs are saved — just click Generate again in a minute. Upgrading the Groq key to the free Dev tier removes this limit.',
+        }, { status: 429 })
+      }
+      if (genErr?.code === 'GROQ_AUTH') {
+        return NextResponse.json({ error: genErr.message }, { status: 503 })
+      }
       throw genErr  // re-throw other errors to outer catch
     }
 

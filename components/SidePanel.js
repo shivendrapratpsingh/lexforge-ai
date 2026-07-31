@@ -169,8 +169,14 @@ export default function SidePanel({ navLinks, session, tier, tierLbl, pro, label
           </button>
         </div>
 
-        {/* Nav */}
-        <div className="flex-1 min-h-0 overscroll-contain">
+        {/* Nav — THIS element is the scroll container. `flex-1` gives it the
+             leftover height between the header and the footer, `min-h-0` lets
+             it actually shrink inside the flex column (without it a flex item
+             refuses to go below its content height), and `overflow-y-auto`
+             then scrolls the list. On short laptop windows the link list is
+             taller than the drawer, so without this the items simply spilled
+             out and overlapped the footer instead of scrolling. */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain lf-scroll">
           <SidebarNav links={navLinks} />
         </div>
 

@@ -20,7 +20,11 @@ export default function SidebarNav({ links, railOnly = false }) {
   }
 
   return (
-    <nav className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3.5 flex flex-col gap-0.5">
+    // Height is intentionally natural (content-sized): the parent element in
+    // SidePanel owns the bounded height and the scrolling. Putting flex-1 /
+    // overflow here did nothing, because the parent is a plain block — so the
+    // list grew to full content height and overlapped the drawer footer.
+    <nav className="px-2.5 py-3.5 flex flex-col gap-0.5">
       {links.map((link, idx) => {
         if (link.type === 'header') {
           if (railOnly) return <div key={`hdr-${idx}`} className="h-px bg-border my-2 mx-2" />

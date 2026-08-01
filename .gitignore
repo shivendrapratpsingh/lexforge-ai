@@ -66,3 +66,7 @@ service-account*.json
 next-env.d.ts
 
 .vercel
+
+# Locally generated/downloaded draft exports (test artifacts)
+*.pdf
+*.docx

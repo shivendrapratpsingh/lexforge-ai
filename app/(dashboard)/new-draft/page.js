@@ -7,6 +7,7 @@ import { isJunkValue, validateTemplateData, buildValidationError } from '@/lib/v
 import { PRO_TAGLINE, getProFeatureList } from '@/lib/pro-features'
 import FolderUploader from '@/components/FolderUploader'
 import DocumentCopyButton from '@/components/DocumentCopyButton'
+import GeneratingOverlay from '@/components/GeneratingOverlay'
 import { DOC_FIELDS } from '@/lib/document-fields'
 
 // ─── Client field mapping per document type ──────────────────────
@@ -818,7 +819,7 @@ export default function NewDraftPage() {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: '#6A6A6A', flexWrap: 'wrap' }}>
                 <span style={{ padding: '2px 9px', borderRadius: 100, background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontWeight: 700 }}>✓ Generated</span>
                 {courtName && <span>{courtName}</span>}
-                {result.language !== 'english' && <span style={{ color: '#8B5CF6' }}>{result.language === 'hindi' ? 'हिन्दी' : result.language === 'tamil' ? 'தமிழ்' : 'Bilingual'}</span>}
+                {result.language !== 'english' && <span style={{ color: '#8B5CF6' }}>{LANGUAGES.find(l => l.value === result.language)?.label || result.language}</span>}
                 {autoClientMsg && <span style={{ color: '#D4A017' }}>{autoClientMsg}</span>}
               </div>
             </div>
@@ -913,6 +914,16 @@ export default function NewDraftPage() {
 
   return (
     <div>
+      {/* Pro-only law-themed generation overlay. Free users keep the plain
+          inline button state, so their experience is unchanged. */}
+      <GeneratingOverlay
+        open={generating}
+        isPro={!!me?.isPro}
+        documentType={selectedType}
+        details={Object.values(intakeMethod === 'chat' ? chatAnswers : formData).filter(Boolean).join(' ')}
+        courtLabel={courtLabel}
+      />
+
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#F0F0F0', marginBottom: 4 }}>Generate New Document</h1>
         <p style={{ color: '#5A5A5A', fontSize: 14 }}>Uttar Pradesh & Tamil Nadu Courts Edition — AI-powered legal drafting</p>

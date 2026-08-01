@@ -6,6 +6,7 @@ import { formatDate, DOCUMENT_TYPES } from '@/lib/utils'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import DailyBriefWidget from '@/components/DailyBriefWidget'
 
 async function getDashboardData(userId) {
   try {
@@ -52,6 +53,10 @@ export default async function DashboardPage() {
 
   const { drafts, total, finalized, clientCount, upcomingDates, error } = await getDashboardData(session.user.id)
   const firstName = session.user?.name?.split(' ')[0] || t('defaultName')
+
+  // Drives the quota line in the daily-brief preview (Pro has no cap).
+  const { hasProAccess } = await import('@/lib/admin')
+  const isPro = await hasProAccess(session.user?.email, session.user?.tier).catch(() => false)
 
   const stats = [
     { label: t('stats.totalDocuments'), value: total,       icon: '📄', color: '#D4A017' },
@@ -170,6 +175,12 @@ export default async function DashboardPage() {
 
         {/* Quick Actions + Upcoming Dates */}
         <div className="flex flex-col gap-4">
+          {/* Daily brief: notification control + a preview of tomorrow's push */}
+          <DailyBriefWidget
+            nextHearing={upcomingDates[0] ? { title: upcomingDates[0].title, date: upcomingDates[0].date } : null}
+            isPro={isPro}
+          />
+
           <Card className="p-5">
             <h3 className="text-[15px] font-bold text-ink mb-3.5">{t('quickActions')}</h3>
             <div className="flex flex-col gap-2">

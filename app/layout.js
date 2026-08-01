@@ -15,8 +15,13 @@ export async function generateMetadata() {
       statusBarStyle: 'black-translucent',
     },
     icons: {
-      icon: '/icon.png',
-      apple: '/icon.png',
+      icon: [
+        { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+        { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+        { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      ],
+      // iOS uses this for the home-screen icon; it must be opaque PNG.
+      apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
     },
   }
 }
@@ -27,7 +32,7 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#0D0D0D',
+  themeColor: '#0B0A07',
 }
 
 export default async function RootLayout({ children }) {

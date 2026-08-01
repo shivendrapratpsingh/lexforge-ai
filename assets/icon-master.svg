@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!--
+    LexForge AI — master app icon ("Molten LF").
+    scripts/build-icons.mjs rasterises this to every PNG in /public.
+    Edit here; never hand-edit the PNGs.
+
+    Deliberately font-free: the monogram is drawn as geometry, so it
+    rasterises identically on every machine (a font-based <text> would
+    silently fall back to a different serif in the rasteriser) and the
+    sturdier slab serifs survive down to a 16px favicon, where hairline
+    serifs would disappear.
+
+    Lighting is baked into geometry rather than SVG filters — a dropped
+    bronze copy for depth, a poured-metal gradient body, and a specular
+    strike clipped to the top third — so it renders the same in librsvg,
+    Chrome and iOS.
+
+    The mark sits inside the centre 66% Android maskable safe area.
+  -->
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1E1A12"/>
+      <stop offset="0.55" stop-color="#12100A"/>
+      <stop offset="1" stop-color="#080705"/>
+    </linearGradient>
+
+    <!-- forge bloom low in the frame: the metal is lit from the coals -->
+    <radialGradient id="ember" cx="50%" cy="80%" r="58%">
+      <stop offset="0"    stop-color="#FF8A1E" stop-opacity="0.42"/>
+      <stop offset="0.45" stop-color="#E2761B" stop-opacity="0.16"/>
+      <stop offset="1"    stop-color="#E2761B" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- soft halo directly behind the letterforms -->
+    <radialGradient id="halo" cx="50%" cy="46%" r="42%">
+      <stop offset="0"   stop-color="#FFB347" stop-opacity="0.30"/>
+      <stop offset="0.6" stop-color="#E2761B" stop-opacity="0.10"/>
+      <stop offset="1"   stop-color="#E2761B" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- poured metal: pale strike at the top, brass body, cooling copper foot -->
+    <linearGradient id="metal" x1="0.12" y1="0" x2="0.46" y2="1">
+      <stop offset="0"    stop-color="#FFF6D6"/>
+      <stop offset="0.16" stop-color="#F9D67E"/>
+      <stop offset="0.40" stop-color="#E6B241"/>
+      <stop offset="0.66" stop-color="#C98A1D"/>
+      <stop offset="0.87" stop-color="#A05D11"/>
+      <stop offset="1"    stop-color="#7E400C"/>
+    </linearGradient>
+
+    <linearGradient id="sheen" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0"   stop-color="#FFFFFF" stop-opacity="0.60"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="1"   stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"    stop-color="#E3AE3A" stop-opacity="0"/>
+      <stop offset="0.24" stop-color="#F0C560" stop-opacity="0.9"/>
+      <stop offset="0.5"  stop-color="#FFE9B0" stop-opacity="1"/>
+      <stop offset="0.76" stop-color="#F0C560" stop-opacity="0.9"/>
+      <stop offset="1"    stop-color="#E3AE3A" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- LF monogram, drawn as geometry. Cap height 300, baseline y=300.
+         The L's foot stops at x=186 and the F's baseline serif starts at
+         x=220: without that 34-unit channel the two shapes butt together
+         and read as a single bar across the bottom of the icon. -->
+    <g id="lf">
+      <!-- L -->
+      <rect x="8"   y="0"   width="52"  height="300" rx="3"/>
+      <rect x="-22" y="0"   width="104" height="17"  rx="3"/>
+      <rect x="8"   y="252" width="178" height="48"  rx="3"/>
+      <rect x="170" y="232" width="16"  height="20"  rx="3"/>
+      <!-- F -->
+      <rect x="250" y="0"   width="52"  height="300" rx="3"/>
+      <rect x="220" y="0"   width="104" height="17"  rx="3"/>
+      <rect x="220" y="284" width="104" height="16"  rx="3"/>
+      <rect x="250" y="0"   width="172" height="46"  rx="3"/>
+      <rect x="406" y="46"  width="16"  height="20"  rx="3"/>
+      <rect x="250" y="126" width="136" height="42"  rx="3"/>
+      <rect x="370" y="168" width="16"  height="18"  rx="3"/>
+    </g>
+
+    <clipPath id="strike"><rect x="0" y="250" width="1024" height="190"/></clipPath>
+  </defs>
+
+  <!-- ground -->
+  <rect width="1024" height="1024" fill="url(#ground)"/>
+  <rect width="1024" height="1024" fill="url(#ember)"/>
+  <ellipse cx="512" cy="470" rx="430" ry="330" fill="url(#halo)"/>
+
+  <!-- monogram: dropped bronze copy for depth, then the metal face -->
+  <g transform="translate(296,308) scale(1.08)">
+    <g transform="translate(0,7)" fill="#4A2205" opacity="0.85"><use href="#lf"/></g>
+    <g fill="url(#metal)"><use href="#lf"/></g>
+    <g fill="url(#sheen)" clip-path="url(#strike)"><use href="#lf"/></g>
+  </g>
+
+  <!-- struck-anvil rule and spark: the "forge" half of the name -->
+  <rect x="288" y="748" width="448" height="10" rx="5" fill="url(#rule)"/>
+  <path d="M512 694 l11 34 34 11 -34 11 -11 34 -11-34 -34-11 34-11z" fill="#FFE9B0" opacity="0.9"/>
+</svg>

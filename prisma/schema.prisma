@@ -21,6 +21,30 @@ model User {
   clients          Client[]
   courtDates       CourtDate[]
   drafts           Draft[]
+  pushSubs         PushSubscription[]
+}
+
+// A browser/device push endpoint for the daily digest. One user can have
+// several (phone, laptop, tablet), so the daily job de-duplicates by user
+// and sends to every live endpoint. Endpoints that return 404/410 are
+// pruned automatically — that is how a push service reports an uninstall.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  // Which digests this device wants. Stored as a comma-separated list so
+  // preferences can grow without another migration.
+  topics    String   @default("dates,drafts,study")
+  hour      Int      @default(8)     // local-ish hour for the digest (IST)
+  failCount Int      @default(0)
+  lastSentAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Client {

@@ -7,6 +7,7 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [done, setDone]     = useState(false)
   const [error, setError]   = useState('')
+  const [message, setMessage] = useState('')
   const [devLink, setDevLink] = useState('')
 
   const inp = {
@@ -28,6 +29,7 @@ export default function ForgotPasswordPage() {
       const j = await res.json()
       if (!res.ok) throw new Error(j.error || 'Request failed')
       setDone(true)
+      setMessage(j.message || '')
       if (j.resetLink) setDevLink(j.resetLink)
     } catch (err) {
       setError(err.message)
@@ -54,12 +56,17 @@ export default function ForgotPasswordPage() {
         <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 32, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
           {done ? (
             <div>
-              <div style={{ background: 'rgba(76,175,80,0.08)', border: '1px solid rgba(76,175,80,0.25)', color: '#4CAF50', padding: '14px 16px', borderRadius: 10, marginBottom: 20, fontSize: 13, lineHeight: 1.6 }}>
-                ✅ If that email is registered, a reset link has been issued. Check your inbox (and spam folder).
+              <div style={{ background: 'rgba(76,175,80,0.08)', border: '1px solid rgba(76,175,80,0.25)', color: '#4CAF50', padding: '14px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13, lineHeight: 1.6 }}>
+                ✅ {message || 'If that email is registered, a reset link is on its way. Check your inbox, and your spam folder.'}
               </div>
+              <p style={{ fontSize: 12.5, color: '#6E6E68', lineHeight: 1.6, marginBottom: 20 }}>
+                The link expires in an hour and works once. Nothing arrived after a few
+                minutes? Check spam, then try again — and if it still does not come,
+                contact support rather than waiting.
+              </p>
               {devLink && (
                 <div style={{ background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
-                  <div style={{ fontSize: 11, color: '#D4A017', fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>DEV ONLY — reset link (hidden in production)</div>
+                  <div style={{ fontSize: 11, color: '#D4A017', fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>DEV ONLY — no mail provider configured</div>
                   <a href={devLink} style={{ color: '#D4A017', fontSize: 12, wordBreak: 'break-all' }}>{devLink}</a>
                 </div>
               )}

@@ -14,8 +14,22 @@ model User {
   password         String?
   tier             String      @default("free")
   suspended        Boolean     @default(false)
-  resetToken       String?
-  resetTokenExpiry DateTime?
+  // Account recovery by security question, replacing emailed reset links.
+  // The old resetToken / resetTokenExpiry columns are gone: a reset token
+  // stored in the clear IS the credential, so anyone who could read the
+  // table could take over any account with a reset pending. Nothing
+  // replayable is stored now.
+  // Only a bcrypt hash of the answer is ever stored — the answer is a
+  // permanent credential (it cannot be rotated the way a 60-minute token
+  // can), so it is protected exactly like a password. The attempt counter
+  // and lockout exist because a nickname has little entropy and would
+  // otherwise be trivially brute-forceable.
+  securityQuestion    String?
+  securityAnswerHash  String?
+  securityAttempts    Int       @default(0)
+  securityLockedUntil DateTime?
+  passwordChangedAt   DateTime?
+
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   clients          Client[]

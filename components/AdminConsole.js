@@ -116,6 +116,8 @@ export default function AdminConsole() {
   const [draftFilter, setDraftFilter] = useState('')
   // Session refresh notice after tier change
   const [tierChangeNotice, setTierChangeNotice] = useState(null)
+  // Holds a just-issued password for one display. Never re-fetchable.
+  const [newPassword, setNewPassword] = useState(null)
 
   async function loadAll() {
     setLoading(true)
@@ -285,6 +287,33 @@ export default function AdminConsole() {
     }
   }
 
+  // Admin override for account recovery. This is the fallback for anyone
+  // the security question cannot help: accounts created before it
+  // existed, a forgotten answer, or someone locked out by failed tries.
+  // The generated password is shown once and cannot be read back.
+  async function resetUserPassword(id, email) {
+    if (!confirm(
+      `Set a new password for ${email}?\n\n` +
+      `Their current password stops working immediately. You will be shown the ` +
+      `new one once — copy it and give it to them yourself.`
+    )) return
+    setBusy(b => ({ ...b, [id + 'pwd']: true }))
+    try {
+      const r = await fetch(`/api/admin/users/${id}/password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),          // empty = generate one
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Could not set password')
+      setNewPassword({ email: j.email, password: j.password })
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setBusy(b => ({ ...b, [id + 'pwd']: false }))
+    }
+  }
+
   async function deleteUser(id, email) {
     if (!confirm(`Permanently delete user ${email}? This also deletes all their drafts, clients, and court dates.`)) return
     setBusy(b => ({ ...b, [id + 'del']: true }))
@@ -345,6 +374,33 @@ export default function AdminConsole() {
       )}
 
       {/* ── Tier change notice ── */}
+      {/* Shown once after an admin password reset. Dismissing it loses the
+          password for good — it is stored only as a bcrypt hash. */}
+      {newPassword && (
+        <div style={{
+          background: 'rgba(212,160,23,0.07)', border: '1px solid rgba(212,160,23,0.35)',
+          borderRadius: 12, padding: '16px 18px', marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '1.4px', color: '#D4A017', marginBottom: 8 }}>
+            NEW PASSWORD — SHOWN ONCE
+          </div>
+          <div style={{ fontSize: 13, color: '#B0A488', marginBottom: 10, lineHeight: 1.6 }}>
+            For <b style={{ color: '#E8E8E8' }}>{newPassword.email}</b>. Copy it now and
+            give it to them over a channel you trust. Close this and it is gone —
+            only a hash is stored. Tell them to change it after signing in.
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <code style={{
+              flex: '1 1 220px', background: '#0D0D0D', border: '1px solid #2A2A2A',
+              borderRadius: 8, padding: '11px 14px', fontSize: 16, letterSpacing: '1px',
+              color: '#F0C040', fontFamily: 'ui-monospace, Menlo, monospace', userSelect: 'all',
+            }}>{newPassword.password}</code>
+            <Btn onClick={() => navigator.clipboard?.writeText(newPassword.password)}>Copy</Btn>
+            <Btn onClick={() => setNewPassword(null)} danger>Done</Btn>
+          </div>
+        </div>
+      )}
+
       {tierChangeNotice && (
         <div style={{
           background: 'rgba(96,165,250,0.12)',
@@ -613,6 +669,12 @@ export default function AdminConsole() {
                             danger={!u.suspended}
                           >
                             {u.suspended ? 'Unsuspend' : 'Suspend'}
+                          </Btn>
+                          <Btn
+                            onClick={() => resetUserPassword(u.id, u.email)}
+                            disabled={busy[u.id + 'pwd']}
+                          >
+                            {busy[u.id + 'pwd'] ? 'Setting…' : 'Set password'}
                           </Btn>
                           <Btn
                             onClick={() => deleteUser(u.id, u.email)}

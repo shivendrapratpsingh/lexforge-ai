@@ -3,10 +3,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
+import { DEFAULT_SECURITY_QUESTION as SECURITY_QUESTION } from '@/lib/security-question'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', securityAnswer: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -15,6 +16,8 @@ export default function RegisterPage() {
     setError('')
     if (form.password !== form.confirm) return setError('Passwords do not match.')
     if (form.password.length < 8) return setError('Password must be at least 8 characters.')
+    if (form.securityAnswer.trim().length < 2)
+      return setError('Please answer the security question — it is how you get back in if you forget your password.')
     setLoading(true)
 
     try {
@@ -22,7 +25,12 @@ export default function RegisterPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: form.name, email: form.email, password: form.password }),
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          securityAnswer: form.securityAnswer,
+        }),
       })
 
       let data = {}
@@ -108,6 +116,38 @@ export default function RegisterPage() {
                 />
               </div>
             ))}
+
+            {/* Recovery. Set here because it is the only way back into the
+                account — there is no emailed reset link to fall back on. */}
+            <div style={{
+              marginTop: 4, marginBottom: 16, padding: 16,
+              background: 'rgba(212,160,23,0.05)',
+              border: '1px solid rgba(212,160,23,0.22)', borderRadius: 12,
+            }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '1.4px', color: '#D4A017', marginBottom: 8 }}>
+                SECURITY QUESTION
+              </div>
+              <label style={{ ...lbl, textTransform: 'none', letterSpacing: 0, fontSize: 13.5, color: '#D8D8D8' }}>
+                {SECURITY_QUESTION}
+              </label>
+              <input
+                type="text"
+                value={form.securityAnswer}
+                onChange={e => setForm({ ...form, securityAnswer: e.target.value })}
+                placeholder="e.g. Bunty"
+                required
+                autoComplete="off"
+                style={inp}
+                onFocus={e => e.target.style.borderColor = '#D4A017'}
+                onBlur={e => e.target.style.borderColor = '#2A2A2A'}
+              />
+              <p style={{ fontSize: 11.5, color: '#6E6E68', lineHeight: 1.6, marginTop: 9, marginBottom: 0 }}>
+                This is how you get back in if you forget your password — there is
+                no reset email. Capitals and spacing do not matter. Pick something
+                you will still remember in two years, and that is not on your
+                social media.
+              </p>
+            </div>
 
             <button
               type="submit"

@@ -1,5 +1,7 @@
 import './globals.css'
 import { Providers } from '@/components/Providers'
+import LaunchSplash from '@/components/LaunchSplash'
+import AmbientSparks from '@/components/AmbientSparks'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages, getTranslations } from 'next-intl/server'
 
@@ -44,6 +46,10 @@ export default async function RootLayout({ children }) {
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
+            {/* Sparks keep falling behind the whole app, and burst off the
+                mark when it is opened from the home screen. */}
+            <AmbientSparks />
+            <LaunchSplash />
             {children}
           </Providers>
         </NextIntlClientProvider>

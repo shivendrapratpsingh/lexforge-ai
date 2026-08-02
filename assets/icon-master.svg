@@ -83,6 +83,12 @@
     </g>
 
     <clipPath id="strike"><rect x="0" y="250" width="1024" height="190"/></clipPath>
+
+    <!-- Unit four-point spark, scaled into place below. A home-screen icon
+         cannot animate on any OS, so the sparks are struck into the art
+         itself — the mark reads as metal throwing sparks even while static,
+         and the launch screen then animates these same sparks outward. -->
+    <path id="spark" d="M0 -1 L0.26 -0.26 L1 0 L0.26 0.26 L0 1 L-0.26 0.26 L-1 0 L-0.26 -0.26 Z"/>
   </defs>
 
   <!-- ground -->
@@ -97,7 +103,28 @@
     <g fill="url(#sheen)" clip-path="url(#strike)"><use href="#lf"/></g>
   </g>
 
-  <!-- struck-anvil rule and spark: the "forge" half of the name -->
+  <!-- struck-anvil rule -->
   <rect x="288" y="748" width="448" height="10" rx="5" fill="url(#rule)"/>
-  <path d="M512 694 l11 34 34 11 -34 11 -11 34 -11-34 -34-11 34-11z" fill="#FFE9B0" opacity="0.9"/>
+
+  <!-- Sparks thrown off the strike. Weighted up-and-outward from the rule
+       so the eye reads them as flying off hot metal, largest nearest the
+       mark and fading with distance. All inside the maskable safe zone. -->
+  <g fill="#FFE9B0">
+    <use href="#spark" transform="translate(512,700) scale(34)"/>
+    <use href="#spark" transform="translate(742,352) scale(26)" opacity="0.95"/>
+    <use href="#spark" transform="translate(286,404) scale(21)" opacity="0.9"/>
+    <use href="#spark" transform="translate(676,268) scale(15)" opacity="0.8"/>
+    <use href="#spark" transform="translate(806,470) scale(13)" opacity="0.72"/>
+    <use href="#spark" transform="translate(232,300) scale(12)" opacity="0.68"/>
+    <use href="#spark" transform="translate(772,624) scale(11)" opacity="0.6"/>
+    <use href="#spark" transform="translate(258,614) scale(10)" opacity="0.55"/>
+  </g>
+  <g fill="#FFD27A">
+    <circle cx="836" cy="560" r="7" opacity="0.75"/>
+    <circle cx="196" cy="512" r="6" opacity="0.7"/>
+    <circle cx="716" cy="196" r="5.5" opacity="0.6"/>
+    <circle cx="322" cy="228" r="5" opacity="0.55"/>
+    <circle cx="628" cy="672" r="6" opacity="0.65"/>
+    <circle cx="392" cy="676" r="5" opacity="0.6"/>
+  </g>
 </svg>

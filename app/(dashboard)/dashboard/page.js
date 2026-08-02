@@ -7,12 +7,15 @@ import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import DailyBriefWidget from '@/components/DailyBriefWidget'
+import WidgetWall from '@/components/WidgetWall'
+import { lineForDay, studyPromptForDay } from '@/lib/daily-lines'
 
 async function getDashboardData(userId) {
   try {
     const { prisma } = await import('@/lib/prisma')
     const now = new Date()
-    const [drafts, total, finalized, clientCount, upcomingDates] = await Promise.all([
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const [drafts, total, finalized, clientCount, upcomingDates, draftsThisMonth] = await Promise.all([
       prisma.draft.findMany({
         where: { userId },
         orderBy: { updatedAt: 'desc' },
@@ -35,11 +38,12 @@ async function getDashboardData(userId) {
           draft:  { select: { id: true, title: true } },
         },
       }).catch(() => []),
+      prisma.draft.count({ where: { userId, createdAt: { gte: startOfMonth } } }).catch(() => 0),
     ])
-    return { drafts, total, finalized, clientCount, upcomingDates, error: null }
+    return { drafts, total, finalized, clientCount, upcomingDates, draftsThisMonth, error: null }
   } catch (err) {
     console.error('[Dashboard] DB error:', err)
-    return { drafts: [], total: 0, finalized: 0, clientCount: 0, upcomingDates: [], error: 'Database not connected. Run: npx prisma db push' }
+    return { drafts: [], total: 0, finalized: 0, clientCount: 0, upcomingDates: [], draftsThisMonth: 0, error: 'Database not connected. Run: npx prisma db push' }
   }
 }
 
@@ -51,12 +55,18 @@ export default async function DashboardPage() {
   const tNav    = await getTranslations('nav')
   const locale  = await getLocale()
 
-  const { drafts, total, finalized, clientCount, upcomingDates, error } = await getDashboardData(session.user.id)
+  const { drafts, total, finalized, clientCount, upcomingDates, draftsThisMonth, error } = await getDashboardData(session.user.id)
   const firstName = session.user?.name?.split(' ')[0] || t('defaultName')
 
   // Drives the quota line in the daily-brief preview (Pro has no cap).
-  const { hasProAccess } = await import('@/lib/admin')
+  const { hasProAccess, getFreeDocsLimit } = await import('@/lib/admin')
   const isPro = await hasProAccess(session.user?.email, session.user?.tier).catch(() => false)
+  const freeLimit = isPro ? null : await getFreeDocsLimit().catch(() => null)
+
+  // The widget wall. Resolved on the server so the line, the study
+  // prompt and the 8 AM notification all agree on what today is.
+  const todaysLine = lineForDay()
+  const nextHearing = upcomingDates.find(d => new Date(d.date) >= new Date()) || null
 
   const stats = [
     { label: t('stats.totalDocuments'), value: total,       icon: '📄', color: '#D4A017' },
@@ -87,6 +97,18 @@ export default async function DashboardPage() {
           {t('dbError', { error })}
         </div>
       )}
+
+      {/* Widget wall — the Aurora tiles. Everything that matters at 8 AM,
+          above the fold, before the reporting numbers. */}
+      <WidgetWall
+        line={todaysLine}
+        nextHearing={nextHearing ? { title: nextHearing.title, date: nextHearing.date } : null}
+        inProgress={Math.max(0, total - finalized)}
+        draftsLeft={isPro || !freeLimit ? null : Math.max(0, freeLimit - draftsThisMonth)}
+        freeLimit={freeLimit}
+        studyPrompt={studyPromptForDay()}
+        clientCount={clientCount}
+      />
 
       {/* Stats — fixed: was a hard-coded 4-col grid with no breakpoints */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

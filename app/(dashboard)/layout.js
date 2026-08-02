@@ -64,6 +64,8 @@ export default async function DashboardLayout({ children }) {
     ...lawyerLinks,
     { type: 'header', label: 'Future Lawyer' },
     ...futureLawyerLinks,
+    { type: 'header', label: 'You' },
+    { href: '/account', label: 'Account', icon: '⚙', locked: false },
     ...(admin ? [
       { type: 'header', label: 'Admin' },
       {

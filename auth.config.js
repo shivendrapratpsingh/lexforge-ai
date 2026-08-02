@@ -42,7 +42,7 @@ export const authConfig = {
         nextUrl.pathname.startsWith('/register')         ||
         nextUrl.pathname.startsWith('/forgot-password')  ||
         nextUrl.pathname.startsWith('/reset-password')
-      const isProtected = ['/dashboard', '/drafts', '/new-draft', '/research', '/clients', '/court-dates', '/tools', '/admin', '/upgrade', '/study', '/future-lawyer'].some(
+      const isProtected = ['/dashboard', '/drafts', '/new-draft', '/research', '/clients', '/court-dates', '/tools', '/admin', '/upgrade', '/study', '/future-lawyer', '/account'].some(
         p => nextUrl.pathname.startsWith(p)
       )
       const isAdminRoute = nextUrl.pathname.startsWith('/admin')

@@ -36,6 +36,7 @@ model User {
   courtDates       CourtDate[]
   drafts           Draft[]
   pushSubs         PushSubscription[]
+  trackedCases     TrackedCase[]
 }
 
 // A browser/device push endpoint for the daily digest. One user can have
@@ -252,4 +253,100 @@ model SystemConfig {
   freeDocsLimit         Int      @default(10)
   updatedAt             DateTime @updatedAt
   updatedBy             String?
+}
+
+// ── Live legal data ───────────────────────────────────────────────
+// Case law and legislation pulled from external providers. Everything
+// here is a CACHE, never a mirror: the judgment corpus is 30M+ documents
+// billed per call, so we fetch on demand and keep what users actually
+// open. Nothing is stored that we did not fetch for a real request.
+
+// One Act from India Code (indiacode.nic.in), the official Government
+// repository of every Central and State enactment. Free and public, so
+// this table IS harvested in full — unlike judgments.
+model ActRecord {
+  id            String    @id @default(cuid())
+  source        String    @default("indiacode")
+  handle        String    @unique          // India Code DSpace handle
+  shortTitle    String
+  actNumber     String?
+  actYear       Int?
+  ministry      String?
+  enactmentDate DateTime?
+  jurisdiction  String    @default("central")  // central | <state>
+  url           String
+  repealed      Boolean   @default(false)
+  firstSeenAt   DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([actYear])
+  @@index([shortTitle])
+  @@index([jurisdiction])
+}
+
+// A judgment fetched from a provider and kept so the same document is
+// never paid for twice. hitCount drives what is worth keeping if the
+// cache ever needs trimming.
+model CachedJudgment {
+  id           String    @id @default(cuid())
+  provider     String                        // indiankanoon | ecourts
+  docId        String
+  title        String
+  court        String?
+  bench        String?
+  judgmentDate DateTime?
+  citation     String?
+  snippet      String?
+  fullText     String?
+  sourceUrl    String?
+  fetchedAt    DateTime  @default(now())
+  lastReadAt   DateTime  @default(now())
+  hitCount     Int       @default(1)
+
+  @@unique([provider, docId])
+  @@index([court])
+  @@index([judgmentDate])
+}
+
+// A case a user is following by CNR. Refreshed by the daily job so the
+// next hearing date on their dashboard stays current without anyone
+// having to look it up by hand.
+model TrackedCase {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cnr           String                        // Case Number Record, the national id
+  caseNumber    String?
+  title         String?
+  court         String?
+  stage         String?
+  nextHearing   DateTime?
+  lastOrderDate DateTime?
+  parties       String?
+  raw           String?                       // provider payload, as returned
+  refreshedAt   DateTime  @default(now())
+  refreshError  String?
+  createdAt     DateTime  @default(now())
+
+  @@unique([userId, cnr])
+  @@index([userId])
+  @@index([nextHearing])
+}
+
+// One row per run of the daily sync. Doubles as the resume cursor: the
+// job is bounded by wall-clock time so it fits a serverless invocation,
+// and picks up next morning where it stopped.
+model LegalSyncRun {
+  id         String    @id @default(cuid())
+  job        String                          // acts | cases | judgments
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  ok         Boolean   @default(false)
+  cursor     String?
+  scanned    Int       @default(0)
+  added      Int       @default(0)
+  updated    Int       @default(0)
+  error      String?
+
+  @@index([job, startedAt])
 }

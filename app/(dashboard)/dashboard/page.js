@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import DailyBriefWidget from '@/components/DailyBriefWidget'
 import WidgetWall from '@/components/WidgetWall'
+import RelevantCaseFinder from '@/components/RelevantCaseFinder'
 import { lineForDay, studyPromptForDay } from '@/lib/daily-lines'
 
 async function getDashboardData(userId) {
@@ -98,6 +99,10 @@ export default async function DashboardPage() {
           {t('dbError', { error })}
         </div>
       )}
+
+      {/* Describe a matter, get the authorities. First on the page
+          because it is the thing a lawyer opens the app to do. */}
+      <RelevantCaseFinder isPro={isPro} />
 
       {/* Widget wall — the Aurora tiles. Everything that matters at 8 AM,
           above the fold, before the reporting numbers. */}

@@ -26,6 +26,7 @@ export default async function DashboardLayout({ children }) {
     { href: '/court-dates', labelKey: 'nav.courtDates',    icon: '📅', proOnly: true  },
     { href: '/tools',       labelKey: 'nav.legalTools',    icon: '⚒️', proOnly: true  },
     { href: '/research',    labelKey: 'nav.legalResearch', icon: '◎', proOnly: true  },
+    { href: '/case-law',    label:    'Case Law & Status', icon: '⚖️', proOnly: true  },
     { href: '/study',       label:    'Study & Learn',     icon: '📚', proOnly: false },
   ]
 

@@ -68,11 +68,12 @@ export default async function DashboardPage() {
   const todaysLine = lineForDay()
   const nextHearing = upcomingDates.find(d => new Date(d.date) >= new Date()) || null
 
+  // No "document types" tile: it counted a constant (always 20), which is
+  // not a statistic, and it is the same clutter the Document Types list was.
   const stats = [
     { label: t('stats.totalDocuments'), value: total,       icon: '📄', color: '#D4A017' },
     { label: t('stats.finalized'),      value: finalized,    icon: '✅', color: '#4CAF50' },
     { label: t('stats.clients'),        value: clientCount,  icon: '👤', color: '#8B5CF6', href: '/clients' },
-    { label: t('stats.docTypes'),       value: DOCUMENT_TYPES.length, icon: '⚖️', color: '#2196F3' },
   ]
 
   // Use Hindi-friendly date formatting when locale=hi
@@ -111,7 +112,7 @@ export default async function DashboardPage() {
       />
 
       {/* Stats — fixed: was a hard-coded 4-col grid with no breakpoints */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {stats.map(s => {
           const content = (
             <>
@@ -157,45 +158,66 @@ export default async function DashboardPage() {
       })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
-        {/* Recent Documents */}
-        <Card className="p-5 sm:p-6">
-          <div className="flex justify-between items-center mb-5">
-            <h2 className="text-[17px] font-bold text-ink">{t('recentDocuments')}</h2>
-            <Link href="/drafts" className="text-[13px] text-gold no-underline font-semibold">{t('viewAll')}</Link>
-          </div>
+        {/* ── The two research surfaces, given the main column so every
+             user meets them on the page they land on after signing in.
+             Free users are pointed at /upgrade rather than hidden from
+             the feature, so they can see what they are missing. ── */}
+        <div className="flex flex-col gap-5">
+          <Link href={isPro ? '/case-law' : '/upgrade'} className="no-underline">
+            <Card interactive className="block p-5 sm:p-6 bg-gradient-to-br from-[#141008] to-surface border-gold/20">
+              <div className="flex items-start gap-4">
+                <div className="size-12 rounded-card bg-gold/10 border border-gold/25 flex items-center justify-center text-2xl shrink-0">
+                  ⚖️
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-[17px] font-bold text-ink">Case Law &amp; Status</h2>
+                    {!isPro && <Badge tone="warning" className="shrink-0">PRO</Badge>}
+                  </div>
+                  <p className="text-[13.5px] text-ink-muted leading-relaxed mt-1.5">
+                    Search judgments from the Supreme Court, every High Court and the
+                    tribunals. Enter a CNR number to pull a live case — parties, stage
+                    and the next hearing date — and it stays tracked from then on.
+                  </p>
+                  <div className="flex gap-4 flex-wrap mt-3">
+                    <span className="text-[11.5px] text-ink-faint">◆ Judgment search</span>
+                    <span className="text-[11.5px] text-ink-faint">◆ Case by CNR</span>
+                    <span className="text-[11.5px] text-ink-faint">◆ New Acts daily</span>
+                  </div>
+                  <div className="text-[13px] text-gold font-semibold mt-3.5">
+                    {isPro ? 'Open case law →' : 'Upgrade to unlock →'}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </Link>
 
-          {drafts.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">📄</div>
-              <p className="text-ink-faint mb-4">{t('noDocuments')}</p>
-              <Link href="/new-draft">
-                <Button variant="primary">{t('createFirst')}</Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {drafts.map(draft => {
-                const dt = DOCUMENT_TYPES.find(t => t.value === draft.documentType)
-                return (
-                  <Link key={draft.id} href={`/drafts/${draft.id}`}
-                    className="flex items-center gap-3.5 px-3 py-3.5 rounded-btn no-underline hover:bg-surface-2 transition-colors"
-                  >
-                    <div className="size-10 bg-surface-2 rounded-btn flex items-center justify-center shrink-0 text-xl">
-                      {dt?.icon || '📄'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-ink truncate">{draft.title}</div>
-                      <div className="text-xs text-ink-faint mt-0.5">{dt?.label} · {formatDate(draft.updatedAt)}</div>
-                    </div>
-                    <Badge tone={draft.status === 'finalized' ? 'success' : 'warning'} className="shrink-0">{draft.status}</Badge>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </Card>
+          <Link href={isPro ? '/research' : '/upgrade'} className="no-underline">
+            <Card interactive className="block p-5 sm:p-6">
+              <div className="flex items-start gap-4">
+                <div className="size-12 rounded-card bg-surface-2 border border-border flex items-center justify-center text-2xl shrink-0">
+                  ◎
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-[17px] font-bold text-ink">{t('researchCaseLaws')}</h2>
+                    {!isPro && <Badge tone="warning" className="shrink-0">PRO</Badge>}
+                  </div>
+                  <p className="text-[13.5px] text-ink-muted leading-relaxed mt-1.5">
+                    Ask a question in plain language and get the provisions, the leading
+                    authorities and the reasoning that applies — with the exact Act and
+                    section, ready to cite.
+                  </p>
+                  <div className="text-[13px] text-gold font-semibold mt-3.5">
+                    {isPro ? 'Start researching →' : 'Upgrade to unlock →'}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </Link>
+        </div>
 
-        {/* Quick Actions + Upcoming Dates */}
+        {/* Sidebar */}
         <div className="flex flex-col gap-4">
           {/* Daily brief: notification control + a preview of tomorrow's push */}
           <DailyBriefWidget
@@ -223,19 +245,54 @@ export default async function DashboardPage() {
             </div>
           </Card>
 
-          {/* Upcoming Court Dates widget */}
+          {/* Recent Documents — moved into the sidebar so the main column
+              belongs to the research surfaces. */}
           <Card className="p-5">
             <div className="flex justify-between items-center mb-3.5">
-              <h3 className="text-sm font-bold text-ink">{t('upcomingDates')}</h3>
-              <Link href="/court-dates" className="text-xs text-gold no-underline font-semibold">{t('viewAll')}</Link>
+              <h3 className="text-sm font-bold text-ink">{t('recentDocuments')}</h3>
+              <Link href="/drafts" className="text-xs text-gold no-underline font-semibold">{t('viewAll')}</Link>
             </div>
-            {upcomingDates.length === 0 ? (
-              <div className="text-center py-4 text-ink-faint text-[13px]">
-                {t('noUpcomingDates')}{' '}
-                <Link href="/court-dates" className="text-gold no-underline">{t('addOne')}</Link>
+
+            {drafts.length === 0 ? (
+              <div className="text-center py-6">
+                <div className="text-3xl mb-2.5">📄</div>
+                <p className="text-ink-faint text-[13px] mb-3.5">{t('noDocuments')}</p>
+                <Link href="/new-draft">
+                  <Button variant="primary" className="text-[13px]">{t('createFirst')}</Button>
+                </Link>
               </div>
             ) : (
-              upcomingDates.map(d => {
+              <div className="flex flex-col gap-0.5">
+                {drafts.map(draft => {
+                  const dt = DOCUMENT_TYPES.find(t => t.value === draft.documentType)
+                  return (
+                    <Link key={draft.id} href={`/drafts/${draft.id}`}
+                      className="flex items-center gap-2.5 px-2 py-2.5 rounded-btn no-underline hover:bg-surface-2 transition-colors"
+                    >
+                      <div className="size-8 bg-surface-2 rounded-btn flex items-center justify-center shrink-0 text-base">
+                        {dt?.icon || '📄'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-semibold text-ink truncate">{draft.title}</div>
+                        <div className="text-[11px] text-ink-faint mt-0.5 truncate">{formatDate(draft.updatedAt)}</div>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* Upcoming court dates — only once there are some. An empty
+              "no dates yet" card is dead weight on every login for
+              anyone who does not use the feature. */}
+          {upcomingDates.length > 0 && (
+            <Card className="p-5">
+              <div className="flex justify-between items-center mb-3.5">
+                <h3 className="text-sm font-bold text-ink">{t('upcomingDates')}</h3>
+                <Link href="/court-dates" className="text-xs text-gold no-underline font-semibold">{t('viewAll')}</Link>
+              </div>
+              {upcomingDates.map(d => {
                 const diff = Math.round((new Date(d.date) - new Date()) / 86400000)
                 const typeColors = { hearing: '#60A5FA', compliance: '#F97316', filing: '#8B5CF6', order: '#D4A017', deadline: '#F87171' }
                 const color = typeColors[d.type] || '#5A5A5A'
@@ -255,20 +312,9 @@ export default async function DashboardPage() {
                     </div>
                   </Link>
                 )
-              })
-            )}
-          </Card>
-
-          <Card className="bg-gradient-to-br from-[#1A1200] to-surface border-gold/15 p-5">
-            <h3 className="text-xs font-bold text-gold mb-3 uppercase tracking-wide">{t('documentTypes')}</h3>
-            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-              {DOCUMENT_TYPES.map(dtype => (
-                <div key={dtype.value} className="flex items-center gap-2 text-[13px] text-ink-muted">
-                  <span>{dtype.icon}</span> {dtype.label}
-                </div>
-              ))}
-            </div>
-          </Card>
+              })}
+            </Card>
+          )}
         </div>
       </div>
     </div>

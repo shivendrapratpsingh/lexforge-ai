@@ -92,14 +92,39 @@ async function run() {
   return { ok: true, users: byUser.size, sent, pruned, skipped }
 }
 
+// The legal-data sync rides along with this job. Vercel Hobby allows two
+// cron jobs and both are already spoken for, and this one already fires
+// at 8 AM IST — which is when new Acts were asked to be checked anyway.
+//
+// It runs AFTER the notifications and on a small budget: a slow court
+// API upstream must never be the reason somebody's hearing reminder does
+// not go out. Its failure is recorded and swallowed for the same reason.
+async function runLegalSync() {
+  try {
+    const { runDailySync } = await import('@/lib/legal-data/sync')
+    return await runDailySync({ budgetMs: 20_000 })
+  } catch (e) {
+    console.error('[push/daily] legal sync failed:', e?.message)
+    return { ok: false, error: e?.message }
+  }
+}
+
 export async function GET(req) {
   if (!authorised(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  try { return NextResponse.json(await run()) }
+  try {
+    const notifications = await run()
+    const legal = await runLegalSync()
+    return NextResponse.json({ ...notifications, legal })
+  }
   catch (e) { console.error('[push/daily]', e?.message); return NextResponse.json({ ok: false, error: e?.message }, { status: 500 }) }
 }
 
 export async function POST(req) {
   if (!authorised(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  try { return NextResponse.json(await run()) }
+  try {
+    const notifications = await run()
+    const legal = await runLegalSync()
+    return NextResponse.json({ ...notifications, legal })
+  }
   catch (e) { console.error('[push/daily]', e?.message); return NextResponse.json({ ok: false, error: e?.message }, { status: 500 }) }
 }

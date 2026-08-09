@@ -8,20 +8,74 @@ export default function ResearchPage() {
   const [issue, setIssue] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState('')
+  const [cases, setCases] = useState([])
+  const [caseLawStatus, setCaseLawStatus] = useState(null)
   const [err, setErr] = useState('')
 
   const handleSearch = v => { setQuery(v); setResults(searchCaseLaws(v)) }
 
   const handleAnalyze = async () => {
     if (!issue.trim()) return
-    setAnalyzing(true); setAnalysis(''); setErr('')
+    setAnalyzing(true); setAnalysis(''); setCases([]); setCaseLawStatus(null); setErr('')
     try {
       const res = await fetch(`/api/legal/analyze?issue=${encodeURIComponent(issue)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setAnalysis(data.analysis)
+      setCases(data.cases || [])
+      setCaseLawStatus(data.caseLawStatus || null)
     } catch (e) { setErr(e.message || 'Analysis failed.') }
     finally { setAnalyzing(false) }
+  }
+
+  // Every authority the analysis may mention, with a link to its original
+  // text. Nothing cited should be unverifiable by the person reading it.
+  const SourceList = () => {
+    if (!analysis) return null
+    if (caseLawStatus !== 'ok' || cases.length === 0) {
+      const why = {
+        'unavailable': 'Case law search is not switched on for this deployment, so no judgments were retrieved.',
+        'none-found': 'No judgments matched this issue in the case-law index.',
+        'retrieval-failed': 'The case-law index could not be reached just now.',
+      }[caseLawStatus] || 'No judgments were retrieved for this issue.'
+      return (
+        <div style={{
+          marginTop: 16, padding: '13px 15px', borderRadius: 10,
+          background: 'rgba(225,88,75,.07)', border: '1px solid rgba(225,88,75,.3)',
+          fontSize: 12.5, color: '#FF9A8F', lineHeight: 1.6,
+        }}>
+          <b>No verified case law.</b> {why} The analysis above therefore cites
+          no judgments &mdash; search case law directly before relying on any
+          precedent.
+        </div>
+      )
+    }
+    return (
+      <div style={{ marginTop: 18 }}>
+        <div style={{
+          fontSize: 10, fontWeight: 800, letterSpacing: '1.4px',
+          color: '#D4A017', textTransform: 'uppercase', marginBottom: 4,
+        }}>
+          Verified sources &mdash; {cases.length} judgment{cases.length === 1 ? '' : 's'}
+        </div>
+        <p style={{ fontSize: 11.5, color: '#6E6E68', lineHeight: 1.55, margin: '0 0 10px' }}>
+          These were retrieved from the case-law index, not written by the AI.
+          The analysis may discuss only these. Open any of them to read the
+          original judgment.
+        </p>
+        {cases.map((c, i) => (
+          <a key={i} href={c.sourceUrl} target="_blank" rel="noopener noreferrer"
+            style={{ display: 'block', padding: '10px 0', borderBottom: '1px solid #1F1F1F', textDecoration: 'none' }}>
+            <div style={{ fontFamily: 'Georgia, serif', fontSize: 13.5, color: '#F0E4C0', lineHeight: 1.4 }}>
+              {c.title}
+            </div>
+            <div style={{ fontSize: 11, color: '#8A7748', marginTop: 3 }}>
+              {[c.court, c.date, c.citation].filter(Boolean).join(' · ')}
+            </div>
+          </a>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -84,9 +138,14 @@ export default function ResearchPage() {
           {err && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444', padding: '12px 16px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
           {analysis && (
-            <div style={{ background: '#0D0D0D', border: '1px solid rgba(212,160,23,0.15)', borderRadius: 12, padding: 20, maxHeight: 420, overflowY: 'auto' }}>
+            <div style={{ background: '#0D0D0D', border: '1px solid rgba(212,160,23,0.15)', borderRadius: 12, padding: 20, maxHeight: 620, overflowY: 'auto' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#D4A017', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 12 }}>⚖ Analysis Result</div>
               <div style={{ fontSize: 13, color: '#C0C0C0', lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>{analysis}</div>
+              <SourceList />
+              <p style={{ fontSize: 11, color: '#5A5A5A', lineHeight: 1.6, marginTop: 16, paddingTop: 12, borderTop: '1px solid #1F1F1F' }}>
+                Always read the original judgment before relying on it. This is
+                research assistance, not legal advice.
+              </p>
             </div>
           )}
         </div>

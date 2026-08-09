@@ -12,7 +12,31 @@ export default function ResearchPage() {
   const [caseLawStatus, setCaseLawStatus] = useState(null)
   const [err, setErr] = useState('')
 
-  const handleSearch = v => { setQuery(v); setResults(searchCaseLaws(v)) }
+  // Searches the live case-law index. The 8 landmarks in lib/utils are only
+  // a fallback for when the index is unreachable — they are a reference
+  // shelf, not a database, and should never be mistaken for one.
+  const [live, setLive] = useState(null)      // null = offline list in use
+  const [searching, setSearching] = useState(false)
+
+  const handleSearch = v => {
+    setQuery(v)
+    setResults(searchCaseLaws(v))             // instant, offline
+  }
+
+  const runLiveSearch = async (e) => {
+    e?.preventDefault()
+    if (!query.trim()) return
+    setSearching(true)
+    try {
+      const r = await fetch(`/api/legal/search?q=${encodeURIComponent(query)}`)
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Search failed')
+      setLive(j.results || [])
+    } catch (e) {
+      setLive([])
+      setErr(e.message)
+    } finally { setSearching(false) }
+  }
 
   const handleAnalyze = async () => {
     if (!issue.trim()) return
@@ -96,7 +120,52 @@ export default function ResearchPage() {
               onBlur={e => e.target.style.borderColor = '#2A2A2A'}
             />
           </div>
-          <p style={{ fontSize: 12, color: '#3A3A3A', marginBottom: 14 }}>{results.length} case{results.length !== 1 ? 's' : ''} found</p>
+          <button type="button" onClick={runLiveSearch} disabled={searching || !query.trim()}
+            style={{
+              width: '100%', padding: '11px', marginBottom: 14, borderRadius: 9,
+              fontSize: 13.5, fontWeight: 700, border: 'none',
+              cursor: searching || !query.trim() ? 'not-allowed' : 'pointer',
+              background: searching || !query.trim() ? '#1C1C1C' : 'linear-gradient(135deg,#D4A017,#B8860B)',
+              color: searching || !query.trim() ? '#4A4A4A' : '#0D0D0D',
+            }}>
+            {searching ? 'Searching 30 million judgments…' : '🔎 Search the full case-law index'}
+          </button>
+
+          {live !== null ? (
+            <>
+              <p style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 4 }}>
+                {live.length} judgment{live.length !== 1 ? 's' : ''} from the live index
+              </p>
+              <p style={{ fontSize: 11, color: '#3A3A3A', marginBottom: 12 }}>
+                Real judgments with real citations. Open any to read the original.{' '}
+                <button type="button" onClick={() => setLive(null)}
+                  style={{ background: 'none', border: 'none', color: '#D4A017', cursor: 'pointer', fontSize: 11, padding: 0 }}>
+                  Back to landmarks
+                </button>
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 520, overflowY: 'auto' }}>
+                {live.length === 0 && (
+                  <div style={{ fontSize: 12.5, color: '#6A6A6A', lineHeight: 1.6 }}>
+                    Nothing matched. Try the legal issue or the section rather than a case name.
+                  </div>
+                )}
+                {live.map(c => (
+                  <a key={c.docId} href={c.sourceUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 12, padding: 16, textDecoration: 'none', display: 'block' }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 700, color: '#F0E4C0', lineHeight: 1.4, fontFamily: 'Georgia, serif' }}>{c.title}</h3>
+                    <div style={{ fontSize: 11, color: '#8A7748', marginTop: 5 }}>
+                      {[c.court, c.date, c.citation].filter(Boolean).join(' · ')}
+                    </div>
+                    {c.snippet && <div style={{ fontSize: 12, color: '#6A6A6A', lineHeight: 1.6, marginTop: 7 }}>{c.snippet}</div>}
+                  </a>
+                ))}
+              </div>
+            </>
+          ) : (
+          <>
+          <p style={{ fontSize: 12, color: '#3A3A3A', marginBottom: 14 }}>
+            {results.length} landmark{results.length !== 1 ? 's' : ''} &mdash; offline reference shelf. Use the button above to search the full index.
+          </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 520, overflowY: 'auto' }}>
             {results.map(cl => (
               <div key={cl.id} style={{ background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 12, padding: 16, transition: 'border-color 0.15s' }}
@@ -118,12 +187,14 @@ export default function ResearchPage() {
               </div>
             ))}
           </div>
+          </>
+          )}
         </div>
 
         {/* AI Analysis */}
         <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 16, padding: 24 }}>
           <h2 style={{ fontSize: 17, fontWeight: 700, color: '#F0F0F0', marginBottom: 6 }}>AI Legal Analysis</h2>
-          <p style={{ fontSize: 13, color: '#5A5A5A', marginBottom: 16 }}>Describe a legal issue and get AI-powered analysis with laws and case citations</p>
+          <p style={{ fontSize: 13, color: '#5A5A5A', marginBottom: 16 }}>Describe a legal issue. Judgments are retrieved from the real case-law index, never written by the AI &mdash; every one is listed below the analysis with a link to the original.</p>
           <textarea value={issue} onChange={e => setIssue(e.target.value)} placeholder="e.g., A tenant is refusing to vacate after lease expiry. What remedies are available under Indian law?" rows={6}
             style={{ width: '100%', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 10, padding: '13px 16px', color: '#F0F0F0', fontSize: 14, outline: 'none', resize: 'vertical', marginBottom: 12 }}
             onFocus={e => e.target.style.borderColor = '#D4A017'}

@@ -12,6 +12,20 @@ export default async function DashboardLayout({ children }) {
 
   const t        = await getTranslations()
   const admin    = isAdmin(session)
+
+  // Faculty co-ordinators get one extra link. Read here rather than
+  // guessed from the session, because role is set by an admin after the
+  // college confirms who the co-ordinator is — it must not be something
+  // a stale token can carry.
+  let faculty = false
+  try {
+    const { prisma } = await import('@/lib/prisma')
+    const me = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true, institutionId: true },
+    })
+    faculty = me?.role === 'faculty' && Boolean(me.institutionId)
+  } catch { /* the link simply does not appear */ }
   const pro      = await hasProAccessForSession(session)
   const tier     = admin ? 'admin' : (pro ? 'pro' : 'free')
   const tierLbl  = t(`tier.${tier}`)
@@ -66,6 +80,10 @@ export default async function DashboardLayout({ children }) {
     ...lawyerLinks,
     { type: 'header', label: 'Future Lawyer' },
     ...futureLawyerLinks,
+    ...(faculty ? [
+      { type: 'header', label: 'Faculty' },
+      { href: '/college', label: 'My college', icon: '🏛', locked: false },
+    ] : []),
     { type: 'header', label: 'You' },
     { href: '/account', label: 'Account', icon: '⚙', locked: false },
     ...(admin ? [

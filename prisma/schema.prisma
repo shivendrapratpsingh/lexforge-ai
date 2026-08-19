@@ -394,6 +394,7 @@ model Institution {
   members  User[]
   invites  InstitutionInvite[]
   usage    ApiUsage[]
+  invoices Invoice[]
 
   @@index([plan])
 }
@@ -491,5 +492,42 @@ model PilotRequest {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  @@index([status])
+}
+
+// An invoice raised against an institution.
+//
+// Stored rather than generated on the fly because the number has to be a
+// sequence: an invoice with a number that changes, or repeats, is not an
+// invoice a college's accounts department will accept, and under GST the
+// series has to be continuous for the financial year.
+//
+// The amounts are frozen at issue. A price change next term must not
+// silently rewrite an invoice a college has already paid.
+model Invoice {
+  id            String      @id @default(cuid())
+  number        String      @unique                // LF/2026-27/0001
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  status        String      @default("proforma")   // proforma | issued | paid | cancelled
+  description   String                             // "Annual licence, 300 seats"
+  seats         Int         @default(0)
+  unitPaise     Int         @default(0)
+  amountPaise   Int         @default(0)            // seats x unit, before tax
+  taxPercent    Int         @default(0)            // 18 once GST registration exists
+  taxPaise      Int         @default(0)
+  totalPaise    Int         @default(0)
+
+  periodStart   DateTime?
+  periodEnd     DateTime?
+  issuedAt      DateTime?
+  paidAt        DateTime?
+  notes         String?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([institutionId])
   @@index([status])
 }

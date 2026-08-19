@@ -315,6 +315,7 @@ function Detail({ id, onChanged }) {
         {chip('activity', 'What they use')}
         {chip('members', `Members (${d.memberList.length})`)}
         {chip('invite', 'Invite a class')}
+        {chip('invoices', 'Invoices')}
         {chip('settings', 'Settings')}
       </div>
 
@@ -329,23 +330,179 @@ function Detail({ id, onChanged }) {
             ))
       )}
 
-      {tab === 'members' && (
-        d.memberList.length === 0
-          ? <div style={{ fontSize: 12.5, color: '#8A8A8A' }}>Nobody has signed up yet.</div>
-          : <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-              {d.memberList.map(m => (
-                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '7px 0', borderBottom: '1px solid #1A1A1A', fontSize: 12.5 }}>
-                  <span style={{ color: '#C0C0C0', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {m.email}{m.batch ? ` · ${m.batch}` : ''}
-                  </span>
-                  <span style={{ color: '#6E6E68', flex: 'none' }}>{m.drafts} doc{m.drafts === 1 ? '' : 's'}</span>
-                </div>
-              ))}
-            </div>
-      )}
+      {tab === 'members' && <Members id={id} members={d.memberList} onChanged={load} />}
 
       {tab === 'invite' && <InviteForm id={id} onDone={() => { load(); onChanged?.() }} />}
+      {tab === 'invoices' && <Invoices id={id} suggestedSeats={d.activity.signedUp} />}
       {tab === 'settings' && <Settings inst={d.institution} onDone={() => { load(); onChanged?.() }} />}
+    </div>
+  )
+}
+
+// Marking somebody faculty hands them the roster of everyone at their
+// college, so it happens here, after confirming with the college who the
+// co-ordinator actually is — never on a user's own say-so.
+function Members({ id, members, onChanged }) {
+  const [busy, setBusy] = useState('')
+  const [msg, setMsg] = useState(null)
+
+  async function setRole(userId, role) {
+    setBusy(userId); setMsg(null)
+    try {
+      const r = await fetch(`/api/admin/institutions/${id}/members`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      onChanged?.()
+    } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy('') }
+  }
+
+  if (!members.length) return <div style={{ fontSize: 12.5, color: '#8A8A8A' }}>Nobody has signed up yet.</div>
+
+  return (
+    <>
+      <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+        {members.map(m => (
+          <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #1A1A1A', fontSize: 12.5, flexWrap: 'wrap' }}>
+            <span style={{ color: '#C0C0C0', minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {m.email}
+              {m.batch && <span style={{ color: '#6E6E68' }}> · {m.batch}</span>}
+              {m.role === 'faculty' && <span style={{ color: '#D4A017' }}> · faculty</span>}
+            </span>
+            <span style={{ color: '#6E6E68', flex: 'none' }}>{m.drafts} doc{m.drafts === 1 ? '' : 's'}</span>
+            <button type="button" disabled={busy === m.id}
+              onClick={() => setRole(m.id, m.role === 'faculty' ? 'student' : 'faculty')}
+              style={{ ...S.ghost, padding: '4px 10px', fontSize: 11 }}>
+              {m.role === 'faculty' ? 'Make student' : 'Make faculty'}
+            </button>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 11.5, color: '#5A5A5A', marginTop: 10, lineHeight: 1.6 }}>
+        A faculty co-ordinator gets their college&rsquo;s roster, its join code
+        and its activity at /college — how much each student works, never what
+        they wrote.
+      </p>
+      {msg && <div style={S.err}>{msg.text}</div>}
+    </>
+  )
+}
+
+// A college cannot pay against an email — it needs a numbered document
+// to raise a purchase order against. Seats default to the number who
+// actually signed up, because billing for 300 when 40 use it is how a
+// pilot becomes an argument.
+function Invoices({ id, suggestedSeats }) {
+  const [d, setD] = useState(null)
+  const [f, setF] = useState({
+    description: 'LexForge Pro — annual institutional licence',
+    seats: String(suggestedSeats || 1), unitRupees: '',
+    periodStart: '', periodEnd: '', notes: '',
+  })
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState(null)
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/admin/institutions/${id}/invoices`)
+      if (r.ok) setD(await r.json())
+    } catch { /* the list simply does not render */ }
+  }, [id])
+  useEffect(() => { load() }, [load])
+
+  const total = (Number(f.seats) || 0) * (Number(f.unitRupees) || 0)
+  const tax = d ? total * (d.taxPercent / 100) : 0
+
+  async function raise(e) {
+    e.preventDefault()
+    setBusy(true); setMsg(null)
+    try {
+      const r = await fetch(`/api/admin/institutions/${id}/invoices`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setMsg({ ok: true, text: `${j.invoice.number} raised.` })
+      load()
+    } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
+  }
+
+  async function mark(invoiceId, status) {
+    setBusy(true)
+    try {
+      await fetch(`/api/admin/institutions/${id}/invoices`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceId, status }),
+      })
+      load()
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div>
+      {d?.invoices?.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          {d.invoices.map(iv => (
+            <div key={iv.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #1A1A1A', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0 }}>
+                <a href={`/admin/invoice/${iv.id}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 13, fontWeight: 700, color: '#D4A017', textDecoration: 'none' }}>{iv.number}</a>
+                <span style={{ fontSize: 11.5, color: '#6E6E68', marginLeft: 8 }}>
+                  {iv.status} · {iv.seats} seats · {money(iv.totalPaise / 100)}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {iv.status !== 'paid' && <button type="button" style={{ ...S.ghost, padding: '4px 10px', fontSize: 11.5 }} onClick={() => mark(iv.id, 'paid')} disabled={busy}>Mark paid</button>}
+                {iv.status !== 'cancelled' && <button type="button" style={{ ...S.ghost, padding: '4px 10px', fontSize: 11.5 }} onClick={() => mark(iv.id, 'cancelled')} disabled={busy}>Cancel</button>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form onSubmit={raise}>
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={S.label}>What for</label>
+            <input value={f.description} onChange={set('description')} required style={S.input} />
+          </div>
+          <div>
+            <label style={S.label}>Seats</label>
+            <input type="number" min="1" value={f.seats} onChange={set('seats')} required style={S.input} />
+          </div>
+          <div>
+            <label style={S.label}>Price per seat (₹)</label>
+            <input type="number" min="0" step="1" value={f.unitRupees} onChange={set('unitRupees')} required style={S.input} placeholder="300" />
+          </div>
+          <div>
+            <label style={S.label}>Period from</label>
+            <input type="date" value={f.periodStart} onChange={set('periodStart')} style={S.input} />
+          </div>
+          <div>
+            <label style={S.label}>Period to</label>
+            <input type="date" value={f.periodEnd} onChange={set('periodEnd')} style={S.input} />
+          </div>
+        </div>
+
+        <div style={{ margin: '12px 0', fontSize: 13, color: '#C0C0C0' }}>
+          {money(total)}
+          {d?.taxPercent > 0
+            ? <> + {d.taxPercent}% GST {money(tax)} = <strong style={{ color: '#F0E4C0' }}>{money(total + tax)}</strong></>
+            : <span style={{ color: '#6E6E68' }}> — proforma, no GST charged (no registration yet)</span>}
+        </div>
+
+        <button type="submit" style={S.btn(busy)} disabled={busy}>{busy ? 'Raising…' : 'Raise invoice'}</button>
+        {msg && <div style={msg.ok ? S.ok : S.err}>{msg.text}</div>}
+        <p style={{ fontSize: 11.5, color: '#5A5A5A', margin: '10px 0 0', lineHeight: 1.6 }}>
+          Seats default to how many students actually signed up. Billing for
+          three hundred when forty use it is how a renewal turns into an
+          argument. Numbers run in one unbroken series per financial year, and
+          a cancelled invoice keeps its number.
+        </p>
+      </form>
     </div>
   )
 }

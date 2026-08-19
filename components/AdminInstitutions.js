@@ -38,6 +38,83 @@ const S = {
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+// Colleges that filled in the form on /for-colleges and are waiting for
+// a reply. Shown above the institutions list because a request nobody
+// answers is a lost customer, and it is the only thing on this screen
+// with a person on the other end of it.
+function PilotRequests() {
+  const [d, setD] = useState(null)
+  const [busy, setBusy] = useState('')
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch('/api/admin/pilot-requests')
+      if (r.ok) setD(await r.json())
+    } catch { /* the panel simply does not render */ }
+  }, [])
+  useEffect(() => { load() }, [load])
+
+  async function move(id, status) {
+    setBusy(id)
+    try {
+      await fetch('/api/admin/pilot-requests', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      })
+      load()
+    } finally { setBusy('') }
+  }
+
+  if (!d?.requests?.length) return null
+
+  const tone = { new: '#D4A017', contacted: '#60A5FA', converted: '#5FCC8D', declined: '#6A6A6A' }
+
+  return (
+    <div style={{ ...S.card, borderColor: d.waiting > 0 ? 'rgba(212,160,23,.35)' : '#2A2A2A' }}>
+      <div style={S.kicker}>Pilot requests</div>
+      <h2 style={{ fontSize: 16, fontWeight: 800, color: '#F0F0F0', margin: 0 }}>
+        {d.waiting > 0 ? `${d.waiting} college${d.waiting === 1 ? '' : 's'} waiting for a reply` : 'All replied to'}
+      </h2>
+      <div style={{ marginTop: 14 }}>
+        {d.requests.map(r => (
+          <div key={r.id} style={{ borderTop: '1px solid #1F1F1F', padding: '12px 0' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#F0E4C0' }}>{r.college}</span>
+              <span style={{
+                fontSize: 9.5, fontWeight: 800, letterSpacing: '.08em', padding: '3px 7px',
+                borderRadius: 5, textTransform: 'uppercase',
+                border: `1px solid ${tone[r.status]}55`, color: tone[r.status],
+              }}>{r.status}</span>
+              <span style={{ fontSize: 11.5, color: '#6E6E68' }}>
+                {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              </span>
+            </div>
+            <div style={{ fontSize: 12.5, color: '#9A9A9A', marginTop: 4, lineHeight: 1.6 }}>
+              {r.contactName} · <a href={`mailto:${r.contactEmail}`} style={{ color: '#9A8C6E' }}>{r.contactEmail}</a>
+              {r.phone && ` · ${r.phone}`}
+              {r.role && ` · ${r.role}`}
+              {r.students && ` · ${r.students} students`}
+            </div>
+            {r.message && (
+              <div style={{ fontSize: 12.5, color: '#8A8A8A', marginTop: 6, lineHeight: 1.7, fontStyle: 'italic' }}>
+                “{r.message}”
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 6, marginTop: 9, flexWrap: 'wrap' }}>
+              {['contacted', 'converted', 'declined'].filter(sx => sx !== r.status).map(sx => (
+                <button key={sx} type="button" onClick={() => move(r.id, sx)} disabled={busy === r.id}
+                  style={{ ...S.ghost, padding: '5px 11px', fontSize: 11.5 }}>
+                  Mark {sx}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminInstitutions() {
   const [list, setList] = useState(null)
   const [err, setErr] = useState('')
@@ -56,6 +133,8 @@ export default function AdminInstitutions() {
   useEffect(() => { load() }, [load])
 
   return (
+    <>
+    <PilotRequests />
     <div style={S.card}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
         <div>
@@ -103,13 +182,15 @@ export default function AdminInstitutions() {
               </span>
             </div>
             <div style={{ fontSize: 11.5, color: '#5A5A5A', marginTop: 3, fontFamily: 'ui-monospace, Menlo, monospace' }}>
-              {i.emailDomains || '(no domains — invite only)'}
+              {i.emailDomains || '(no domains — code or invite only)'}
+              {i.joinCode && <span style={{ color: '#9A8C6E' }}>{'  ·  join code '}<strong style={{ color: '#D4A017' }}>{i.joinCode}</strong></span>}
             </div>
             {open === i.id && <Detail id={i.id} onChanged={load} />}
           </div>
         ))}
       </div>
     </div>
+    </>
   )
 }
 
@@ -336,6 +417,21 @@ function Settings({ inst, onDone }) {
     } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
   }
 
+  async function regenerate() {
+    if (!confirm('Issue a new code? Anyone who has the old one and has not joined yet will not be able to.')) return
+    setBusy(true); setMsg(null)
+    try {
+      const r = await fetch(`/api/admin/institutions/${inst.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ regenerateJoinCode: true }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setMsg({ ok: true, text: `New code: ${j.institution.joinCode}` })
+      onDone?.()
+    } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
+  }
+
   async function remove() {
     if (!confirm(`Remove ${inst.name}? Its members keep their accounts and all their work — they simply lose institutional Pro.`)) return
     setBusy(true)
@@ -360,6 +456,21 @@ function Settings({ inst, onDone }) {
         <div><label style={S.label}>Access ends</label><input type="date" value={f.endsAt} onChange={set('endsAt')} style={S.input} /></div>
         <div><label style={S.label}>Contact email</label><input value={f.contactEmail} onChange={set('contactEmail')} style={S.input} /></div>
       </div>
+      <div style={{ marginTop: 14, padding: 14, background: '#0A0A0A', border: '1px solid #232323', borderRadius: 10 }}>
+        <div style={S.label}>Join code</div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <code style={{ fontSize: 20, fontWeight: 800, color: '#D4A017', letterSpacing: '3px' }}>
+            {inst.joinCode || '—'}
+          </code>
+          <button type="button" style={S.ghost} onClick={regenerate} disabled={busy}>Regenerate</button>
+        </div>
+        <p style={{ fontSize: 11.5, color: '#5A5A5A', margin: '9px 0 0', lineHeight: 1.65 }}>
+          Read this out and students join themselves — no class list, no
+          college email needed. Regenerating cuts off anyone holding the old
+          one, which is what you want the day it turns up in a public group.
+        </p>
+      </div>
+
       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
         <button type="submit" style={S.btn(busy)} disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
         <button type="button" style={S.btn(busy, true)} onClick={remove} disabled={busy}>Remove institution</button>

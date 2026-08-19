@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { isAdmin } from '@/lib/admin'
-import { parseDomains, rejectPublicDomains, isActive } from '@/lib/institutions'
+import { parseDomains, rejectPublicDomains, isActive, generateJoinCode } from '@/lib/institutions'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -44,7 +44,7 @@ export async function GET() {
     return NextResponse.json({
       institutions: rows.map(i => ({
         id: i.id, name: i.name, slug: i.slug, kind: i.kind, plan: i.plan,
-        emailDomains: i.emailDomains, seats: i.seats,
+        emailDomains: i.emailDomains, seats: i.seats, joinCode: i.joinCode,
         startsAt: i.startsAt, endsAt: i.endsAt,
         contactName: i.contactName, contactEmail: i.contactEmail, notes: i.notes,
         members: i._count.members, invites: i._count.invites,
@@ -88,9 +88,15 @@ export async function POST(req) {
       slug = `${slugify(b.slug || name)}-${n}`
     }
 
+    // A code from the start. The whole value of it is that a convenor
+    // can read it out the moment the college is set up, so making an
+    // admin go and generate one first defeats it.
+    let joinCode = generateJoinCode()
+    while (await prisma.institution.findUnique({ where: { joinCode } })) joinCode = generateJoinCode()
+
     const inst = await prisma.institution.create({
       data: {
-        name, slug,
+        name, slug, joinCode,
         emailDomains: domains.join(','),
         kind: ['college', 'firm', 'chamber'].includes(b.kind) ? b.kind : 'college',
         plan: ['pilot', 'paid', 'expired'].includes(b.plan) ? b.plan : 'pilot',

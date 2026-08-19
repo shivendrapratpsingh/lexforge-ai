@@ -368,7 +368,7 @@ export default function AdminConsole() {
               Pro Enforcement is OFF — all users currently have free Pro access
             </div>
             <div style={{ fontSize: 12, color: '#A08020', lineHeight: 1.55 }}>
-              Every signed-in user is getting the full Pro experience (unlimited drafts, 70B model, Case Assistant, all routes).
+              Every signed-in user is getting the full Pro experience (unlimited drafts, the larger model, Case Assistant, all routes).
               Monthly quotas and tier checks are bypassed. Turn Pro Mode OFF in System Settings below to re-enable free-tier limits.
             </div>
           </div>

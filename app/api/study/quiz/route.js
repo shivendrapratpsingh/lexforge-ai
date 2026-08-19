@@ -94,12 +94,20 @@ ${schema}
 Now produce the JSON.`
 
     const { default: Groq } = await import('groq-sdk')
+    const { PRO_MODELS } = await import('@/lib/groq')
+    // Whatever lib/groq.js is on. Naming a model here is how this route
+    // came to be calling one Groq had retired.
+    const STUDY_MODEL = PRO_MODELS[0]
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY, timeout: 60000, maxRetries: 1 })
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: STUDY_MODEL,
       temperature: 0.4,
       max_tokens: 2200,
+      // A reasoning model spends part of max_tokens thinking before it
+      // writes anything, so a low effort setting is what leaves room for
+      // the answer. Without it a short budget returns an empty string.
+      reasoning_effort: 'low',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: QUIZ_SYS },

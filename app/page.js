@@ -7,8 +7,8 @@ import { Card } from '@/components/ui/Card'
 import LandingSidePanel from '@/components/LandingSidePanel'
 
 const FEATURES = [
-  { icon: '🤖', title: 'AI Document Generation', desc: "Llama 3.3 70B generates complete, legally sound documents in seconds — tailored for Indian law." },
-  { icon: '🔍', title: 'Case Law Research', desc: 'Search landmark Supreme Court and High Court cases instantly. Automatic citations included in your documents.' },
+  { icon: '🤖', title: 'AI Document Generation', desc: 'Complete, court-ready documents in seconds, drafted for Indian law and Indian formats.' },
+  { icon: '🔍', title: 'Case Law Research', desc: 'Search real Supreme Court and High Court judgments and quote them as reported — never a citation invented to fill a gap.' },
   { icon: '📤', title: 'Export PDF, DOCX, TXT', desc: 'Download your documents in any format, ready to file or share with your client immediately.' },
   { icon: '⚡', title: 'Groq Ultra-Fast Inference', desc: "Complete legal documents in under 30 seconds using Groq's world-fastest AI inference API." },
   { icon: '🔒', title: 'Secure & Private', desc: 'JWT authentication, bcrypt passwords, and isolated user accounts. Your data is yours.' },
@@ -22,7 +22,7 @@ const STEPS = [
 ]
 
 const FOOTER_COLUMNS = [
-  { title: 'Product', links: [['Features', '#features'], ['Document Types', '#documents'], ['Pricing', '/upgrade']] },
+  { title: 'Product', links: [['Features', '#features'], ['Document Types', '#documents'], ['Pricing', '/upgrade'], ['For law colleges', '/for-colleges']] },
   { title: 'Account', links: [['Sign In', '/login'], ['Register', '/register']] },
   { title: 'Legal', links: [['Privacy', '#'], ['Terms', '#']] },
 ]
@@ -73,7 +73,7 @@ export default async function LandingPage() {
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center gap-2 bg-gold/[0.08] border border-gold/20 px-4 py-1.5 rounded-full mb-7">
               <span className="size-1.5 rounded-full bg-gold inline-block" />
-              <span className="text-[13px] text-gold font-medium">Powered by Llama 3.3 70B via Groq</span>
+              <span className="text-[13px] text-gold font-medium">Powered by Groq</span>
             </div>
             <h1 className="font-display font-semibold leading-[1.1] tracking-tight text-4xl sm:text-6xl lg:text-7xl mb-6">
               Legal Documents.

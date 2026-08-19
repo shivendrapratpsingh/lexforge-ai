@@ -353,6 +353,102 @@ function Plan({ account, usage }) {
       </div>
 
       <Billing isPro={account.isPro} />
+      <College />
+    </div>
+  )
+}
+
+// ── College ───────────────────────────────────────────────────────
+// The student's own way in. An admin can match on email domain or paste
+// a class list, but most Indian law colleges issue no student email and
+// nobody has the list — so a convenor reads a code out once and three
+// hundred students onboard themselves.
+function College() {
+  const [state, setState] = useState(null)
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState(null)
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch('/api/billing/subscription')
+      if (r.ok) setState(await r.json())
+    } catch { /* the section simply does not render */ }
+  }, [])
+  useEffect(() => { load() }, [load])
+
+  async function join(e) {
+    e.preventDefault()
+    setBusy(true); setMsg(null)
+    try {
+      const r = await fetch('/api/account/join', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setMsg({ ok: true, text: `You are in — ${j.institution.name}. Everything unlocks on your next page load.` })
+      setCode('')
+      load()
+    } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
+  }
+
+  async function leave() {
+    if (!confirm('Leave your college? You keep your account and everything you have written — you would just lose the access that comes with being a member.')) return
+    setBusy(true); setMsg(null)
+    try {
+      const r = await fetch('/api/account/join', { method: 'DELETE' })
+      if (!r.ok) throw new Error((await r.json()).error)
+      setMsg({ ok: true, text: 'Left. Your work is untouched.' })
+      load()
+    } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
+  }
+
+  if (state?.institution) {
+    return (
+      <div style={S.card}>
+        <div style={S.kicker}>College</div>
+        <h2 style={S.h2}>{state.institution.name}</h2>
+        <p style={S.sub}>
+          You are a member, which is where your access comes from. Nothing to pay.
+          {state.institution.endsAt && ` Your college's plan runs until ${new Date(state.institution.endsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}.`}
+        </p>
+        <Btn onClick={leave} busy={busy} ghost>Leave college</Btn>
+        {msg && <Note tone={msg.ok ? 'ok' : 'err'}>{msg.text}</Note>}
+      </div>
+    )
+  }
+
+  return (
+    <div style={S.card}>
+      <div style={S.kicker}>College</div>
+      <h2 style={S.h2}>Join your college</h2>
+      <p style={S.sub}>
+        If your college has a plan, whoever runs it has a code — usually the
+        Moot Court Society or a faculty co-ordinator. Type it here and
+        everything unlocks. It works with a personal email; you do not need a
+        college address.
+      </p>
+      <form onSubmit={join} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <input
+          value={code}
+          onChange={e => setCode(e.target.value)}
+          placeholder="LEXF-2K9M"
+          style={{
+            flex: '1 1 200px', minWidth: 0, background: '#0D0D0D', border: '1px solid #232323',
+            borderRadius: 9, padding: '11px 13px', color: '#F0F0F0', fontSize: 15,
+            outline: 'none', letterSpacing: '2px', fontFamily: 'ui-monospace, Menlo, monospace',
+            textTransform: 'uppercase',
+          }}
+        />
+        <Btn type="submit" busy={busy} disabled={!code.trim()}>Join</Btn>
+      </form>
+      {msg && <Note tone={msg.ok ? 'ok' : 'err'}>{msg.text}</Note>}
+      <p style={{ fontSize: 12, color: '#5A5A5A', marginTop: 12, lineHeight: 1.65 }}>
+        No code? Send your Moot Court Society to{' '}
+        <Link href="/for-colleges" style={{ color: '#9A8C6E' }}>lexforge for colleges</Link>{' '}
+        — a pilot is free for a term.
+      </p>
     </div>
   )
 }

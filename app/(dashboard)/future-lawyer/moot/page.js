@@ -5,6 +5,7 @@
 //
 import { useState } from 'react'
 import Link from 'next/link'
+import MootAuthorities from '@/components/MootAuthorities'
 
 const SIDES = [
   { value: 'petitioner',  label: 'Petitioner / Applicant', accent: '#22C55E', icon: '⚖️' },
@@ -170,6 +171,8 @@ export default function MootBuilderPage() {
           }}>
             {memorial}
           </div>
+
+          <MootAuthorities memorial={memorial} />
 
           <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
             <button onClick={() => navigator.clipboard.writeText(memorial)}

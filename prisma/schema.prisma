@@ -383,6 +383,11 @@ model Institution {
   contactName  String?
   contactEmail String?
   notes        String?
+  // A short code a student can type to join, for colleges that issue no
+  // student email and whose class list nobody has. The Moot Court
+  // Society reads it out once; three hundred students onboard
+  // themselves. Regenerating it cuts off anyone who has passed it on.
+  joinCode     String?   @unique
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -466,4 +471,25 @@ model Subscription {
 
   @@index([status])
   @@index([currentEnd])
+}
+
+// A college asking to be set up, from the public /for-colleges page.
+// Kept as its own thing rather than an inactive Institution so the
+// institutions list stays a list of real customers, and so a request
+// that goes nowhere leaves no half-built college behind.
+model PilotRequest {
+  id           String   @id @default(cuid())
+  college      String
+  contactName  String
+  contactEmail String
+  phone        String?
+  role         String?                          // student | faculty | society | other
+  students     String?                          // free text: "about 300"
+  message      String?
+  status       String   @default("new")         // new | contacted | converted | declined
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
 }

@@ -1616,7 +1616,7 @@ function GenBtn({ generating, onClick }) {
       </button>
       {generating && (
         <div style={{ marginTop: 12, padding: '11px 14px', background: 'rgba(212,160,23,0.05)', border: '1px solid rgba(212,160,23,0.1)', borderRadius: 10, fontSize: 13, color: '#D4A017', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>⚡</span> Generating court-specific document via Llama 3.3 70B on Groq... ~15–30 seconds.
+          <span>⚡</span> Drafting your court-specific document... ~15–30 seconds.
         </div>
       )}
     </div>

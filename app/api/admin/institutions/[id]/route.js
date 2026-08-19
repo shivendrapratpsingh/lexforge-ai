@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { isAdmin } from '@/lib/admin'
-import { parseDomains, rejectPublicDomains, isActive } from '@/lib/institutions'
+import { parseDomains, rejectPublicDomains, isActive, generateJoinCode } from '@/lib/institutions'
 import { usageSummary } from '@/lib/usage'
 
 export const runtime = 'nodejs'
@@ -121,11 +121,20 @@ export async function PATCH(req, { params }) {
       data.emailDomains = domains.join(',')
     }
 
+    const { prisma } = await import('@/lib/prisma')
+
+    // Regenerating cuts off anyone who was passed the old code — which
+    // is the point, when a code ends up in a public WhatsApp group.
+    if (b.regenerateJoinCode) {
+      let code = generateJoinCode()
+      while (await prisma.institution.findUnique({ where: { joinCode: code } })) code = generateJoinCode()
+      data.joinCode = code
+    }
+
     if (!Object.keys(data).length) {
       return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 })
     }
 
-    const { prisma } = await import('@/lib/prisma')
     const inst = await prisma.institution.update({ where: { id }, data })
 
     // Domains may have changed — pick up anyone already signed up who now

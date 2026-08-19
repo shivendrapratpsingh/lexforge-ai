@@ -108,7 +108,14 @@ function Judgments({ status }) {
         <div style={{ marginBottom: 12 }}>
           <label style={S.label}>Search judgments</label>
           <input value={q} onChange={e => setQ(e.target.value)} required style={S.input}
-            placeholder="e.g. twin conditions for bail under Section 45 PMLA" />
+            placeholder="e.g. section 45 PMLA twin conditions bail" />
+          <p style={{ fontSize: 11.5, color: '#5A5A5A', marginTop: 7, lineHeight: 1.55 }}>
+            Three or four distinctive words work best — every word you type has
+            to appear in the judgment. Searching a whole sentence usually finds
+            nothing. Not sure of the legal terms? Use{' '}
+            <b style={{ color: '#9A8C6E' }}>Find cases like mine</b> on the
+            dashboard instead and describe it plainly.
+          </p>
         </div>
         <div style={{ marginBottom: 14 }}>
           <label style={S.label}>Court (optional)</label>
@@ -130,10 +137,33 @@ function Judgments({ status }) {
 
       {res && (
         <div style={S.card}>
-          <div style={{ fontSize: 12, color: '#6E6E68', marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: '#6E6E68', marginBottom: res.relaxed ? 8 : 14 }}>
             {res.total.toLocaleString('en-IN')} result{res.total === 1 ? '' : 's'}
           </div>
-          {res.results.length === 0 && <div style={{ fontSize: 13.5, color: '#8A8A8A' }}>Nothing matched. Try different words.</div>}
+
+          {/* The index requires every word to appear, so an over-specified
+              query finds nothing. When that happens the search is retried
+              with the distinctive words only — said plainly here, because a
+              silent change of query is a search the reader cannot trust. */}
+          {res.relaxed && (
+            <div style={{
+              background: 'rgba(212,160,23,.07)', border: '1px solid rgba(212,160,23,.28)',
+              borderRadius: 9, padding: '10px 13px', marginBottom: 14, fontSize: 12.5,
+              color: '#B9A97C', lineHeight: 1.6,
+            }}>
+              Your full search found nothing — every word has to appear in a
+              judgment, and that was too many. These results are for{' '}
+              <b style={{ color: '#E0D6BC' }}>{res.searchedFor}</b>.
+            </div>
+          )}
+
+          {res.results.length === 0 && (
+            <div style={{ fontSize: 13.5, color: '#8A8A8A', lineHeight: 1.65 }}>
+              Nothing matched, even after shortening the search. Every word you
+              type has to appear in the judgment — try three or four of the most
+              distinctive ones, e.g. <b style={{ color: '#C9BFA4' }}>section 138 rebuttal presumption</b>.
+            </div>
+          )}
           {res.results.map(d => (
             <a key={d.docId} href={d.sourceUrl} target="_blank" rel="noopener noreferrer"
               style={{ display: 'block', padding: '13px 0', borderBottom: '1px solid #1F1F1F', textDecoration: 'none' }}>

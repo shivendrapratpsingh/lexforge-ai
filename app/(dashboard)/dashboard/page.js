@@ -220,6 +220,38 @@ export default async function DashboardPage() {
               </div>
             </Card>
           </Link>
+
+          {/* For students. Free, deliberately — a moot team has no budget,
+              and a memorial is the hardest thing they have to write. */}
+          <Link href="/future-lawyer/moot" className="no-underline">
+            <Card interactive className="block p-5 sm:p-6">
+              <div className="flex items-start gap-4">
+                <div className="size-12 rounded-card bg-surface-2 border border-border flex items-center justify-center text-2xl shrink-0">
+                  🎓
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-[17px] font-bold text-ink">Moot Court Memorial Builder</h2>
+                    <Badge tone="success" className="shrink-0">FREE</Badge>
+                  </div>
+                  <p className="text-[13.5px] text-ink-muted leading-relaxed mt-1.5">
+                    Paste the moot proposition, pick your side, and get a full
+                    memorial outline — jurisdiction, facts, issues, arguments and
+                    prayer. Generate the Petitioner and Respondent versions from
+                    the same problem.
+                  </p>
+                  <div className="flex gap-4 flex-wrap mt-3">
+                    <span className="text-[11.5px] text-ink-faint">◆ For law students</span>
+                    <span className="text-[11.5px] text-ink-faint">◆ Both sides</span>
+                    <span className="text-[11.5px] text-ink-faint">◆ Court-format structure</span>
+                  </div>
+                  <div className="text-[13px] text-gold font-semibold mt-3.5">
+                    Build a memorial →
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </Link>
         </div>
 
         {/* Sidebar */}

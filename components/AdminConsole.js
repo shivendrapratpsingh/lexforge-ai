@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import AdminInstitutions from './AdminInstitutions'
+import AdminCosts from './AdminCosts'
 
 const CARD = {
   background: '#141414',
@@ -614,6 +616,12 @@ export default function AdminConsole() {
           </div>
         </div>
       </section>
+
+      {/* ── Cost of running it ── */}
+      <AdminCosts />
+
+      {/* ── Institutions ── */}
+      <AdminInstitutions />
 
       {/* ── Users ── */}
       <section>

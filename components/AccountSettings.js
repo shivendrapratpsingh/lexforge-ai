@@ -352,16 +352,101 @@ function Plan({ account, usage }) {
         {stat('Court dates', usage.courtDates)}
       </div>
 
-      {!account.isPro && (
-        <Link href="/upgrade" style={{ textDecoration: 'none' }}>
-          <span style={{
-            display: 'inline-block', padding: '10px 18px', borderRadius: 9,
-            fontSize: 13.5, fontWeight: 700, color: '#0D0D0D',
-            background: 'linear-gradient(135deg,#D4A017,#B8860B)',
-          }}>Upgrade to Pro</span>
-        </Link>
-      )}
+      <Billing isPro={account.isPro} />
     </div>
+  )
+}
+
+// ── Billing ───────────────────────────────────────────────────────
+// Why someone has Pro matters more than whether they do. A student on a
+// college plan should not be shown a renewal date they do not owe, and
+// an early user who was promised Pro for good should never see a price.
+function Billing({ isPro }) {
+  const [b, setB] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState(null)
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch('/api/billing/subscription')
+      if (r.ok) setB(await r.json())
+    } catch { /* the section simply does not render */ }
+  }, [])
+  useEffect(() => { load() }, [load])
+
+  async function cancel() {
+    if (!confirm('Stop renewing? You keep everything you have already paid for, until the end of the term.')) return
+    setBusy(true); setMsg(null)
+    try {
+      const r = await fetch('/api/billing/subscription', { method: 'DELETE' })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setMsg({ ok: true, text: j.message })
+      load()
+    } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
+  }
+
+  const when = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  if (b?.via === 'grandfathered') {
+    return (
+      <Note tone="ok">
+        You joined early, so your Pro access is permanent and free — whatever is
+        charged later does not apply to you. Nothing to renew, nothing to pay.
+      </Note>
+    )
+  }
+
+  if (b?.via === 'institution') {
+    return (
+      <Note tone="ok">
+        Your Pro access comes from {b.institution.name}
+        {b.institution.endsAt ? `, and runs until ${when(b.institution.endsAt)}` : ''}. There
+        is nothing for you to pay.
+      </Note>
+    )
+  }
+
+  const sub = b?.subscription
+  if (sub && sub.status !== 'created') {
+    return (
+      <div style={{ marginTop: 4 }}>
+        <div style={{ fontSize: 13, color: '#C0C0C0', lineHeight: 1.7 }}>
+          <strong style={{ color: '#F0E4C0' }}>{sub.planLabel}</strong> · ₹{sub.rupees.toLocaleString('en-IN')}
+          {sub.currentEnd && (
+            sub.expired
+              ? <> · <span style={{ color: '#FF8A80' }}>expired {when(sub.currentEnd)}</span></>
+              : <> · access until {when(sub.currentEnd)}</>
+          )}
+          {sub.status === 'cancelled' && !sub.expired && <> · not renewing</>}
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          <Link href="/upgrade" style={{ textDecoration: 'none' }}>
+            <span style={{
+              display: 'inline-block', padding: '9px 16px', borderRadius: 9,
+              fontSize: 13, fontWeight: 700, color: '#0D0D0D',
+              background: 'linear-gradient(135deg,#D4A017,#B8860B)',
+            }}>{sub.expired ? 'Renew' : 'Extend'}</span>
+          </Link>
+          {sub.status === 'active' && !sub.expired && (
+            <Btn onClick={cancel} busy={busy} ghost>Stop renewing</Btn>
+          )}
+        </div>
+        {msg && <Note tone={msg.ok ? 'ok' : 'err'}>{msg.text}</Note>}
+      </div>
+    )
+  }
+
+  if (isPro) return null
+
+  return (
+    <Link href="/upgrade" style={{ textDecoration: 'none' }}>
+      <span style={{
+        display: 'inline-block', padding: '10px 18px', borderRadius: 9,
+        fontSize: 13.5, fontWeight: 700, color: '#0D0D0D',
+        background: 'linear-gradient(135deg,#D4A017,#B8860B)',
+      }}>Upgrade to Pro</span>
+    </Link>
   )
 }
 

@@ -109,12 +109,27 @@ async function runLegalSync() {
   }
 }
 
+// Vercel's free plan allows two cron entries and both are spoken for, so
+// the billing sweep rides along here. Its failure is swallowed for the
+// same reason the legal sync's is: nobody's hearing reminder should be
+// lost because a subscription check went wrong.
+async function runBillingExpiry() {
+  try {
+    const { expireLapsedSubscriptions } = await import('@/lib/billing')
+    return await expireLapsedSubscriptions()
+  } catch (e) {
+    console.error('[push/daily] billing expiry failed:', e?.message)
+    return { ok: false, error: e?.message }
+  }
+}
+
 export async function GET(req) {
   if (!authorised(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   try {
     const notifications = await run()
     const legal = await runLegalSync()
-    return NextResponse.json({ ...notifications, legal })
+    const billing = await runBillingExpiry()
+    return NextResponse.json({ ...notifications, legal, billing })
   }
   catch (e) { console.error('[push/daily]', e?.message); return NextResponse.json({ ok: false, error: e?.message }, { status: 500 }) }
 }
@@ -124,7 +139,8 @@ export async function POST(req) {
   try {
     const notifications = await run()
     const legal = await runLegalSync()
-    return NextResponse.json({ ...notifications, legal })
+    const billing = await runBillingExpiry()
+    return NextResponse.json({ ...notifications, legal, billing })
   }
   catch (e) { console.error('[push/daily]', e?.message); return NextResponse.json({ ok: false, error: e?.message }, { status: 500 }) }
 }

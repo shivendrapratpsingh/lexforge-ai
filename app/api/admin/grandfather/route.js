@@ -47,6 +47,25 @@ export async function POST(req) {
   const g = await guard(); if (g.error) return g.error
   try {
     const body = await req.json().catch(() => ({}))
+    const { prisma: db } = await import('@/lib/prisma')
+
+    // Single-user form: grant or withdraw for one address. A bulk grant
+    // that cannot be undone for one person is a grant nobody should be
+    // willing to make, so the reverse exists before the bulk button does.
+    if (body.email) {
+      const email = String(body.email).trim().toLowerCase()
+      const value = body.value !== false
+      const user = await db.user.findUnique({ where: { email }, select: { id: true } })
+      if (!user) return NextResponse.json({ error: `No account for ${email}.` }, { status: 404 })
+      await db.user.update({ where: { id: user.id }, data: { grandfathered: value } })
+      console.log(`[admin] ${value ? 'grandfathered' : 'un-grandfathered'} ${email}`)
+      return NextResponse.json({
+        ok: true,
+        email,
+        grandfathered: value,
+        totalGrandfathered: await db.user.count({ where: { grandfathered: true } }),
+      })
+    }
 
     // A cut-off makes this safe to run more than once: only people who
     // joined before the given moment are covered, so running it again
@@ -57,8 +76,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'That is not a valid date.' }, { status: 400 })
     }
 
-    const { prisma } = await import('@/lib/prisma')
-    const result = await prisma.user.updateMany({
+    const result = await db.user.updateMany({
       where: { createdAt: { lte: before }, grandfathered: false },
       data: { grandfathered: true },
     })
@@ -69,7 +87,7 @@ export async function POST(req) {
       ok: true,
       grandfathered: result.count,
       before: before.toISOString(),
-      totalGrandfathered: await prisma.user.count({ where: { grandfathered: true } }),
+      totalGrandfathered: await db.user.count({ where: { grandfathered: true } }),
     })
   } catch (err) {
     console.error('[admin/grandfather POST]', err)

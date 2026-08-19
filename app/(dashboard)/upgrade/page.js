@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ADMIN_EMAIL, hasProAccessForSession, getFreeDocsLimit } from '@/lib/admin'
 import { PRO_GLOBAL_FEATURES } from '@/lib/pro-features'
+import UpgradeCheckout from '@/components/UpgradeCheckout'
+import { configured as billingConfigured, PLANS } from '@/lib/billing'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +17,9 @@ export default async function UpgradePage() {
   const isPro = await hasProAccessForSession(session)
   const tier  = isPro ? 'pro' : (session.user?.tier || 'free')
   const freeDocsLimit = await getFreeDocsLimit()
+  // Until Razorpay is switched on, the page keeps its invite-only wording.
+  const canPay = billingConfigured()
+  const MONTHLY_PAISE = PLANS.monthly.amountPaise
 
   return (
     <div className="px-4 sm:px-0" style={{ maxWidth: 920, margin: '20px auto 60px' }}>
@@ -40,7 +45,7 @@ export default async function UpgradePage() {
           <div style={{ fontSize: 12, color: '#6A6A6A', marginTop: 2 }}>per month, forever</div>
           <ul style={{ listStyle: 'none', padding: 0, margin: '18px 0 0', display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, color: '#C0C0C0' }}>
             <li>&#10003; {freeDocsLimit} documents per month</li>
-            <li>&#10003; Llama 3.1 8B (standard model)</li>
+            <li>&#10003; Standard AI model</li>
             <li>&#10003; Core types: Legal Notice, Affidavit, RTI, Memorandum, Vakalatnama, Cheque-bounce, Consumer, FIR, Rent, Stay, Legal Opinion, Case Brief</li>
             <li>&#10003; PDF / DOCX / TXT export</li>
             <li>&#10003; Draft history + version control</li>
@@ -68,8 +73,12 @@ export default async function UpgradePage() {
           <div style={{ fontSize: 12, color: '#D4A017', letterSpacing: '2px', fontWeight: 700, textTransform: 'uppercase' }}>
             Pro {isPro && <span>(current)</span>}
           </div>
-          <div style={{ fontSize: 28, color: '#F0F0F0', fontWeight: 800, marginTop: 6 }}>By invite</div>
-          <div style={{ fontSize: 12, color: '#D4A017', marginTop: 2 }}>contact admin for access</div>
+          <div style={{ fontSize: 28, color: '#F0F0F0', fontWeight: 800, marginTop: 6 }}>
+            {canPay ? <>&#8377;{Math.round(MONTHLY_PAISE / 100).toLocaleString('en-IN')}</> : 'By invite'}
+          </div>
+          <div style={{ fontSize: 12, color: '#D4A017', marginTop: 2 }}>
+            {canPay ? 'per month, paid once — nothing auto-renews' : 'contact admin for access'}
+          </div>
           <ul style={{ listStyle: 'none', padding: 0, margin: '18px 0 0', display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, color: '#F0F0F0' }}>
             {PRO_GLOBAL_FEATURES.map(f => (
               <li key={f}>&#10003; {f}</li>
@@ -89,8 +98,8 @@ export default async function UpgradePage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
           {[
             { t: '2–3× longer drafts',   d: 'Court-ready length with Index of Documents, Annexure list, and detailed verification clause.' },
-            { t: 'Stronger AI model',              d: 'Llama 3.3 70B vs. the standard 8B used on Free — sharper reasoning, better citations.' },
-            { t: 'Real case-law citations',        d: 'Five or more landmark Supreme Court / High Court precedents woven into each document.' },
+            { t: 'Stronger AI model',              d: 'The larger reasoning model rather than the standard one used on Free — sharper analysis, and it works through a problem before answering.' },
+            { t: 'Real case-law citations',        d: 'Judgments retrieved from Indian Kanoon and India Code and quoted as reported — never invented to fill a gap.' },
             { t: 'AI Case Assistant',              d: 'Floating Pro chatbot that suggests favourable IPC/CrPC sections and counters opposing arguments.' },
             { t: 'Premium document types',         d: 'Writ Petition, PIL, Bail Application, Divorce Petition, Sale Deed, and full Contracts unlock.' },
             { t: 'Client + Court Dates suite',     d: 'Track clients, link drafts to clients, schedule hearings and deadlines with a daily reminder feed.' },
@@ -106,7 +115,9 @@ export default async function UpgradePage() {
         </div>
       </div>
 
-      {!isPro && (
+      {!isPro && canPay && <UpgradeCheckout isPro={isPro} />}
+
+      {!isPro && !canPay && (
         <div style={{
           marginTop: 28,
           padding: 20,

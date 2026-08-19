@@ -45,7 +45,7 @@ export async function POST(req) {
       documentType: body.documentType,
       court: body.court,
       actsInvolved: body.actsInvolved,
-    })
+    }, { userId: session.user.id })
 
     return NextResponse.json(result)
   } catch (err) {

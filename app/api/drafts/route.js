@@ -212,6 +212,8 @@ export async function POST(req) {
       content = await generateLegalDocument(documentType, fullDetails, court, language, {
         isPro: userIsPro,
         targetWords: targetWordsClamped,
+        userId: session.user.id,
+        operation: 'draft',
       })
     } catch (genErr) {
       if (genErr?.code === 'AI_REFUSAL') {

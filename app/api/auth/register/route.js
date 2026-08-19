@@ -72,7 +72,24 @@ export async function POST(req) {
       },
     })
 
-    return NextResponse.json({ id: user.id, email: user.email, name: user.name }, { status: 201 })
+    // Link to a college if the email belongs to one, by domain or by a
+    // pre-authorised invite. Never allowed to fail the sign-up: a student
+    // who cannot create an account because the institution lookup broke
+    // is a far worse outcome than one who is linked a moment later, on
+    // their next access check.
+    let institution = null
+    try {
+      const { linkUserToInstitution } = await import('@/lib/institutions')
+      const inst = await linkUserToInstitution(user, prisma)
+      if (inst) institution = { name: inst.name, plan: inst.plan }
+    } catch (e) {
+      console.error('[register] institution link failed:', e?.message)
+    }
+
+    return NextResponse.json(
+      { id: user.id, email: user.email, name: user.name, institution },
+      { status: 201 }
+    )
   } catch (err) {
     console.error('[POST /api/auth/register]', err)
     // Show actual error in development for debugging

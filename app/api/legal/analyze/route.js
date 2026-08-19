@@ -52,10 +52,10 @@ export async function GET(req) {
         const { buildCaseSearchQuery } = await import('@/lib/groq')
         const { searchJudgments } = await import('@/lib/legal-data/indiankanoon')
 
-        const query = await buildCaseSearchQuery({ facts: issue })
+        const query = await buildCaseSearchQuery({ facts: issue }, { userId: session.user.id })
         const [apex, general] = await Promise.allSettled([
-          searchJudgments({ query, court: 'supremecourt' }),
-          searchJudgments({ query }),
+          searchJudgments({ query, court: 'supremecourt', userId: session.user.id }),
+          searchJudgments({ query, userId: session.user.id }),
         ])
 
         const seen = new Set()
@@ -79,7 +79,7 @@ export async function GET(req) {
     // ── 3. Reason over what was actually retrieved. With an empty list the
     //      model is instructed to cite nothing at all rather than recall.
     const { analyzeLegalIssue } = await import('@/lib/groq')
-    const analysis = await analyzeLegalIssue(issue, { cases, acts })
+    const analysis = await analyzeLegalIssue(issue, { cases, acts, userId: session.user.id })
 
     return NextResponse.json({
       analysis,

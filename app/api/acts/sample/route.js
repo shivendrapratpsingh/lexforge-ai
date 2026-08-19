@@ -59,7 +59,7 @@ export async function POST(req) {
 
     const { generateLegalDocument } = await import('@/lib/groq')
     const content = await generateLegalDocument(
-      documentType, details, court || null, 'english', { isPro: true, targetWords: 700 }
+      documentType, details, court || null, 'english', { isPro: true, targetWords: 700, userId: session.user.id, operation: 'sample' }
     )
 
     const text = typeof content === 'string' ? content : (content?.content || content?.text || '')

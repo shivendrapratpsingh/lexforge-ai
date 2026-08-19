@@ -32,7 +32,7 @@ export async function GET(req, { params }) {
     }
 
     const { cnr } = await params
-    const found = await caseByCnr(cnr)
+    const found = await caseByCnr(cnr, { userId: session.user.id })
 
     // Remember it, so tomorrow's 8 AM run keeps the hearing date current.
     // A failure here must not lose the user their result.

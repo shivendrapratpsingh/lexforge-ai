@@ -41,6 +41,7 @@ export async function GET(req) {
     }
 
     const result = await searchJudgments({
+      userId: session.user.id,
       query,
       court: searchParams.get('court') || undefined,
       fromYear: searchParams.get('from') || undefined,

@@ -37,6 +37,17 @@ model User {
   drafts           Draft[]
   pushSubs         PushSubscription[]
   trackedCases     TrackedCase[]
+
+  // Institutional membership. Set on signup when the email domain matches.
+  institutionId    String?
+  institution      Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  role             String       @default("student")  // student | faculty | staff
+  batch            String?
+  grandfathered    Boolean      @default(false)
+  apiUsage         ApiUsage[]
+  subscription     Subscription?
+
+  @@index([institutionId])
 }
 
 // A browser/device push endpoint for the daily digest. One user can have
@@ -349,4 +360,110 @@ model LegalSyncRun {
   error      String?
 
   @@index([job, startedAt])
+}
+
+// ── Institutions ──────────────────────────────────────────────────
+// A law college (or firm) whose members get Pro without anyone adding
+// them one at a time. Membership is decided by email domain: a student
+// signing up with @ulc.ac.in is linked and granted access automatically.
+// Adding 300 students by hand was the single thing blocking college
+// adoption.
+model Institution {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  // Comma-separated, lowercased, no "@" — e.g. "ulc.ac.in,bub.ernet.in".
+  // A list because colleges routinely have more than one domain.
+  emailDomains String
+  kind         String    @default("college")   // college | firm | chamber
+  plan         String    @default("pilot")     // pilot | paid | expired
+  seats        Int       @default(0)           // 0 = unlimited
+  startsAt     DateTime  @default(now())
+  endsAt       DateTime?                       // null = no expiry
+  contactName  String?
+  contactEmail String?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  members  User[]
+  invites  InstitutionInvite[]
+  usage    ApiUsage[]
+
+  @@index([plan])
+}
+
+// A pre-authorised email. Lets a college onboard a class whose students
+// use personal addresses, which is common — many Indian colleges do not
+// issue student email at all.
+model InstitutionInvite {
+  id            String      @id @default(cuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  email         String
+  batch         String?                        // "BA LLB 2027" — for reporting
+  claimedAt     DateTime?
+  createdAt     DateTime    @default(now())
+
+  @@unique([institutionId, email])
+  @@index([email])
+}
+
+// ── Cost tracking ─────────────────────────────────────────────────
+// One row per billed upstream call. Without this there is no way to
+// answer "what does a user cost", which is the number every pricing
+// decision depends on. Cost is stored in paise as an integer: floating
+// point money is a bug waiting to happen, and the rates are estimates
+// anyway, so the unit needs to be exact even when the value is not.
+model ApiUsage {
+  id            String       @id @default(cuid())
+  userId        String?
+  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  provider  String                                // groq | indiankanoon | ecourts | indiacode
+  operation String                                // draft | search | analyze | fulltext | case | sample | moot
+  calls     Int      @default(1)
+  tokens    Int?                                  // groq only
+  costPaise Int      @default(0)                  // estimated
+  ok        Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([institutionId, createdAt])
+  @@index([provider, createdAt])
+  @@index([createdAt])
+}
+
+// ── Subscriptions ─────────────────────────────────────────────────
+// Razorpay state. Separate from User.tier because tier is the *effective*
+// answer (admin, promo, institution or payment can all grant it) while
+// this records what was actually bought.
+model Subscription {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan              String                        // monthly | yearly
+  status            String    @default("created") // created | active | halted | cancelled | expired
+  amountPaise       Int       @default(0)
+  currency          String    @default("INR")
+
+  razorpayOrderId   String?   @unique
+  razorpayPaymentId String?
+  razorpaySubId     String?   @unique
+  razorpaySignature String?
+
+  startsAt          DateTime?
+  currentEnd        DateTime?                     // access runs until this
+  cancelledAt       DateTime?
+  lastPaymentAt     DateTime?
+  failCount         Int       @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status])
+  @@index([currentEnd])
 }

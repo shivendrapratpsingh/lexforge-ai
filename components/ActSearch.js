@@ -258,7 +258,7 @@ function ActCard({ act, isPro }) {
                 in practice, written out in plain terms. For the complete statute,
                 open it on India Code — the Government&apos;s own repository.
               </p>
-              <a href={`https://www.indiacode.nic.in/handle/123456789/1362?query=${encodeURIComponent(act.fullName)}`}
+              <a href={`https://indiacode.gov.in/search?query=${encodeURIComponent(act.fullName)}`}
                 target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                 <span style={{
                   display: 'inline-block', padding: '9px 15px', borderRadius: 8,

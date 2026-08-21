@@ -77,10 +77,13 @@ export default function AdminCosts() {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
             <div style={{ ...CARD, border: '1px solid rgba(212,160,23,.28)' }}>
-              <div style={LABEL}>Per active user / month</div>
-              <div style={{ ...VALUE, color: '#D4A017' }}>{money(perUserMonthly)}</div>
+              <div style={LABEL}>True cost / user / month</div>
+              <div style={{ ...VALUE, color: '#D4A017' }}>{money(d.trueCostPerUserRupees)}</div>
               <div style={{ fontSize: 11, color: '#6A6A6A', marginTop: 6, lineHeight: 1.55 }}>
-                Price above this or every subscriber loses money.
+                {money(perUserMonthly)} of upstream calls plus this user&rsquo;s share
+                of {money(d.fixedMonthlyRupees)} in fixed monthly bills. With few
+                users the fixed share is nearly all of it — that is real, not a
+                rounding artefact.
               </div>
             </div>
             <div style={CARD}><div style={LABEL}>Total, {d.days}d</div><div style={VALUE}>{money(d.totalRupees)}</div></div>
@@ -141,6 +144,28 @@ export default function AdminCosts() {
               </div>
             </div>
           </div>
+
+          {d.breakEven && (
+            <div style={{ ...CARD, marginTop: 12 }}>
+              <div style={{ ...LABEL, marginBottom: 10 }}>Subscribers needed to break even</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(110px,1fr))', gap: 10 }}>
+                {Object.entries(d.breakEven).map(([price, users]) => (
+                  <div key={price} style={{ background: '#0D0D0D', border: '1px solid #232323', borderRadius: 10, padding: '12px 14px' }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: users == null ? '#FF8A80' : '#5FCC8D', lineHeight: 1 }}>
+                      {users == null ? 'never' : users}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#6E6E68', marginTop: 5 }}>at ₹{price}/mo</div>
+                  </div>
+                ))}
+              </div>
+              <p style={{ fontSize: 11.5, color: '#5A5A5A', margin: '11px 0 0', lineHeight: 1.65 }}>
+                Paying subscribers required to cover {money(d.fixedMonthlyRupees)} of fixed
+                bills, after Razorpay keeps about 2% plus GST on its fee. Anything
+                beyond this number is profit, because the cost of one more user is
+                a few rupees.
+              </p>
+            </div>
+          )}
 
           <Grandfather />
         </>

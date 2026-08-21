@@ -126,7 +126,27 @@ Now produce the JSON.`
       return NextResponse.json({ error: 'Could not generate quiz items. Try a more specific topic.' }, { status: 500 })
     }
 
-    return NextResponse.json(parsed)
+    // Each item is checked, not just the array. A truncated or partial
+    // response parses as valid JSON with items that have no options and
+    // no answer — which reached the student as a question they could not
+    // answer. Malformed items are dropped rather than failing the batch:
+    // four good questions are worth more than an error message.
+    const wellFormed = parsed.items.filter(i =>
+      i && typeof i.question === 'string' && i.question.trim() &&
+      (mode === 'flashcards'
+        ? typeof i.back === 'string' && i.back.trim()
+        : Array.isArray(i.options) && i.options.length >= 2 && i.answer)
+    )
+
+    if (!wellFormed.length) {
+      console.warn(`[study/quiz] all ${parsed.items.length} items malformed — model returned an unusable shape`)
+      return NextResponse.json({ error: 'Could not generate quiz items. Try a more specific topic.' }, { status: 500 })
+    }
+    if (wellFormed.length < parsed.items.length) {
+      console.warn(`[study/quiz] dropped ${parsed.items.length - wellFormed.length} malformed item(s)`)
+    }
+
+    return NextResponse.json({ ...parsed, items: wellFormed })
   } catch (err) {
     console.error('[POST /api/study/quiz]', err)
     return NextResponse.json({

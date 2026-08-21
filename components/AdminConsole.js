@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import AdminInstitutions from './AdminInstitutions'
 import AdminCosts from './AdminCosts'
+import AdminDiagnostics from './AdminDiagnostics'
 
 const CARD = {
   background: '#141414',
@@ -616,6 +617,9 @@ export default function AdminConsole() {
           </div>
         </div>
       </section>
+
+      {/* ── Are the upstreams actually connected? ── */}
+      <AdminDiagnostics />
 
       {/* ── Cost of running it ── */}
       <AdminCosts />

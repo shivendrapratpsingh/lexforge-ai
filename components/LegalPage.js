@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { COMPANY, POLICY_UPDATED, hasAddress } from '@/lib/company'
+import { COMPANY, POLICY_UPDATED, hasAddress, hasEmail } from '@/lib/company'
 
 // The shell every policy page sits in. One file, so Terms and Privacy
 // cannot drift into looking like they came from different companies —
@@ -53,7 +53,9 @@ export function ContactBlock() {
       {hasAddress()
         ? <div style={{ whiteSpace: 'pre-line' }}>{COMPANY.address}</div>
         : <div style={{ color: '#7A7A7A' }}>{COMPANY.city}, {COMPANY.state}, India</div>}
-      <div>Email: <a href={`mailto:${COMPANY.email}`} style={{ color: GOLD }}>{COMPANY.email}</a></div>
+      {hasEmail()
+        ? <div>Email: <a href={`mailto:${COMPANY.email}`} style={{ color: GOLD }}>{COMPANY.email}</a></div>
+        : <div style={{ color: '#FF9B90' }}>Contact email not configured — set SELLER_EMAIL.</div>}
       {COMPANY.phone && <div>Phone: {COMPANY.phone}</div>}
       {COMPANY.gstin && <div>GSTIN: {COMPANY.gstin}</div>}
     </div>

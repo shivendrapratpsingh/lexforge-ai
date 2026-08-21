@@ -12,7 +12,7 @@
     "icons": "node scripts/build-icons.mjs",
     "db:push": "dotenv -e .env.local -- prisma db push",
     "db:studio": "dotenv -e .env.local -- prisma studio",
-    "verify": "npm run verify:models && npm run verify:robots && npm run verify:mail && npm run verify:billing && npm run verify:institutions && npm run verify:expiry && npm run verify:college && npm run verify:invoicing && npm run verify:sources",
+    "verify": "npm run verify:models && npm run verify:robots && npm run verify:mail && npm run verify:billing && npm run verify:institutions && npm run verify:expiry && npm run verify:college && npm run verify:invoicing && npm run verify:digest && npm run verify:sources",
     "verify:models": "dotenv -e .env.local -- node scripts/verify-models.mjs",
     "verify:billing": "node scripts/verify-billing.mjs",
     "verify:institutions": "dotenv -e .env.local -- node scripts/verify-institutions.mjs",
@@ -23,7 +23,8 @@
     "verify:sources": "dotenv -e .env.local -- node scripts/verify-legal-sources.mjs",
     "verify:mail": "node scripts/verify-mail.mjs",
     "verify:capacity": "dotenv -e .env.local -- node scripts/verify-capacity.mjs",
-    "verify:database": "dotenv -e .env.local -- node scripts/verify-database.mjs"
+    "verify:database": "dotenv -e .env.local -- node scripts/verify-database.mjs",
+    "verify:digest": "dotenv -e .env.local -- node scripts/verify-digest.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

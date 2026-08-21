@@ -127,13 +127,32 @@ async function runBillingExpiry() {
   }
 }
 
+// The report that says whether yesterday actually worked. Runs last, so
+// it can see the results of everything above it. Its own failure is
+// swallowed for the same reason as the others.
+async function runDailyDigest() {
+  try {
+    const { ADMIN_EMAIL } = await import('@/lib/admin')
+    const { buildDailyDigest, digestEmail } = await import('@/lib/digest')
+    const { notifyQuietly } = await import('@/lib/mail')
+
+    const digest = await buildDailyDigest()
+    await notifyQuietly({ to: ADMIN_EMAIL, ...digestEmail(digest) })
+    return { alerts: digest.alerts.length, sent: true }
+  } catch (e) {
+    console.error('[push/daily] digest failed:', e?.message)
+    return { ok: false, error: e?.message }
+  }
+}
+
 export async function GET(req) {
   if (!authorised(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   try {
     const notifications = await run()
     const legal = await runLegalSync()
     const billing = await runBillingExpiry()
-    return NextResponse.json({ ...notifications, legal, billing })
+    const digest = await runDailyDigest()
+    return NextResponse.json({ ...notifications, legal, billing, digest })
   }
   catch (e) { console.error('[push/daily]', e?.message); return NextResponse.json({ ok: false, error: e?.message }, { status: 500 }) }
 }
@@ -144,7 +163,8 @@ export async function POST(req) {
     const notifications = await run()
     const legal = await runLegalSync()
     const billing = await runBillingExpiry()
-    return NextResponse.json({ ...notifications, legal, billing })
+    const digest = await runDailyDigest()
+    return NextResponse.json({ ...notifications, legal, billing, digest })
   }
   catch (e) { console.error('[push/daily]', e?.message); return NextResponse.json({ ok: false, error: e?.message }, { status: 500 }) }
 }

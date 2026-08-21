@@ -22,7 +22,8 @@
     "verify:robots": "node scripts/verify-robots.mjs",
     "verify:sources": "dotenv -e .env.local -- node scripts/verify-legal-sources.mjs",
     "verify:mail": "node scripts/verify-mail.mjs",
-    "verify:capacity": "dotenv -e .env.local -- node scripts/verify-capacity.mjs"
+    "verify:capacity": "dotenv -e .env.local -- node scripts/verify-capacity.mjs",
+    "verify:database": "dotenv -e .env.local -- node scripts/verify-database.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

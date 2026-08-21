@@ -85,6 +85,25 @@ export async function POST(req) {
 
     console.log(`[billing] ${session.user.email} paid for ${sub.plan}, access to ${currentEnd.toISOString()}`)
 
+    // Fire and forget. Somebody who has just paid must not see an error
+    // because a mail server is unreachable — the money moved and the
+    // access is granted either way.
+    try {
+      const { notifyQuietly, paymentReceiptEmail } = await import('@/lib/mail')
+      notifyQuietly({
+        to: session.user.email,
+        ...paymentReceiptEmail({
+          name: session.user.name?.split(' ')[0],
+          planLabel: plan.label || sub.plan,
+          amountPaise: sub.amountPaise,
+          currentEnd,
+          paymentId,
+        }),
+      })
+    } catch (e) {
+      console.error('[billing] receipt not sent:', e?.message)
+    }
+
     return NextResponse.json({ ok: true, plan: sub.plan, currentEnd })
   } catch (err) {
     console.error('[billing/verify]', err)

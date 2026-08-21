@@ -115,8 +115,12 @@ async function runLegalSync() {
 // lost because a subscription check went wrong.
 async function runBillingExpiry() {
   try {
-    const { expireLapsedSubscriptions } = await import('@/lib/billing')
-    return await expireLapsedSubscriptions()
+    const { expireLapsedSubscriptions, remindExpiringSubscriptions } = await import('@/lib/billing')
+    // Warn first, then expire. Reversed, somebody whose term ended today
+    // would be warned about a plan they had already lost.
+    const reminded = await remindExpiringSubscriptions()
+    const expired = await expireLapsedSubscriptions()
+    return { ...expired, ...reminded }
   } catch (e) {
     console.error('[push/daily] billing expiry failed:', e?.message)
     return { ok: false, error: e?.message }

@@ -72,6 +72,31 @@ export async function POST(req) {
           prisma.user.update({ where: { id: sub.userId }, data: { tier: 'pro' } }),
         ])
         console.log(`[billing/webhook] credited ${sub.userId} until ${currentEnd.toISOString()}`)
+
+        // This is the path for someone who paid by UPI and never came
+        // back to the page, so the receipt matters more here than in
+        // /verify — the email may be the only confirmation they see.
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: sub.userId },
+            select: { email: true, name: true },
+          })
+          if (user?.email) {
+            const { notifyQuietly, paymentReceiptEmail } = await import('@/lib/mail')
+            notifyQuietly({
+              to: user.email,
+              ...paymentReceiptEmail({
+                name: user.name?.split(' ')[0],
+                planLabel: plan.label || sub.plan,
+                amountPaise: sub.amountPaise,
+                currentEnd,
+                paymentId: payment.id,
+              }),
+            })
+          }
+        } catch (e) {
+          console.error('[billing/webhook] receipt not sent:', e?.message)
+        }
         break
       }
 

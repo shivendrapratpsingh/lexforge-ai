@@ -22,9 +22,11 @@ const STEPS = [
 ]
 
 const FOOTER_COLUMNS = [
-  { title: 'Product', links: [['Features', '#features'], ['Document Types', '#documents'], ['Pricing', '/upgrade'], ['For law colleges', '/for-colleges']] },
+  { title: 'Product', links: [['Features', '#features'], ['Document Types', '#documents'], ['Pricing', '/pricing'], ['For law colleges', '/for-colleges']] },
   { title: 'Account', links: [['Sign In', '/login'], ['Register', '/register']] },
-  { title: 'Legal', links: [['Privacy', '#'], ['Terms', '#']] },
+  // These pointed at '#' — dead links on the one page a payment gateway
+  // reviews before it will activate an account.
+  { title: 'Legal', links: [['Terms', '/terms'], ['Privacy', '/privacy'], ['Refunds', '/refund'], ['Contact', '/contact']] },
 ]
 
 export default async function LandingPage() {

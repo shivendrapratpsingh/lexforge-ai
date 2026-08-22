@@ -12,7 +12,7 @@ import { PRO_GLOBAL_FEATURES } from '@/lib/pro-features'
 
 export const metadata = {
   title: 'Pricing — LexForge AI',
-  description: 'What LexForge AI costs. Ten documents a month free, no card required, and paid plans that never auto-renew.',
+  description: 'What LexForge AI costs. A free tier with no card required, and paid plans that never auto-renew.',
 }
 
 export const dynamic = 'force-dynamic'
@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
 const GOLD = '#D4A017'
 
 export default async function Pricing() {
-  const freeLimit = await getFreeDocsLimit().catch(() => 10)
+  const freeLimit = await getFreeDocsLimit().catch(() => 2)
   const canPay = billingConfigured()
 
   const paid = Object.values(PLANS).map(p => ({
@@ -121,15 +121,17 @@ export default async function Pricing() {
                   background: `linear-gradient(135deg, ${GOLD}, #B8860B)`, color: '#0D0D0D',
                   fontWeight: 800, fontSize: 14,
                 }}>
-                  {p.requiresInstitution ? 'For college members' : `Get ${p.label}`}
+                  {`Get ${p.label}`}
                 </span>
               </Link>
             </div>
           ))}
         </div>
 
-        {/* Student pricing is only purchasable by a verified college member,
-            so it is explained rather than sold to everyone. */}
+        {/* There is no separate student price any more. A student at a
+            participating college pays nothing; everyone else pays the
+            same. This block exists to say so plainly, and to send an
+            unserved college to the pilot form. */}
         <div style={{ background: '#141414', border: '1px solid #1F1F1F', borderRadius: 14, padding: 22, marginTop: 20 }}>
           <div style={{ fontSize: 11, color: GOLD, letterSpacing: '1.6px', fontWeight: 800, textTransform: 'uppercase' }}>
             Law students
@@ -137,8 +139,9 @@ export default async function Pricing() {
           <p style={{ fontSize: 14.5, color: '#A8A8A8', lineHeight: 1.8, margin: '10px 0 0', maxWidth: '66ch' }}>
             If your college has a plan with us, you pay nothing at all — ask your
             Moot Court Society or faculty co-ordinator for the join code, type it
-            in Account settings, and everything unlocks. If your college does not
-            have one yet,{' '}
+            in Account settings, and everything unlocks. Otherwise students pay
+            the same as everyone else; there is no separate student rate to
+            argue about. If your college does not have one yet,{' '}
             <Link href="/for-colleges" style={{ color: GOLD }}>send them here</Link> —
             a pilot is free for a full term.
           </p>

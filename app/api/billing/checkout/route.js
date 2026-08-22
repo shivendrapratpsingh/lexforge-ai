@@ -17,9 +17,9 @@ export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Student pricing is only shown to someone who is actually at a
-  // college. Showing it to everyone would make the real price look like
-  // a penalty for being honest.
+  // Kept because a member of a college should not be sold anything at
+  // all — their college is already paying per seat, so the checkout says
+  // so instead of taking a second payment for the same access.
   let hasInstitution = false
   try {
     const { prisma } = await import('@/lib/prisma')
@@ -31,13 +31,17 @@ export async function GET() {
   } catch { /* fall through — the paid plans still show */ }
 
   const plans = Object.values(PLANS)
-    .filter(p => !p.requiresInstitution || hasInstitution)
     .map(p => ({
       id: p.id, label: p.label, days: p.days, blurb: p.blurb,
       amountPaise: p.amountPaise, rupees: rupees(p.amountPaise),
     }))
 
-  return NextResponse.json({ configured: configured(), live: IS_LIVE, keyId: KEY_ID, plans })
+  return NextResponse.json({
+    configured: configured(), live: IS_LIVE, keyId: KEY_ID, plans,
+    // The UI uses this to say "your college already covers this" rather
+    // than showing a price to somebody who should not be charged.
+    coveredByInstitution: hasInstitution,
+  })
 }
 
 export async function POST(req) {
@@ -62,12 +66,12 @@ export async function POST(req) {
     })
     if (!user) return NextResponse.json({ error: 'Account not found.' }, { status: 404 })
 
-    // Enforced here, not in the UI. A price shown only to students but
-    // purchasable by anyone who can open devtools is not a price.
-    if (plan.requiresInstitution && !user.institutionId) {
+    // Someone whose college is already paying per seat must not be
+    // charged again for the same access.
+    if (user.institutionId) {
       return NextResponse.json({
-        error: 'Student pricing is for members of a registered college. Ask your college to be added, or choose the monthly plan.',
-      }, { status: 403 })
+        error: 'Your college already covers your access, so there is nothing to pay. If you think that is wrong, write to us.',
+      }, { status: 400 })
     }
 
     const order = await createOrder({

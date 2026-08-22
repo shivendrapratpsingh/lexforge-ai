@@ -394,11 +394,18 @@ function Members({ id, members, onChanged }) {
 // to raise a purchase order against. Seats default to the number who
 // actually signed up, because billing for 300 when 40 use it is how a
 // pilot becomes an argument.
+// ₹420 per student per month, or ₹3,528 per student per year — 30% off
+// twelve months. Offered as buttons rather than typed each time, because
+// a price typed by hand is a price that will eventually be typed wrong
+// on a document a college keeps.
+const SEAT_MONTHLY = 420
+const SEAT_YEARLY = 3528
+
 function Invoices({ id, suggestedSeats }) {
   const [d, setD] = useState(null)
   const [f, setF] = useState({
     description: 'LexForge Pro — annual institutional licence',
-    seats: String(suggestedSeats || 1), unitRupees: '',
+    seats: String(suggestedSeats || 1), unitRupees: String(SEAT_YEARLY),
     periodStart: '', periodEnd: '', notes: '',
   })
   const [busy, setBusy] = useState(false)
@@ -475,7 +482,17 @@ function Invoices({ id, suggestedSeats }) {
           </div>
           <div>
             <label style={S.label}>Price per seat (₹)</label>
-            <input type="number" min="0" step="1" value={f.unitRupees} onChange={set('unitRupees')} required style={S.input} placeholder="300" />
+            <input type="number" min="0" step="1" value={f.unitRupees} onChange={set('unitRupees')} required style={S.input} placeholder={String(SEAT_YEARLY)} />
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <button type="button" style={{ ...S.ghost, padding: '4px 9px', fontSize: 11 }}
+                onClick={() => setF(v => ({ ...v, unitRupees: String(SEAT_YEARLY), description: 'LexForge Pro — annual institutional licence' }))}>
+                ₹{SEAT_YEARLY} / year
+              </button>
+              <button type="button" style={{ ...S.ghost, padding: '4px 9px', fontSize: 11 }}
+                onClick={() => setF(v => ({ ...v, unitRupees: String(SEAT_MONTHLY), description: 'LexForge Pro — monthly institutional licence' }))}>
+                ₹{SEAT_MONTHLY} / month
+              </button>
+            </div>
           </div>
           <div>
             <label style={S.label}>Period from</label>

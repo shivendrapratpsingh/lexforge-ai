@@ -120,6 +120,29 @@ export default function ActSearch({ isPro }) {
               {res.official.map(act => <ActCard key={act.id} act={act} isPro={isPro} />)}
             </>
           )}
+
+          {/* The long tail. Only fetched when the free sources came back
+              nearly empty, so its presence means "we went looking". */}
+          {res.external?.length > 0 && (
+            <>
+              <div style={{ ...S.kicker, marginTop: 22, marginBottom: 4 }}>
+                Every other Central Act &amp; Rule
+              </div>
+              <p style={{ fontSize: 12, color: '#6A6A6A', margin: '0 0 12px', lineHeight: 1.6 }}>
+                Searched beyond the {269} curated Acts, across the full index of
+                Central Acts and Rules. These have no hand-written section notes
+                — open the source to read the text.
+              </p>
+              {res.external.map(act => <ActCard key={act.id} act={act} isPro={isPro} />)}
+            </>
+          )}
+
+          {res.externalError && (
+            <p style={{ fontSize: 12.5, color: '#8A8A8A', marginTop: 18, lineHeight: 1.65 }}>
+              The wider Act index could not be reached just now, so this shows
+              only the curated Acts. {res.externalError}
+            </p>
+          )}
         </>
       )}
     </div>
@@ -184,7 +207,7 @@ function ActCard({ act, isPro }) {
         <span style={{
           fontSize: 10, fontWeight: 700, letterSpacing: '.08em', padding: '3px 7px',
           borderRadius: 5, border: '1px solid #2A2A2A', color: '#8A7748', textTransform: 'uppercase',
-        }}>{act.source === 'curated' ? act.category : 'India Code'}</span>
+        }}>{act.source === 'curated' ? act.category : act.source === 'indiankanoon' ? 'Central Act' : 'India Code'}</span>
       </div>
 
       {act.sections.length > 0 && (

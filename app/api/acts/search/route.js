@@ -5,8 +5,11 @@
 // they carry hand-written section notes; Acts the daily India Code sync
 // has recorded follow, with official metadata and a link to the text.
 //
-// Free for every signed-in user: it reads a local corpus and our own
-// table, so nothing here is billed.
+// The local corpus and our own India Code table are free for every
+// signed-in user. When they come back with almost nothing, a Pro user's
+// search also reaches Indian Kanoon's `laws` doctype — every Central Act
+// and Rule rather than the 269 carried locally. That call is billed, so
+// it is Pro-only and runs only as a fallback.
 
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
@@ -23,6 +26,11 @@ export async function GET(req) {
 
     const q = new URL(req.url).searchParams.get('q')
 
+    // Reaching past the free sources costs money, so it follows the same
+    // rule as every other live legal lookup in the app.
+    const { hasProAccess } = await import('@/lib/admin')
+    const deep = await hasProAccess(session.user.email, session.user.tier).catch(() => false)
+
     let prisma = null
     try { ({ prisma } = await import('@/lib/prisma')) } catch (_) {}
 
@@ -33,7 +41,7 @@ export async function GET(req) {
       return buildCaseSearchQuery({ facts: text })
     }
 
-    const result = await searchActs(q, { expand, prisma })
+    const result = await searchActs(q, { expand, prisma, deep, userId: session.user.id })
     return NextResponse.json(result)
   } catch (err) {
     if (err?.code === 'BAD_QUERY') {

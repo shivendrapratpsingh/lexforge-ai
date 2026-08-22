@@ -81,6 +81,15 @@ export async function GET() {
     return `${out.results.length} results, e.g. "${out.results[0].title.slice(0, 45)}"`
   }, { configured: kanoonConfigured(), hint: 'INDIANKANOON_TOKEN is not set' }))
 
+  results.push(await probe('Every Act (Indian Kanoon)', async () => {
+    const { searchActsOnKanoon } = await import('@/lib/legal-data/indiankanoon')
+    // Deliberately an Act that is NOT in the curated 269, so a result
+    // proves the long tail is reachable rather than the local corpus.
+    const out = await searchActsOnKanoon({ query: 'Coastal Aquaculture Authority Act' })
+    if (!out.results.length) throw new Error('the laws doctype answered with nothing')
+    return `${out.results.length} acts, e.g. "${out.results[0].title.slice(0, 45)}"`
+  }, { configured: kanoonConfigured(), hint: 'INDIANKANOON_TOKEN is not set' }))
+
   results.push(await probe('Acts (India Code)', async () => {
     const { fetchCollectionFeed, COLLECTIONS } = await import('@/lib/legal-data/indiacode')
     const acts = await fetchCollectionFeed(COLLECTIONS[0])

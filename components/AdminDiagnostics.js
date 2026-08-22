@@ -25,6 +25,8 @@ export default function AdminDiagnostics() {
   const [d, setD] = useState(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [mail, setMail] = useState(null)
+  const [mailBusy, setMailBusy] = useState(false)
 
   async function run() {
     setBusy(true); setErr(''); setD(null)
@@ -36,19 +38,43 @@ export default function AdminDiagnostics() {
     } catch (e) { setErr(e.message) } finally { setBusy(false) }
   }
 
+  // Connecting proves the credentials are accepted. It does not prove a
+  // message arrives — those fail differently and are fixed differently.
+  async function sendTest() {
+    setMailBusy(true); setMail(null)
+    try {
+      const r = await fetch('/api/admin/diagnostics/test-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+      })
+      const j = await r.json()
+      setMail(r.ok ? { ok: true, text: j.message } : { ok: false, text: j.hint || j.error })
+    } catch (e) {
+      setMail({ ok: false, text: e.message })
+    } finally { setMailBusy(false) }
+  }
+
   return (
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <h2 style={{ fontSize: 13, color: '#D4A017', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 700, margin: 0 }}>
           Is everything connected?
         </h2>
-        <button type="button" onClick={run} disabled={busy} style={{
-          padding: '9px 16px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 700,
-          background: 'linear-gradient(135deg,#D4A017,#B8860B)', color: '#0D0D0D',
-          cursor: busy ? 'wait' : 'pointer', opacity: busy ? .6 : 1,
-        }}>
-          {busy ? 'Testing…' : 'Test every connection'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button type="button" onClick={sendTest} disabled={mailBusy} style={{
+            padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+            border: '1px solid #2E2718', background: 'transparent', color: '#9A8C6E',
+            cursor: mailBusy ? 'wait' : 'pointer', opacity: mailBusy ? .6 : 1,
+          }}>
+            {mailBusy ? 'Sending…' : 'Send me a test email'}
+          </button>
+          <button type="button" onClick={run} disabled={busy} style={{
+            padding: '9px 16px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 700,
+            background: 'linear-gradient(135deg,#D4A017,#B8860B)', color: '#0D0D0D',
+            cursor: busy ? 'wait' : 'pointer', opacity: busy ? .6 : 1,
+          }}>
+            {busy ? 'Testing…' : 'Test every connection'}
+          </button>
+        </div>
       </div>
 
       <div style={{ background: '#141414', border: '1px solid #1C1C1C', borderRadius: 12, padding: 18 }}>
@@ -59,6 +85,15 @@ export default function AdminDiagnostics() {
             to test a key that exists here and nowhere else. It costs a rupee or
             so per run, so it is a button rather than something that polls.
           </p>
+        )}
+
+        {mail && (
+          <div style={{
+            marginBottom: 14, padding: '11px 14px', borderRadius: 9, fontSize: 13, lineHeight: 1.7,
+            background: mail.ok ? 'rgba(63,166,107,.08)' : 'rgba(225,88,75,.08)',
+            border: `1px solid ${mail.ok ? 'rgba(63,166,107,.28)' : 'rgba(225,88,75,.28)'}`,
+            color: mail.ok ? '#5FCC8D' : '#FF8A80',
+          }}>{mail.text}</div>
         )}
 
         {busy && <p style={{ fontSize: 13, color: '#8A8A8A', margin: 0 }}>Calling each provider…</p>}

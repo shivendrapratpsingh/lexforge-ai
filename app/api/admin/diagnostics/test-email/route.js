@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { isAdmin, ADMIN_EMAIL } from '@/lib/admin'
+import { formatDateTime } from '@/lib/dates'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -38,7 +39,7 @@ export async function POST(req) {
       }, { status: 503 })
     }
 
-    const when = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+    const when = formatDateTime()
 
     await sendMail({
       to,

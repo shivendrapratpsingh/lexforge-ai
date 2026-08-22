@@ -28,7 +28,8 @@
     "verify:study": "dotenv -e .env.local -- node scripts/verify-study.mjs",
     "verify:dates": "node scripts/verify-dates.mjs",
     "verify:assistant": "dotenv -e .env.local -- node scripts/verify-assistant.mjs",
-    "verify:pricing": "node scripts/verify-pricing.mjs"
+    "verify:pricing": "node scripts/verify-pricing.mjs",
+    "verify:languages": "dotenv -e .env.local -- node scripts/verify-languages.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

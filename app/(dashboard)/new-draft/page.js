@@ -983,7 +983,7 @@ export default function NewDraftPage() {
                 gap: 12,
                 flexWrap: 'wrap',
               }}>
-                <span><b style={{ color: '#C0C0C0' }}>Free plan:</b> short drafts, limited citations, {me.freeDocsLimit ?? 10} documents/month.</span>
+                <span><b style={{ color: '#C0C0C0' }}>Free plan:</b> short drafts, limited citations, {me.freeDocsLimit ?? 2} documents/month.</span>
                 <Link href="/upgrade" style={{
                   marginLeft: 'auto',
                   padding: '6px 12px',

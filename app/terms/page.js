@@ -1,12 +1,14 @@
 import LegalPage, { P, H, UL, Callout, ContactBlock } from '@/components/LegalPage'
 import { COMPANY } from '@/lib/company'
+import { getFreeDocsLimit } from '@/lib/admin'
 
 export const metadata = {
   title: 'Terms & Conditions — LexForge AI',
   description: 'The terms on which LexForge AI is provided.',
 }
 
-export default function Terms() {
+export default async function Terms() {
+  const freeLimit = await getFreeDocsLimit().catch(() => 2)
   return (
     <LegalPage
       title="Terms & Conditions"
@@ -66,7 +68,7 @@ export default function Terms() {
 
       <H>6. Free and paid plans</H>
       <P>
-        The free plan includes ten documents per calendar month, resetting on the
+        The free plan includes {freeLimit} document{freeLimit === 1 ? '' : 's'} per calendar month, resetting on the
         1st. Paid plans remove that limit and unlock the research suite, premium
         document types and the case assistant. Current prices are on the{' '}
         <a href="/pricing" style={{ color: '#D4A017' }}>pricing page</a>.

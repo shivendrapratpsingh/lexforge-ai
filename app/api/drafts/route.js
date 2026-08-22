@@ -169,7 +169,7 @@ export async function POST(req) {
     // Block premium document types for free users (only when Pro enforcement is on)
     if (!userIsPro && (await requiresProDocumentDynamic(documentType))) {
       return NextResponse.json({
-        error: 'This document type requires Pro. Please contact the administrator to upgrade.',
+        error: 'This document type is part of Pro. See the plans to unlock it.',
         code: 'PRO_REQUIRED',
       }, { status: 403 })
     }
@@ -184,7 +184,7 @@ export async function POST(req) {
       })
       if (thisMonthCount >= FREE_DOCS_PER_MONTH) {
         return NextResponse.json({
-          error: `Free plan is limited to ${FREE_DOCS_PER_MONTH} documents per month. Contact the administrator to upgrade to Pro.`,
+          error: `The free plan covers ${FREE_DOCS_PER_MONTH} document${FREE_DOCS_PER_MONTH === 1 ? '' : 's'} a month, and you have used ${thisMonthCount}. Pro removes the limit — your allowance resets on the 1st either way.`,
           code: 'QUOTA_EXCEEDED',
         }, { status: 403 })
       }

@@ -1,12 +1,14 @@
 import LegalPage, { P, H, UL, Callout, ContactBlock } from '@/components/LegalPage'
 import { COMPANY } from '@/lib/company'
+import { getFreeDocsLimit } from '@/lib/admin'
 
 export const metadata = {
   title: 'Refund & Cancellation Policy — LexForge AI',
   description: 'When LexForge AI refunds a payment, how to ask, and how long it takes.',
 }
 
-export default function Refund() {
+export default async function Refund() {
+  const freeLimit = await getFreeDocsLimit().catch(() => 2)
   return (
     <LegalPage
       title="Refund & Cancellation Policy"
@@ -27,7 +29,7 @@ export default function Refund() {
       </P>
       <P>
         Your account, your documents and all your work survive. You return to the
-        free plan — ten documents a month — and everything you wrote is still
+        free plan — {freeLimit} document{freeLimit === 1 ? '' : 's'} a month — and everything you wrote is still
         there.
       </P>
 

@@ -33,7 +33,12 @@ async function probe(name, fn, { configured = true, hint = '' } = {}) {
   if (!configured) return { name, state: 'not configured', detail: hint }
   const t = Date.now()
   try {
-    return { name, state: 'up', ms: Date.now() - t, detail: await fn() }
+    // Awaited FIRST. Written inline as `ms: Date.now() - t, detail: await
+    // fn()` the properties evaluate in source order, so the duration was
+    // computed before the call had even started and every probe proudly
+    // reported 0 ms.
+    const detail = await fn()
+    return { name, state: 'up', ms: Date.now() - t, detail }
   } catch (err) {
     return {
       name,

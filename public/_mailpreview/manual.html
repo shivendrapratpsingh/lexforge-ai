@@ -1,0 +1,781 @@
+<title>Working the Forge</title>
+
+<style>
+  /* ── tokens: light is the base, both themes defined through them ── */
+  :root{
+    --ground:#FBFAF7; --surface:#F2EFE8; --sunk:#EAE5DA;
+    --line:#DDD6C7; --line-soft:#E8E2D5;
+    --ink:#191712; --body:#3A362E; --muted:#726B5C; --faint:#948C7B;
+    /* #8F6608, not the app's brighter gold: on this near-white ground the
+       lighter tone measured 4.37:1, under the 4.5 minimum for the small
+       uppercase labels and links that use it. This clears it at 4.94. */
+    --gold:#8F6608; --gold-soft:#F6EDD8; --gold-line:#DCC48A;
+    --warn:#A8481F; --warn-soft:#FBEDE6;
+    --good:#2C6B48; --good-soft:#E7F1EA;
+    --code-bg:#EDE8DC;
+    --shadow:0 1px 2px rgba(30,24,10,.05), 0 8px 22px -14px rgba(30,24,10,.22);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#12100C; --surface:#1B1813; --sunk:#161310;
+      --line:#2E2A21; --line-soft:#252118;
+      --ink:#F2EDE1; --body:#CFC7B5; --muted:#8E8674; --faint:#6E6757;
+      --gold:#D9A62A; --gold-soft:#241D0C; --gold-line:#4A3C16;
+      --warn:#E08055; --warn-soft:#2A1810;
+      --good:#68B78C; --good-soft:#12241A;
+      --code-bg:#221E17;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 22px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#12100C; --surface:#1B1813; --sunk:#161310;
+    --line:#2E2A21; --line-soft:#252118;
+    --ink:#F2EDE1; --body:#CFC7B5; --muted:#8E8674; --faint:#6E6757;
+    --gold:#D9A62A; --gold-soft:#241D0C; --gold-line:#4A3C16;
+    --warn:#E08055; --warn-soft:#2A1810;
+    --good:#68B78C; --good-soft:#12241A;
+    --code-bg:#221E17;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 22px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--body);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 20px 90px}
+
+  h1,h2,h3{font-family:Georgia,"Times New Roman",serif; font-weight:400; color:var(--ink); text-wrap:balance; margin:0}
+  h1{font-size:clamp(30px,7vw,44px); line-height:1.1; letter-spacing:-.02em}
+  h2{font-size:clamp(22px,4.6vw,28px); line-height:1.2; letter-spacing:-.015em}
+  h3{font-size:18px; line-height:1.3}
+  p{margin:0 0 14px}
+  a{color:var(--gold)}
+  code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  /* labels the reader must find on their own screen */
+  kbd{
+    background:var(--code-bg); border:1px solid var(--line);
+    border-radius:5px; padding:1.5px 6px; font-size:.86em;
+    color:var(--ink); white-space:nowrap;
+  }
+
+  .eyebrow{
+    font:600 11px/1 ui-monospace,Menlo,monospace; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--gold);
+  }
+
+  /* ── header ── */
+  header{padding:54px 0 30px}
+  header .lede{font-size:18px; line-height:1.6; color:var(--muted); margin:14px 0 0; max-width:60ch}
+  .who{
+    display:flex; gap:10px; flex-wrap:wrap; margin-top:22px;
+  }
+  .who span{
+    font-size:12.5px; padding:6px 12px; border-radius:100px;
+    border:1px solid var(--line); background:var(--surface); color:var(--muted);
+  }
+
+  /* ── sticky jump nav ── */
+  nav.jump{
+    position:sticky; top:0; z-index:20; margin:0 -20px 34px;
+    padding:11px 20px; background:color-mix(in srgb,var(--ground) 92%,transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line-soft);
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+  }
+  nav.jump ul{display:flex; gap:6px; list-style:none; margin:0; padding:0; white-space:nowrap}
+  nav.jump a{
+    display:block; font-size:12.5px; font-weight:600; text-decoration:none;
+    color:var(--muted); padding:6px 12px; border-radius:100px;
+    border:1px solid transparent;
+  }
+  nav.jump a:hover,nav.jump a:focus-visible{
+    color:var(--gold); background:var(--gold-soft); border-color:var(--gold-line);
+  }
+
+  section{padding:14px 0 8px; scroll-margin-top:66px}
+  .sechead{margin-bottom:6px}
+  .sechead p{color:var(--muted); font-size:15px; margin:8px 0 0; max-width:62ch}
+  hr{border:0; border-top:1px solid var(--line-soft); margin:38px 0 0}
+
+  /* ── the walkthrough card ── */
+  .job{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; padding:22px; margin:22px 0; box-shadow:var(--shadow);
+  }
+  .job > h3{margin-bottom:4px}
+  .job .why{font-size:14.5px; color:var(--muted); margin:0 0 4px}
+  .job .for{
+    font-size:13.5px; color:var(--body); background:var(--sunk);
+    border-radius:9px; padding:10px 13px; margin:14px 0 0;
+  }
+  .job .for b{color:var(--ink)}
+
+  /* numbered steps — a real sequence, so numbers carry meaning */
+  ol.steps{list-style:none; counter-reset:s; margin:18px 0 0; padding:0}
+  ol.steps li{
+    counter-increment:s; position:relative;
+    padding:0 0 16px 40px; font-size:15px;
+  }
+  ol.steps li::before{
+    content:counter(s); position:absolute; left:0; top:-1px;
+    width:26px; height:26px; border-radius:50%;
+    background:var(--gold-soft); border:1px solid var(--gold-line);
+    color:var(--gold); font:700 12.5px/25px ui-monospace,Menlo,monospace;
+    text-align:center;
+  }
+  ol.steps li:not(:last-child)::after{
+    content:""; position:absolute; left:13px; top:29px; bottom:4px;
+    width:1px; background:var(--line);
+  }
+  ol.steps li:last-child{padding-bottom:0}
+  ol.steps .note{display:block; font-size:13.5px; color:var(--muted); margin-top:5px}
+
+  .result{
+    margin-top:16px; padding:12px 14px; border-radius:9px;
+    background:var(--good-soft); border:1px solid color-mix(in srgb,var(--good) 30%,transparent);
+    font-size:14px; color:var(--body);
+  }
+  .result b{color:var(--good)}
+
+  .caution{
+    margin-top:14px; padding:12px 14px; border-radius:9px;
+    background:var(--warn-soft); border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);
+    font-size:14px;
+  }
+  .caution b{color:var(--warn)}
+
+  /* ── tappable glossary term: the mixed-audience device ── */
+  .term{
+    font:inherit; color:var(--ink); background:none; padding:0 1px;
+    border:0; border-bottom:1.5px dotted var(--gold); cursor:help;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .term:hover,.term:focus-visible{background:var(--gold-soft); border-radius:3px}
+  .def{
+    display:none; margin:9px 0 3px; padding:11px 13px;
+    background:var(--gold-soft); border:1px solid var(--gold-line);
+    border-radius:9px; font-size:13.5px; line-height:1.6; color:var(--body);
+  }
+  .def.open{display:block}
+  .def b{color:var(--ink)}
+  .def::before{
+    content:"IN PLAIN ENGLISH"; display:block; margin-bottom:5px;
+    font:700 9.5px/1 ui-monospace,Menlo,monospace; letter-spacing:.16em; color:var(--gold);
+  }
+
+  /* ── tables ── */
+  .scroll{overflow-x:auto; margin:18px 0; border:1px solid var(--line); border-radius:12px}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:14px}
+  th,td{text-align:left; padding:10px 13px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+  th{
+    background:var(--sunk); color:var(--ink); font-weight:700;
+    font-size:11.5px; letter-spacing:.06em; text-transform:uppercase;
+    position:sticky; top:0;
+  }
+  tr:last-child td{border-bottom:0}
+  td b{color:var(--ink)}
+
+  .tiny{font-size:13px; color:var(--faint); margin-top:10px}
+
+  footer{margin-top:44px; padding-top:24px; border-top:1px solid var(--line)}
+
+  @media (max-width:520px){
+    .job{padding:18px; border-radius:12px; margin-left:-4px; margin-right:-4px}
+    ol.steps li{padding-left:36px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">LexForge AI · Working manual</div>
+  <h1>Working the Forge</h1>
+  <p class="lede">
+    Everything the app does, and exactly how to do it. Written so that someone who
+    has never seen a courtroom can follow along, without wasting the time of
+    someone who works in one.
+  </p>
+  <div class="who">
+    <span>Open it on your phone</span>
+    <span>Follow along in the app</span>
+    <span>Tap any <button class="term" data-def="glossary-demo">underlined term</button> for plain English</span>
+  </div>
+  <div class="def" id="glossary-demo">
+    Like this. Words with a dotted underline are legal jargon — tap one and the
+    plain meaning appears right here. If you already know the term, ignore them.
+  </div>
+</header>
+
+<nav class="jump" aria-label="Jump to a section">
+  <ul>
+    <li><a href="#start">Setting up</a></li>
+    <li><a href="#draft">Writing a document</a></li>
+    <li><a href="#cases">Finding cases</a></li>
+    <li><a href="#status">Tracking a case</a></li>
+    <li><a href="#research">Research</a></li>
+    <li><a href="#types">All 20 documents</a></li>
+    <li><a href="#tools">The six tools</a></li>
+    <li><a href="#practice">Clients &amp; dates</a></li>
+    <li><a href="#study">Students</a></li>
+    <li><a href="#account">Your account</a></li>
+    <li><a href="#limits">Honest limits</a></li>
+  </ul>
+</nav>
+
+<section>
+  <div class="sechead">
+    <h2>What this app is, in one paragraph</h2>
+  </div>
+  <p>
+    A lawyer who goes to court spends most of their working life not arguing, but
+    typing. Formal documents in formats the court is strict about. Hunting through
+    old judgments for one that supports their argument. Keeping track of dozens of
+    hearing dates. <b>LexForge does the typing and the hunting.</b> The lawyer still
+    decides what to argue — the machine writes the draft and finds the judgments,
+    which turns hours into minutes.
+  </p>
+  <p class="tiny">
+    Live at <a href="https://lexforge-ai.vercel.app">lexforge-ai.vercel.app</a>.
+    Free plan gives 10 documents a month; Pro removes the cap and unlocks case-law
+    search and live case tracking.
+  </p>
+</section>
+
+<hr>
+
+<section id="start">
+  <div class="sechead">
+    <div class="eyebrow">First</div>
+    <h2>Setting up, once</h2>
+    <p>Two minutes. The only part that matters later is step 3.</p>
+  </div>
+
+  <div class="job">
+    <h3>Create your account</h3>
+    <ol class="steps">
+      <li>Go to <a href="https://lexforge-ai.vercel.app">lexforge-ai.vercel.app</a> and tap <kbd>Create one free</kbd>.</li>
+      <li>Enter your name, email, and a password of at least 8 characters.</li>
+      <li>
+        Answer the <b>security question</b> — “What is the nickname you have kept
+        for your best friend?”
+        <span class="note">
+          This is how you get back in if you forget your password. <b>There is no
+          reset email.</b> Capitals and spacing don’t matter, so “Bunty”, “bunty”
+          and “ BUNTY ” all work. Pick something you’ll remember in two years and
+          that isn’t on your Instagram.
+        </span>
+      </li>
+      <li>Tap <kbd>Create Account</kbd>. You land straight on the dashboard.</li>
+    </ol>
+    <div class="result">
+      <b>You’re in.</b> The dashboard is the page you’ll see every time you sign in.
+    </div>
+  </div>
+
+  <div class="job">
+    <h3>Put it on your phone’s home screen</h3>
+    <p class="why">Optional, but it then behaves like a normal app and can send you a morning reminder.</p>
+    <ol class="steps">
+      <li><b>Android:</b> Chrome menu <kbd>⋮</kbd> → <kbd>Install app</kbd>. Or tap the “Add to home screen” card on the dashboard.</li>
+      <li><b>iPhone:</b> in <b>Safari</b> (not Chrome), tap <kbd>Share</kbd> → <kbd>Add to Home Screen</kbd>.</li>
+      <li>Open it from the icon. Long-press that icon for shortcuts: new draft, study, court dates.</li>
+    </ol>
+    <div class="caution">
+      <b>Worth knowing:</b> no web app on Android or iPhone can put a widget on your
+      home screen — only the app icon. The widgets live inside the app, and the daily
+      8&nbsp;AM notification is what actually reaches your phone.
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="draft">
+  <div class="sechead">
+    <div class="eyebrow">The main job</div>
+    <h2>Writing a legal document</h2>
+    <p>
+      This is what most people open the app for. Twenty kinds of document, four
+      different ways to start.
+    </p>
+  </div>
+
+  <div class="job">
+    <h3>The basic run-through</h3>
+    <p class="why">Example used here: a <button class="term" data-def="d-notice">legal notice</button> to a tenant who won’t leave.</p>
+    <div class="def" id="d-notice">
+      <b>Legal notice</b> — a formal warning letter you send before suing someone.
+      It says: here is what you did, here is what I want, do it by this date or I
+      go to court. For many disputes you are legally required to send one first,
+      and it often ends the matter without a case at all.
+    </div>
+    <ol class="steps">
+      <li>From the sidebar, tap <kbd>New Document</kbd>.</li>
+      <li>Pick the document type — here, <kbd>📋 Legal Notice</kbd>.</li>
+      <li>
+        Choose how you want to enter the facts. Four options, explained below.
+        Most people start with <kbd>Fill Form</kbd>.
+      </li>
+      <li>
+        Fill in the facts. For a legal notice that’s nine fields: who is sending,
+        who is receiving, both addresses, the complaint, what you’re demanding,
+        and the deadline.
+        <span class="note">
+          Leave a field blank if you don’t know it. The app writes
+          <code>[DATE — TO BE FILLED]</code> rather than inventing something.
+        </span>
+      </li>
+      <li>Pick the court, and the language if not English.</li>
+      <li>Tap <kbd>Generate</kbd>. It takes roughly thirty seconds.</li>
+      <li>Read what comes back, edit anything you want, then download or copy it.</li>
+    </ol>
+    <div class="result">
+      <b>What you get:</b> a complete document in the format that court expects —
+      correct heading, numbered paragraphs, the right closing, a proper
+      <button class="term" data-def="d-verif">verification clause</button>.
+    </div>
+    <div class="def" id="d-verif">
+      <b>Verification clause</b> — the sworn bit at the end where you confirm the
+      contents are true. Courts take it seriously: a document without one, or with
+      the wording wrong, can be thrown out before a judge reads a word of it.
+    </div>
+  </div>
+
+  <div class="job">
+    <h3>The four ways to enter your facts</h3>
+    <p class="why">Same document, four starting points. Use whichever suits how you actually work.</p>
+    <ol class="steps">
+      <li><b><kbd>Fill Form</kbd></b> — a form with exactly the fields that document needs.<span class="note">Best when you have the details in front of you. Nothing gets forgotten.</span></li>
+      <li><b><kbd>Smart Q&amp;A</kbd></b> — it asks one question at a time.<span class="note">Best on a phone, or when you’ve never made this kind of document before.</span></li>
+      <li><b><kbd>Paste Document</kbd></b> — paste something that already exists; it reads it and pulls the details out.<span class="note">Best for replying to or amending something.</span></li>
+      <li><b><kbd>Upload Folder / File</kbd></b> — upload the client’s papers and it extracts what it needs.<span class="note">The one people react to. Clients arrive with a bundle of papers, not neat facts.</span></li>
+    </ol>
+  </div>
+
+  <div class="job">
+    <h3>Writing in Hindi, Tamil, Telugu or Urdu</h3>
+    <p class="why">District courts across much of India don’t work in English.</p>
+    <ol class="steps">
+      <li>On the New Document screen, find the language selector before you generate.</li>
+      <li>Pick English, Hindi, Urdu, Tamil, Telugu, or English + Hindi side by side.</li>
+      <li>Generate as normal.</li>
+    </ol>
+    <div class="result">
+      <b>It writes in that language</b> — it does not write English and translate.
+      Legal Hindi isn’t conversational Hindi; it has its own formal vocabulary that
+      courts expect, and the app carries a dictionary of the proper terms.
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="cases">
+  <div class="sechead">
+    <div class="eyebrow">The best feature</div>
+    <h2>Finding judgments that support your case</h2>
+    <p>Describe your situation in ordinary words; get back the past judgments that bear on it.</p>
+  </div>
+
+  <div class="job">
+    <h3>Find cases like mine</h3>
+    <p class="why">It’s the first thing on the dashboard when you sign in.</p>
+    <ol class="steps">
+      <li>On the dashboard, find the <kbd>Find cases like mine</kbd> panel and tap <kbd>Start</kbd>.</li>
+      <li>
+        In “What is the matter about?”, describe it plainly. Genuinely plainly —
+        full sentences, the way you’d tell a friend.
+        <span class="note">
+          Example: <i>“My client issued a cheque for ₹4,00,000 which bounced for
+          insufficient funds. The other side now says the signature was forged.”</i>
+        </span>
+      </li>
+      <li>Optionally add what you’re asking the court for, the matter type, and any law you already have in mind.</li>
+      <li>Tap <kbd>Find relevant cases</kbd>.</li>
+    </ol>
+    <div class="result">
+      <b>What you get, in this order:</b> the statutes that apply, then judgments
+      grouped by court — <b>Supreme Court first</b>, then High Courts, then
+      tribunals. That order isn’t decoration: it’s ranked by how much each one
+      binds the judge hearing your case.
+    </div>
+    <p style="margin-top:16px">
+      Above the results it shows <b>the search it actually ran</b>. For the cheque
+      example that was:
+    </p>
+    <div class="scroll" style="margin-top:8px">
+      <table style="min-width:0">
+        <tr><td><code>Section 138 Negotiable Instruments Act dishonour of cheque for insufficient funds forged signature defence</code></td></tr>
+      </table>
+    </div>
+    <p class="tiny">
+      That’s shown deliberately — so you can see whether it understood your matter
+      before you trust anything below it. Names, dates and amounts are stripped out
+      first, because they narrow a case-law search to nothing.
+    </p>
+    <div class="caution">
+      <b>The important safeguard.</b> The AI is never allowed to name a judgment. It
+      only writes the search. Every case you see came out of a real database of 30
+      million judgments, with its own citation and a link to the full text — so you
+      can open it and read the original. Lawyers abroad have been punished for
+      filing invented case citations; this is built specifically so that can’t happen.
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="status">
+  <div class="sechead">
+    <div class="eyebrow">Tracking</div>
+    <h2>Looking up a live case</h2>
+    <p>Type a case number, see everything the court’s own system knows.</p>
+  </div>
+
+  <div class="job">
+    <h3>Look up a case by CNR</h3>
+    <ol class="steps">
+      <li>Sidebar → <kbd>Case Law &amp; Status</kbd>.</li>
+      <li>Tap the <kbd>🔎 Case by CNR</kbd> tab.</li>
+      <li>
+        Type the <button class="term" data-def="d-cnr">CNR number</button>, e.g.
+        <code>DLHC010001232024</code>, then tap <kbd>Look up case</kbd>.
+      </li>
+    </ol>
+    <div class="def" id="d-cnr">
+      <b>CNR number</b> — the unique 16-character code every court case in India
+      has. Think of it as the case’s Aadhaar number. It’s printed on every order
+      and every daily hearing list.
+    </div>
+    <div class="result">
+      <b>What you get:</b> the parties, what stage it’s reached, the next hearing
+      date, and the orders passed. From then on the case is <b>tracked</b> — every
+      morning at 8 the app re-checks it, so the next date on your dashboard is
+      always current without you looking it up.
+    </div>
+  </div>
+
+  <div class="job">
+    <h3>Searching judgments directly, and new laws</h3>
+    <ol class="steps">
+      <li>Same page, <kbd>⚖️ Judgments</kbd> tab — search case law by words or by court.</li>
+      <li><kbd>📜 New Acts</kbd> tab — what the app found this morning.<span class="note">Every day at 8&nbsp;AM it checks India Code, the Government’s own official list of every law, for Acts newly in force.</span></li>
+    </ol>
+    <div class="result">
+      <b>Why that matters:</b> Indian law changes constantly. In 2024 the whole
+      criminal code was replaced — every section number a lawyer had memorised for
+      twenty years changed. Citing a cancelled section can sink your case. This
+      keeps the library current on its own.
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="research">
+  <div class="sechead">
+    <div class="eyebrow">Asking questions</div>
+    <h2>Legal research</h2>
+    <p>Ask a legal question in plain language and get an answer with the law behind it.</p>
+  </div>
+
+  <div class="job">
+    <h3>Analyse a legal issue</h3>
+    <ol class="steps">
+      <li>Sidebar → <kbd>Legal Research</kbd>.</li>
+      <li>In the <b>AI Legal Analysis</b> box, describe your question.<span class="note">Example: <i>“A tenant is refusing to vacate after the lease expired. What remedies are available?”</i></span></li>
+      <li>Tap <kbd>🤖 Analyze with AI</kbd>.</li>
+    </ol>
+    <div class="result">
+      <b>What you get:</b> four headings — Legal Analysis, Applicable Law,
+      Supporting Judgments, Recommended Course of Action — and beneath them a list
+      of <b>Verified sources</b>, each linking to the original judgment.
+    </div>
+    <div class="caution">
+      <b>Read this bit.</b> If it says “No verified case law”, that means no judgments
+      were found — and the analysis will then cite <b>none at all</b>, rather than
+      making some up. That’s deliberate. An answer with no cases is far safer than
+      an answer with invented ones.
+    </div>
+  </div>
+
+  <div class="job">
+    <h3>Searching the case-law database</h3>
+    <ol class="steps">
+      <li>Same page, left side, <b>Case Law Database</b>.</li>
+      <li>Type what you’re looking for.</li>
+      <li>Tap <kbd>🔎 Search the full case-law index</kbd> for the real 30-million-judgment search.<span class="note">Without tapping it you’re only seeing 8 famous landmark cases kept offline as a quick reference — useful, but not a database.</span></li>
+    </ol>
+  </div>
+</section>
+
+<hr>
+
+<section id="types">
+  <div class="sechead">
+    <div class="eyebrow">Reference</div>
+    <h2>All 20 documents it writes</h2>
+    <p>What each one is, and who walks in needing it.</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Document</th><th>What it is</th><th>Who needs it</th></tr></thead>
+      <tbody>
+        <tr><td><b>Legal Notice</b></td><td>Formal warning before suing</td><td>Anyone with a dispute — unpaid dues, a bad product, a tenant who won’t leave</td></tr>
+        <tr><td><b>Cheque Bounce Notice</b></td><td>Notice when a cheque is dishonoured — a criminal offence in India</td><td>Anyone who took a cheque that bounced. <b>Must be sent within 30 days</b></td></tr>
+        <tr><td><b>Vakalatnama</b></td><td>The form appointing your lawyer</td><td>Every client, in every case</td></tr>
+        <tr><td><b>RTI Application</b></td><td>Legal demand for government information</td><td>Citizens, journalists, activists, lawyers gathering proof</td></tr>
+        <tr><td><b>Affidavit</b></td><td>A sworn written statement of facts</td><td>Nearly every litigant, at some stage</td></tr>
+        <tr><td><b>Bail Application</b></td><td>Asking a court to release an arrested person</td><td>Anyone arrested or fearing arrest, and their family</td></tr>
+        <tr><td><b>Stay Application</b></td><td>Urgent request to pause an order</td><td>Anyone facing something irreversible — a demolition, a dismissal, an auction</td></tr>
+        <tr><td><b>Petition</b></td><td>The general document that starts a case</td><td>Anyone beginning litigation</td></tr>
+        <tr><td><b>Writ Petition</b></td><td>Claim that a public authority violated your rights</td><td>Denied pension, arbitrary transfer, sealed shop, refused licence</td></tr>
+        <tr><td><b>PIL</b></td><td>A case filed for the public good, not personal gain</td><td>Activists and NGOs. Usually unpaid work</td></tr>
+        <tr><td><b>Consumer Complaint</b></td><td>Complaint about a bad product or service</td><td>Ordinary consumers. Within two years of the problem</td></tr>
+        <tr><td><b>Divorce Petition</b></td><td>Petition to end a marriage</td><td>Either spouse. Different laws for different communities</td></tr>
+        <tr><td><b>FIR Complaint</b></td><td>Written complaint to police to start a criminal case</td><td>Any victim of a crime</td></tr>
+        <tr><td><b>Contract</b></td><td>A binding agreement between two parties</td><td>Businesses, freelancers, employers</td></tr>
+        <tr><td><b>Rent Agreement</b></td><td>The lease between landlord and tenant</td><td>Landlords and tenants. Usually renewed every 11 months</td></tr>
+        <tr><td><b>Sale Deed</b></td><td>Legally transfers ownership of property</td><td>Anyone buying or selling land or a house</td></tr>
+        <tr><td><b>Legal Opinion</b></td><td>A written professional view on a legal question</td><td>Businesses and individuals deciding what to do</td></tr>
+        <tr><td><b>Case Brief</b></td><td>Structured summary of a case</td><td>The lawyer themselves, or a senior being briefed</td></tr>
+        <tr><td><b>Memorandum</b></td><td>Internal legal memo</td><td>Inside a firm or company legal team</td></tr>
+        <tr><td><b>Legal Email</b></td><td>A professionally worded email, with a tone setting</td><td>The lawyer, several times a day</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tiny">Each has its own form. A legal notice needs 9 details; a bail application needs 10.</p>
+</section>
+
+<hr>
+
+<section id="tools">
+  <div class="sechead">
+    <div class="eyebrow">After filing</div>
+    <h2>The six tools</h2>
+    <p>Filing a document is the beginning, not the end. These handle what comes next.</p>
+  </div>
+  <p>All six live under <kbd>Legal Tools</kbd> in the sidebar. Each takes something you already have and produces the next document from it.</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Tool</th><th>You give it</th><th>You get back</th></tr></thead>
+      <tbody>
+        <tr><td><b>Order Analyzer</b></td><td>A court order</td><td>What it actually means, and what you must now do, by when</td></tr>
+        <tr><td><b>Document Amendment</b></td><td>An existing document + your changes</td><td>The updated version, formatting intact</td></tr>
+        <tr><td><b>Fresh Application</b></td><td>A rejection order</td><td>A corrected version answering the exact reasons it was refused</td></tr>
+        <tr><td><b>Appeal Generator</b></td><td>A judgment you lost</td><td>A drafted appeal with grounds</td></tr>
+        <tr><td><b>Counter / Reply</b></td><td>What the other side filed</td><td>Your formal answer to it</td></tr>
+        <tr><td><b>Compliance Report</b></td><td>The order + what you did</td><td>A filing telling the court you complied</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="result">
+    <b>The one to try first is Fresh Application.</b> Getting an application rejected
+    is a bad day for any lawyer. Paste in the rejection, and it reads why it failed
+    and drafts a fixed version.
+  </div>
+</section>
+
+<hr>
+
+<section id="practice">
+  <div class="sechead">
+    <div class="eyebrow">Running a practice</div>
+    <h2>Clients, dates and the morning brief</h2>
+    <p>Most Indian lawyers run everything from a paper diary. This is the diary that reminds you back.</p>
+  </div>
+
+  <div class="job">
+    <h3>Add a client</h3>
+    <ol class="steps">
+      <li>Sidebar → <kbd>Clients</kbd> → <kbd>Add Client</kbd>.</li>
+      <li>Fill in what you have — name, contact, address, ID. Blank fields are fine.</li>
+      <li>Open the client to attach documents, log payments, and add notes.</li>
+    </ol>
+    <div class="result"><b>Everything links up:</b> that client’s documents, hearing dates and payments all sit together.</div>
+  </div>
+
+  <div class="job">
+    <h3>Add a hearing date</h3>
+    <ol class="steps">
+      <li>Sidebar → <kbd>Court Dates</kbd> → add a date.</li>
+      <li>Give it a title, the date, and a type: hearing, filing, compliance or deadline.</li>
+      <li>Link it to a client or a document if you want them connected.</li>
+    </ol>
+    <div class="result">
+      <b>Anything overdue</b> appears as a red <kbd>Action Required</kbd> banner at the
+      top of your dashboard until you deal with it.
+    </div>
+  </div>
+
+  <div class="job">
+    <h3>Turn on the 8 AM brief</h3>
+    <ol class="steps">
+      <li>On the dashboard, find the <b>Morning notification</b> card.</li>
+      <li>Choose your topics: court dates, draft quota, study prompt.</li>
+      <li>Tap <kbd>Turn on daily brief</kbd> and allow notifications.</li>
+      <li>Use <kbd>Send a test</kbd> to check it works.</li>
+    </ol>
+    <div class="caution">
+      <b>iPhone only:</b> you must add the app to your Home Screen first and open it
+      from there. Apple doesn’t deliver notifications to a Safari tab. That’s their
+      restriction, not a bug in the app.
+    </div>
+    <div class="result">
+      <b>One notification a day</b>, deliberately — your next hearing, drafts waiting
+      for your signature, a study prompt, and a line worth reading. There are 542 of
+      those lines, so it takes over a year to repeat.
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="study">
+  <div class="sechead">
+    <div class="eyebrow">For students</div>
+    <h2>Study &amp; Future Lawyer</h2>
+    <p>Ten modules for law students and juniors — the place to ask the basic question without embarrassment.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Where</th><th>What’s there</th></tr></thead>
+      <tbody>
+        <tr><td><b>Study &amp; Learn</b></td><td>Landmark judgments explained plainly · legal principles · an AI tutor for any question · quizzes and flashcards</td></tr>
+        <tr><td><b>Services</b> (Future Lawyer)</td><td>AI legal Q&amp;A · moot court memorial builder · career roadmap · landmark judgments &amp; doctrines · internships and placements · CLAT and judicial exam prep</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    The <button class="term" data-def="d-moot">moot court</button> memorial builder is
+    the standout: it drafts the long, heavily formatted written submission that moot
+    competitions demand, which is the part most students have no idea how to start.
+  </p>
+  <div class="def" id="d-moot">
+    <b>Moot court</b> — a mock court competition where law students argue a made-up
+    case in front of judges. Central to legal education in India. The
+    <b>memorial</b> is the formal written argument you submit beforehand.
+  </div>
+</section>
+
+<hr>
+
+<section id="account">
+  <div class="sechead">
+    <div class="eyebrow">Housekeeping</div>
+    <h2>Your account</h2>
+    <p>Sidebar → <kbd>Account</kbd>. Everything about you in one place.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Section</th><th>What you can do</th></tr></thead>
+      <tbody>
+        <tr><td><b>Profile</b></td><td>Change your name. Email is fixed for now — changing it safely needs a confirmation step that doesn’t exist yet</td></tr>
+        <tr><td><b>Change password</b></td><td>Needs your current password, even though you’re signed in — so someone at your unlocked laptop can’t lock you out</td></tr>
+        <tr><td><b>Account recovery</b></td><td>Set or change your security question. If you signed up before this existed, the card is outlined in gold — set one</td></tr>
+        <tr><td><b>Plan &amp; usage</b></td><td>Your plan, drafts used this month, and counts of documents, clients and dates</td></tr>
+        <tr><td><b>Language &amp; notifications</b></td><td>Switch the app between English and Hindi</td></tr>
+        <tr><td><b>Your data</b></td><td>Download everything as one file — every document, client and date. You’re not locked in</td></tr>
+        <tr><td><b>Danger zone</b></td><td>Delete your account permanently. Asks for your password and your email typed out</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="job">
+    <h3>If you forget your password</h3>
+    <ol class="steps">
+      <li>On the sign-in page, tap <kbd>Forgot password?</kbd></li>
+      <li>Enter your email. It shows your security question.</li>
+      <li>Answer it and choose a new password.</li>
+    </ol>
+    <div class="caution">
+      <b>Five wrong answers locks the account for 30 minutes.</b> That’s on purpose —
+      a friend’s nickname is short enough that someone could otherwise guess their
+      way in. If you genuinely can’t remember, contact support and an administrator
+      can set a password for you.
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="limits">
+  <div class="sechead">
+    <div class="eyebrow">Straight talk</div>
+    <h2>What it doesn’t do</h2>
+    <p>Worth knowing before you rely on it, and before you recommend it to anyone.</p>
+  </div>
+
+  <div class="job">
+    <h3>It writes a strong first draft, not a finished filing</h3>
+    <p>
+      Simple documents — notices, RTI, affidavits, rent agreements — come out close
+      to final: read them, fill the blanks, sign. Complicated ones — writ petitions,
+      PILs, the grounds in a bail application — come out as a solid skeleton that a
+      lawyer must strengthen. <b>Nothing should be filed unread.</b>
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>It can’t</th><th>Why that matters</th></tr></thead>
+        <tbody>
+          <tr><td><b>Have a strategy</b></td><td>It doesn’t know this judge dislikes that argument. That’s why a lawyer reads it.</td></tr>
+          <tr><td><b>Check whether facts are true</b></td><td>If the client lied or you typed a wrong date, it faithfully reproduces the error.</td></tr>
+          <tr><td><b>Do property title checks</b></td><td>Especially for a sale deed. Verifying ownership and boundaries is human work.</td></tr>
+          <tr><td><b>Handle stamp duty and registration</b></td><td>These vary by state. Getting them wrong can make a document unenforceable.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="result">
+      <b>The honest summary:</b> it does the four hours of typing and searching. It
+      doesn’t do the twenty minutes of thinking — and it shouldn’t. Your name goes
+      on the document.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p class="tiny">
+    LexForge AI · <a href="https://lexforge-ai.vercel.app">lexforge-ai.vercel.app</a><br>
+    A drafting and research assistant for Indian courts. Not legal advice — always
+    read the original judgment before relying on it.
+  </p>
+</footer>
+
+</div>
+
+<script>
+  // Glossary terms: tap to reveal the plain-English definition in place.
+  // The panel is a sibling further down the document rather than inside the
+  // sentence, so a long definition never breaks the line it sits in.
+  document.querySelectorAll('.term').forEach(btn => {
+    const panel = document.getElementById(btn.dataset.def);
+    if (!panel) return;
+    btn.setAttribute('type', 'button');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-controls', panel.id);
+    btn.addEventListener('click', () => {
+      const open = panel.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
+  });
+
+  // Highlight the section currently on screen in the sticky nav.
+  const links = [...document.querySelectorAll('nav.jump a')];
+  const byId = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      const a = byId.get(e.target.id);
+      if (!a) return;
+      if (e.isIntersecting) {
+        links.forEach(l => l.style.color = '');
+        a.style.color = 'var(--gold)';
+      }
+    });
+  }, { rootMargin: '-60px 0px -70% 0px' });
+  document.querySelectorAll('section[id]').forEach(s => io.observe(s));
+</script>

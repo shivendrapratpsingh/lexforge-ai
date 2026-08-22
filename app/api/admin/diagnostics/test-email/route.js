@@ -41,6 +41,8 @@ export async function POST(req) {
 
     const when = formatDateTime()
 
+    const { emailShell, h1, p: para, facts, note } = await import('@/lib/email-theme')
+
     await sendMail({
       to,
       subject: 'LexForge AI — email is working',
@@ -56,25 +58,20 @@ export async function POST(req) {
         '',
         '— LexForge AI',
       ].join('\n'),
-      html: `
-<div style="margin:0;padding:32px 16px;background:#0D0D0D;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
-  <div style="max-width:460px;margin:0 auto;background:#141414;border:1px solid #2A2A2A;border-radius:16px;padding:32px;">
-    <div style="margin-bottom:22px;">
-      <span style="display:inline-block;width:36px;height:36px;line-height:36px;text-align:center;background:#D4A017;border-radius:9px;color:#0D0D0D;font-weight:900;font-size:13px;vertical-align:middle;">LF</span>
-      <span style="margin-left:10px;font-size:18px;font-weight:800;color:#F0F0F0;vertical-align:middle;">LexForge AI</span>
-    </div>
-    <h1 style="margin:0 0 14px;font-size:20px;font-weight:800;color:#5FCC8D;">Email is working</h1>
-    <p style="margin:0 0 18px;font-size:14px;line-height:1.7;color:#A3A39C;">
-      If you are reading this, payment receipts, password-change notices and
-      the daily report will all reach their recipients.
-    </p>
-    <table style="width:100%;border-collapse:collapse;border-top:1px solid #2A2A2A;">
-      <tr><td style="padding:8px 0;font-size:13px;color:#6E6E68;">Sent</td><td style="padding:8px 0;font-size:13px;color:#C0C0C0;text-align:right;">${when}</td></tr>
-      <tr><td style="padding:8px 0;font-size:13px;color:#6E6E68;">Via</td><td style="padding:8px 0;font-size:13px;color:#C0C0C0;text-align:right;">${mailProvider()}</td></tr>
-      <tr><td style="padding:8px 0;font-size:13px;color:#6E6E68;">From</td><td style="padding:8px 0;font-size:13px;color:#C0C0C0;text-align:right;">${mailFrom()}</td></tr>
-    </table>
-  </div>
-</div>`.trim(),
+      html: emailShell({
+        title: 'Email is working',
+        preheader: 'Receipts, security notices and the daily report will all arrive.',
+        body: [
+          h1('Email is working'),
+          para('If you are reading this, payment receipts, password-change notices and the daily report will all reach their recipients.'),
+          facts([
+            ['Sent', when, true],
+            ['Via', mailProvider()],
+            ['From', mailFrom()],
+          ]),
+          note('This is also what every LexForge email will look like — the letterhead, the rule, the footer.', 'good'),
+        ].join(''),
+      }),
     })
 
     return NextResponse.json({

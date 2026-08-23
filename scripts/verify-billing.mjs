@@ -22,8 +22,8 @@ const check = (name, got, want) => {
 check('configured with keys', b.configured(), true)
 check('test key is not live', b.IS_LIVE, false)
 check('price honours env override', b.PLANS.monthly.amountPaise, 39900)
-check('price falls back when env absent', b.PLANS.yearly.amountPaise, 499000)
-check('student plan is gated', b.PLANS.student.requiresInstitution, true)
+check('price falls back when env absent', b.PLANS.yearly.amountPaise, 403200)  // ₹4,032
+check('there is no separate student plan', b.PLANS.student, undefined)
 check('unknown plan is refused', b.planFor('free-forever'), null)
 
 // ── payment signature ────────────────────────────────────────────

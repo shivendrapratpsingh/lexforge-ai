@@ -30,7 +30,8 @@
     "verify:assistant": "dotenv -e .env.local -- node scripts/verify-assistant.mjs",
     "verify:pricing": "node scripts/verify-pricing.mjs",
     "verify:languages": "dotenv -e .env.local -- node scripts/verify-languages.mjs",
-    "verify:import": "dotenv -e .env.local -- node scripts/verify-student-import.mjs"
+    "verify:import": "dotenv -e .env.local -- node scripts/verify-student-import.mjs",
+    "submit:indexnow": "node scripts/submit-indexnow.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

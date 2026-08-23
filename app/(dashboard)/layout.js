@@ -22,10 +22,20 @@ export default async function DashboardLayout({ children }) {
     const { prisma } = await import('@/lib/prisma')
     const me = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true, institutionId: true },
+      select: { role: true, institutionId: true, mustOnboard: true },
     })
     faculty = me?.role === 'faculty' && Boolean(me.institutionId)
-  } catch { /* the link simply does not appear */ }
+
+    // An account created from a college's spreadsheet still has the
+    // password the college chose and no security question. Neither is
+    // acceptable to carry into the app, so nothing else loads until
+    // both are dealt with.
+    if (me?.mustOnboard) redirect('/onboarding')
+  } catch (e) {
+    // redirect() works by throwing; rethrow so it is not swallowed as a
+    // database error and the gate quietly stops gating.
+    if (e?.digest?.startsWith?.('NEXT_REDIRECT')) throw e
+  }
   const pro      = await hasProAccessForSession(session)
   const tier     = admin ? 'admin' : (pro ? 'pro' : 'free')
   const tierLbl  = t(`tier.${tier}`)

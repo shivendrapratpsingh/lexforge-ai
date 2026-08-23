@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import StudentImportPanel from './StudentImportPanel'
 
 // ─────────────────────────────────────────────────────────────────
 //  Institutions panel — colleges and firms, in the Admin Console.
@@ -182,8 +183,7 @@ export default function AdminInstitutions() {
               </span>
             </div>
             <div style={{ fontSize: 11.5, color: '#5A5A5A', marginTop: 3, fontFamily: 'ui-monospace, Menlo, monospace' }}>
-              {i.emailDomains || '(no domains — code or invite only)'}
-              {i.joinCode && <span style={{ color: '#9A8C6E' }}>{'  ·  join code '}<strong style={{ color: '#D4A017' }}>{i.joinCode}</strong></span>}
+              {i.emailDomains || '(students onboarded by uploaded list)'}
             </div>
             {open === i.id && <Detail id={i.id} onChanged={load} />}
           </div>
@@ -314,7 +314,7 @@ function Detail({ id, onChanged }) {
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
         {chip('activity', 'What they use')}
         {chip('members', `Members (${d.memberList.length})`)}
-        {chip('invite', 'Invite a class')}
+        {chip('import', 'Upload student list')}
         {chip('invoices', 'Invoices')}
         {chip('settings', 'Settings')}
       </div>
@@ -332,7 +332,7 @@ function Detail({ id, onChanged }) {
 
       {tab === 'members' && <Members id={id} members={d.memberList} onChanged={load} />}
 
-      {tab === 'invite' && <InviteForm id={id} onDone={() => { load(); onChanged?.() }} />}
+      {tab === 'import' && <StudentImportPanel id={id} institutionName={d.institution.name} />}
       {tab === 'invoices' && <Invoices id={id} suggestedSeats={d.activity.signedUp} />}
       {tab === 'settings' && <Settings inst={d.institution} onDone={() => { load(); onChanged?.() }} />}
     </div>
@@ -381,9 +381,8 @@ function Members({ id, members, onChanged }) {
         ))}
       </div>
       <p style={{ fontSize: 11.5, color: '#5A5A5A', marginTop: 10, lineHeight: 1.6 }}>
-        A faculty co-ordinator gets their college&rsquo;s roster, its join code
-        and its activity at /college — how much each student works, never what
-        they wrote.
+        A faculty co-ordinator gets their college&rsquo;s roster and its activity
+        at /college — how much each student works, never what they wrote.
       </p>
       {msg && <div style={S.err}>{msg.text}</div>}
     </>
@@ -591,21 +590,6 @@ function Settings({ inst, onDone }) {
     } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
   }
 
-  async function regenerate() {
-    if (!confirm('Issue a new code? Anyone who has the old one and has not joined yet will not be able to.')) return
-    setBusy(true); setMsg(null)
-    try {
-      const r = await fetch(`/api/admin/institutions/${inst.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ regenerateJoinCode: true }),
-      })
-      const j = await r.json()
-      if (!r.ok) throw new Error(j.error)
-      setMsg({ ok: true, text: `New code: ${j.institution.joinCode}` })
-      onDone?.()
-    } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
-  }
-
   async function remove() {
     if (!confirm(`Remove ${inst.name}? Its members keep their accounts and all their work — they simply lose institutional Pro.`)) return
     setBusy(true)
@@ -630,21 +614,6 @@ function Settings({ inst, onDone }) {
         <div><label style={S.label}>Access ends</label><input type="date" value={f.endsAt} onChange={set('endsAt')} style={S.input} /></div>
         <div><label style={S.label}>Contact email</label><input value={f.contactEmail} onChange={set('contactEmail')} style={S.input} /></div>
       </div>
-      <div style={{ marginTop: 14, padding: 14, background: '#0A0A0A', border: '1px solid #232323', borderRadius: 10 }}>
-        <div style={S.label}>Join code</div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <code style={{ fontSize: 20, fontWeight: 800, color: '#D4A017', letterSpacing: '3px' }}>
-            {inst.joinCode || '—'}
-          </code>
-          <button type="button" style={S.ghost} onClick={regenerate} disabled={busy}>Regenerate</button>
-        </div>
-        <p style={{ fontSize: 11.5, color: '#5A5A5A', margin: '9px 0 0', lineHeight: 1.65 }}>
-          Read this out and students join themselves — no class list, no
-          college email needed. Regenerating cuts off anyone holding the old
-          one, which is what you want the day it turns up in a public group.
-        </p>
-      </div>
-
       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
         <button type="submit" style={S.btn(busy)} disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
         <button type="button" style={S.btn(busy, true)} onClick={remove} disabled={busy}>Remove institution</button>

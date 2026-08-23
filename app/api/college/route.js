@@ -1,7 +1,7 @@
 // GET /api/college — what a faculty co-ordinator can see about their own college.
 //
 // Deliberately not the admin endpoint with a different guard. A
-// co-ordinator gets their roster, their join code and their activity —
+// co-ordinator gets their roster and their activity —
 // never costs, never other institutions, and never anything a student
 // wrote. Being able to see that a student is active is a register; being
 // able to read their draft is surveillance, and it would make honest
@@ -77,7 +77,6 @@ export async function GET() {
         plan: inst.plan,
         endsAt: inst.endsAt,
         seats: inst.seats,
-        joinCode: inst.joinCode,
         active: isActive(inst),
       },
       totals: {

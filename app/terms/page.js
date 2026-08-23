@@ -85,11 +85,13 @@ export default async function Terms() {
 
       <H>8. Institutional access</H>
       <P>
-        A college or firm may be given access for its members, by email domain,
-        by invitation, or by a join code. That access lasts as long as the
-        institution&rsquo;s arrangement with us. If it ends, members lose the
-        institutional benefit but keep their accounts and everything they have
-        written.
+        A college or firm may be given access for its members. Where a college
+        provides a list of its students, we create accounts from it, and that
+        access lasts as long as the institution&rsquo;s arrangement with us. A
+        student left off a list the college later provides loses the
+        institutional benefit but keeps their account and everything they have
+        written. An account is for one person and may be signed in on one device
+        at a time.
       </P>
 
       <H>9. Who owns what</H>

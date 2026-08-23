@@ -137,10 +137,10 @@ export default async function Pricing() {
             Law students
           </div>
           <p style={{ fontSize: 14.5, color: '#A8A8A8', lineHeight: 1.8, margin: '10px 0 0', maxWidth: '66ch' }}>
-            If your college has a plan with us, you pay nothing at all — ask your
-            Moot Court Society or faculty co-ordinator for the join code, type it
-            in Account settings, and everything unlocks. Otherwise students pay
-            the same as everyone else; there is no separate student rate to
+            If your college has a plan with us, you pay nothing at all — your
+            college sends us the class list and your account is already waiting —
+            sign in with the email and password they give you. Otherwise students
+            pay the same as everyone else; there is no separate student rate to
             argue about. If your college does not have one yet,{' '}
             <Link href="/for-colleges" style={{ color: GOLD }}>send them here</Link> —
             a pilot is free for a full term.

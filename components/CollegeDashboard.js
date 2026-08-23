@@ -78,25 +78,20 @@ export default function CollegeDashboard() {
         </p>
       </header>
 
-      {d.institution.joinCode && (
-        <div style={{ ...CARD, borderColor: 'rgba(212,160,23,.3)', marginBottom: 14 }}>
-          <div style={LABEL}>Join code</div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
-            <code style={{ fontSize: 28, fontWeight: 800, color: '#D4A017', letterSpacing: '4px' }}>
-              {d.institution.joinCode}
-            </code>
-            <button type="button" onClick={() => navigator.clipboard?.writeText(d.institution.joinCode)}
-              style={{ padding: '7px 13px', borderRadius: 8, border: '1px solid #2E2718', background: 'transparent', color: '#9A8C6E', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              Copy
-            </button>
-          </div>
-          <p style={{ fontSize: 12.5, color: '#7A7A7A', margin: '10px 0 0', lineHeight: 1.7, maxWidth: '64ch' }}>
-            Read this out, or put it on a slide. Students sign up with any email
-            — a personal Gmail is fine — then go to Account, Plan, and type it.
-            That is the whole of it.
-          </p>
-        </div>
-      )}
+      <div style={{ ...CARD, borderColor: 'rgba(212,160,23,.3)', marginBottom: 14 }}>
+        <div style={LABEL}>Adding students</div>
+        <p style={{ fontSize: 13.5, color: '#A0A0A0', margin: '9px 0 0', lineHeight: 1.75, maxWidth: '66ch' }}>
+          Students are added from a list, not by claiming a code. Send us the
+          current class list as a spreadsheet — name, email and a starting
+          password — and every student on it has an account waiting. They choose
+          their own password the first time they sign in.
+        </p>
+        <p style={{ fontSize: 12.5, color: '#7A7A7A', margin: '10px 0 0', lineHeight: 1.7 }}>
+          Send the <strong>whole current list</strong> each time, not just the new
+          students: anyone left off it loses access. Their account and their work
+          are kept, and adding them back restores it.
+        </p>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 14 }}>
         <div style={CARD}><div style={LABEL}>Signed up</div><div style={VALUE}>{t.signedUp}</div></div>

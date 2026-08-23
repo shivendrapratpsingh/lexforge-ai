@@ -39,6 +39,13 @@ function LoginForm() {
   useEffect(() => {
     if (searchParams.get('registered')) setSuccess('Account created! Sign in below.')
     if (searchParams.get('reset'))      setSuccess('Password updated! Sign in with your new password.')
+    if (searchParams.get('changed'))    setSuccess('Password set. Sign in with the one you just chose.')
+    // A session that ended because the account was opened somewhere
+    // else. Without this the user is simply back at a login page with no
+    // idea why, which reads as the app losing their session.
+    if (searchParams.get('superseded')) {
+      setError('You were signed out because this account was opened on another device. LexForge allows one device at a time — sign in again to use it here.')
+    }
   }, [searchParams])
 
   const handleSubmit = async (e) => {

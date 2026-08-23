@@ -42,15 +42,24 @@ export const authConfig = {
         nextUrl.pathname.startsWith('/register')         ||
         nextUrl.pathname.startsWith('/forgot-password')  ||
         nextUrl.pathname.startsWith('/reset-password')
-      const isProtected = ['/dashboard', '/drafts', '/new-draft', '/research', '/clients', '/court-dates', '/tools', '/admin', '/upgrade', '/study', '/future-lawyer', '/account', '/case-law', '/acts', '/college'].some(
+      const isProtected = ['/dashboard', '/drafts', '/new-draft', '/research', '/clients', '/court-dates', '/tools', '/admin', '/upgrade', '/study', '/future-lawyer', '/account', '/case-law', '/acts', '/college', '/onboarding'].some(
         p => nextUrl.pathname.startsWith(p)
       )
       const isAdminRoute = nextUrl.pathname.startsWith('/admin')
 
       if (isAuthPage && isLoggedIn)
         return Response.redirect(new URL('/dashboard', nextUrl))
-      if (isProtected && !isLoggedIn)
-        return Response.redirect(new URL('/login', nextUrl))
+      if (isProtected && !isLoggedIn) {
+        // A token that existed a moment ago and does not now was almost
+        // certainly ended by a login elsewhere — the only thing in this
+        // app that revokes one mid-session. The flag lets /login explain
+        // instead of silently presenting an empty form.
+        const url = new URL('/login', nextUrl)
+        if (request.cookies.has('authjs.session-token') || request.cookies.has('__Secure-authjs.session-token')) {
+          url.searchParams.set('superseded', '1')
+        }
+        return Response.redirect(url)
+      }
       // Admin routes: bounce non-admins. The /admin page ALSO guards itself
       // server-side (lib/admin.isAdmin), so this is defence-in-depth.
       if (isAdminRoute && isLoggedIn && !isAdminUser)

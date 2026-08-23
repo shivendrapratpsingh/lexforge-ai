@@ -422,32 +422,17 @@ function College() {
   return (
     <div style={S.card}>
       <div style={S.kicker}>College</div>
-      <h2 style={S.h2}>Join your college</h2>
+      <h2 style={S.h2}>Are you at a law college?</h2>
       <p style={S.sub}>
-        If your college has a plan, whoever runs it has a code — usually the
-        Moot Court Society or a faculty co-ordinator. Type it here and
-        everything unlocks. It works with a personal email; you do not need a
-        college address.
+        Colleges set their students up directly — they send us the class list and
+        every student has an account waiting, with nothing to claim and no code to
+        type. If your college has a plan and you are not on it, ask your Moot
+        Court Society or faculty co-ordinator to include you in the next list.
       </p>
-      <form onSubmit={join} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          value={code}
-          onChange={e => setCode(e.target.value)}
-          placeholder="LEXF-2K9M"
-          style={{
-            flex: '1 1 200px', minWidth: 0, background: '#0D0D0D', border: '1px solid #232323',
-            borderRadius: 9, padding: '11px 13px', color: '#F0F0F0', fontSize: 15,
-            outline: 'none', letterSpacing: '2px', fontFamily: 'ui-monospace, Menlo, monospace',
-            textTransform: 'uppercase',
-          }}
-        />
-        <Btn type="submit" busy={busy} disabled={!code.trim()}>Join</Btn>
-      </form>
-      {msg && <Note tone={msg.ok ? 'ok' : 'err'}>{msg.text}</Note>}
-      <p style={{ fontSize: 12, color: '#5A5A5A', marginTop: 12, lineHeight: 1.65 }}>
-        No code? Send your Moot Court Society to{' '}
-        <Link href="/for-colleges" style={{ color: '#9A8C6E' }}>lexforge for colleges</Link>{' '}
-        — a pilot is free for a term.
+      <p style={{ fontSize: 12.5, color: '#5A5A5A', margin: '10px 0 0', lineHeight: 1.7 }}>
+        If your college has no plan yet, send them to{' '}
+        <Link href="/for-colleges" style={{ color: '#9A8C6E' }}>lexforge for colleges</Link> —
+        a pilot is free for a term.
       </p>
     </div>
   )

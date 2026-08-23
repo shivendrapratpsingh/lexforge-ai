@@ -32,7 +32,12 @@ export const authConfig = {
     }),
   ],
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
+    // `request` is needed whole, not just nextUrl: the superseded-session
+    // check reads its cookies. Destructuring only nextUrl left `request`
+    // undefined and threw inside middleware, which fails EVERY protected
+    // route rather than the one route that added the check.
+    authorized({ auth, request }) {
+      const { nextUrl } = request
       const isLoggedIn = !!auth?.user
       const email = (auth?.user?.email || '').toLowerCase()
       const isAdminUser = !!email && email === ADMIN_EMAIL

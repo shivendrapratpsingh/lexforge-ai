@@ -648,7 +648,7 @@ export default function AdminConsole() {
               </thead>
               <tbody>
                 {users.map(u => {
-                  const isAdminRow = u.email.toLowerCase() === 'pratapsinghshivendra21@gmail.com'
+                  const isAdminRow = Boolean(stats?.adminEmail) && u.email.toLowerCase() === String(stats.adminEmail).toLowerCase()
                   return (
                     <tr key={u.id}>
                       <td style={TD}>

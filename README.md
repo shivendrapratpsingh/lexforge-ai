@@ -61,7 +61,7 @@ fabricated names, dates, or citations.
 The platform admin is hard-coded in `lib/admin.js`:
 
 ```js
-export const ADMIN_EMAIL = 'pratapsinghshivendra21@gmail.com'
+ADMIN_EMAIL="you@example.com"   # set in the environment, never in code
 ```
 
 Register and log in with that email and you'll automatically:

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { isAdmin } from '@/lib/admin'
+import { ADMIN_EMAIL, isAdmin } from '@/lib/admin'
 
 export async function GET() {
   try {
@@ -41,6 +41,9 @@ export async function GET() {
 
     return NextResponse.json({
       stats: {
+        // Who the admin is, so the console can mark that row without the
+        // address being hardcoded into client code that ships publicly.
+        adminEmail: ADMIN_EMAIL,
         totalUsers,
         proUsers,
         freeUsers: totalUsers - proUsers,

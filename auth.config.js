@@ -11,7 +11,8 @@ const DEV_SECRET = 'lexforge-dev-secret-v1-change-before-deployment-!!'
 // hard-coded (with an env override) so the Edge middleware recognises the
 // admin even when the ADMIN_EMAIL environment variable is not set on the
 // deployment — otherwise /admin would wrongly bounce the admin to /dashboard.
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'pratapsinghshivendra21@gmail.com').toLowerCase()
+// See lib/admin.js — never defaulted to a real address in a public repo.
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase()
 
 export const authConfig = {
   secret: process.env.AUTH_SECRET ?? DEV_SECRET,

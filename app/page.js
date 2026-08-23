@@ -5,6 +5,9 @@ import { DOCUMENT_TYPES } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import LandingSidePanel from '@/components/LandingSidePanel'
+import ExplodedLawBook from '@/components/ExplodedLawBook'
+import { COMPANY, hasAddress, hasEmail } from '@/lib/company'
+import { PLANS, rupees } from '@/lib/billing'
 
 const FEATURES = [
   { icon: '🤖', title: 'AI Document Generation', desc: 'Complete, court-ready documents in seconds, drafted for Indian law and Indian formats.' },
@@ -29,6 +32,31 @@ const FOOTER_COLUMNS = [
   { title: 'Legal', links: [['Terms', '/terms'], ['Privacy', '/privacy'], ['Refunds', '/refund'], ['Contact', '/contact']] },
 ]
 
+export const metadata = {
+  title: 'LexForge AI — AI legal drafting for Indian law',
+  description:
+    'Draft Indian legal documents in under a minute — legal notices, writ petitions, bail applications and more. Search real Supreme Court and High Court judgments, read bare Acts, and build moot memorials. Free to start.',
+  keywords: [
+    'AI legal drafting India', 'legal notice format India', 'draft legal notice online',
+    'writ petition format', 'bail application draft', 'moot memorial builder',
+    'Indian bare acts search', 'case law search India', 'LexForge', 'LexForge AI',
+  ],
+  alternates: { canonical: COMPANY.site },
+  openGraph: {
+    type: 'website',
+    siteName: 'LexForge AI',
+    title: 'LexForge AI — AI legal drafting for Indian law',
+    description: 'Indian legal documents drafted in under a minute, with judgments quoted as reported and never invented.',
+    url: COMPANY.site,
+    locale: 'en_IN',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LexForge AI — AI legal drafting for Indian law',
+    description: 'Indian legal documents drafted in under a minute. Real citations, never invented.',
+  },
+}
+
 export default async function LandingPage() {
   // If the visitor is already signed in, send them straight into the app.
   const session = await auth()
@@ -36,8 +64,89 @@ export default async function LandingPage() {
 
   const shownTypes = DOCUMENT_TYPES.slice(0, 8)
 
+  // Structured data. This is how a search engine learns that the page is
+  // a software product with a price and a publisher, rather than a wall
+  // of text it has to guess at — and it is what lets a result show the
+  // price and the rating instead of just a blue link.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'SoftwareApplication',
+        name: 'LexForge AI',
+        applicationCategory: 'BusinessApplication',
+        applicationSubCategory: 'Legal drafting and research',
+        operatingSystem: 'Web browser, Android, iOS',
+        url: COMPANY.site,
+        description:
+          'AI legal drafting for Indian law. Draft legal notices, writ petitions and bail applications, search real Supreme Court and High Court judgments, read bare Acts, and build moot court memorials.',
+        inLanguage: ['en-IN', 'hi-IN'],
+        offers: [
+          { '@type': 'Offer', price: '0', priceCurrency: 'INR', name: 'Free' },
+          ...Object.values(PLANS).map(p => ({
+            '@type': 'Offer',
+            price: String(rupees(p.amountPaise)),
+            priceCurrency: 'INR',
+            name: p.label,
+          })),
+        ],
+        featureList: [
+          'Draft 19 Indian legal document types',
+          'Search real Supreme Court and High Court judgments',
+          'Search every Central Act and Rule',
+          'Moot court memorial builder',
+          'Live case status by CNR number',
+          'Drafting in Hindi, Urdu, Tamil, Telugu and Kannada',
+        ],
+        publisher: { '@id': `${COMPANY.site}/#org` },
+      },
+      {
+        '@type': 'Organization',
+        '@id': `${COMPANY.site}/#org`,
+        name: 'LexForge AI',
+        legalName: COMPANY.legalName,
+        url: COMPANY.site,
+        ...(hasEmail() ? { email: COMPANY.email } : {}),
+        ...(COMPANY.phone ? { telephone: COMPANY.phone } : {}),
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: COMPANY.city,
+          addressRegion: COMPANY.state,
+          addressCountry: 'IN',
+          ...(hasAddress() ? { streetAddress: COMPANY.address.split('\n')[0] } : {}),
+        },
+        areaServed: { '@type': 'Country', name: 'India' },
+      },
+      {
+        // The questions people type into Google, answered on the page
+        // they land on. This is what wins a long-tail search.
+        '@type': 'FAQPage',
+        mainEntity: [
+          ['Can AI draft legal documents in India?',
+           'Yes. LexForge drafts Indian legal formats — legal notices, writ petitions, bail applications, affidavits and more — from the facts you enter. The output is a draft for a qualified person to check, not legal advice.'],
+          ['Does LexForge invent case citations?',
+           'No. Judgments are retrieved from Indian Kanoon and India Code and quoted as reported. Where no authority is found, the draft says so rather than inventing one.'],
+          ['Is there a free plan?',
+           'Yes. Every account includes free documents each month with no card required.'],
+          ['Can it draft in Hindi or Kannada?',
+           'Yes. Documents can be drafted in Hindi, Urdu, Tamil, Telugu and Kannada, using the vocabulary those courts actually use, or bilingually with an English body and Hindi cause title and prayer.'],
+          ['Can a law college use it for all its students?',
+           'Yes. A college sends its class list and every student on it gets an account. A pilot is free for a full term.'],
+        ].map(([q, a]) => ({
+          '@type': 'Question',
+          name: q,
+          acceptedAnswer: { '@type': 'Answer', text: a },
+        })),
+      },
+    ],
+  }
+
   return (
     <div className="min-h-screen bg-base text-ink">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Nav */}
       <nav className="sticky top-0 z-40 bg-base/80 backdrop-blur border-b border-border">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -78,11 +187,14 @@ export default async function LandingPage() {
               <span className="text-[13px] text-gold font-medium">Powered by Groq</span>
             </div>
             <h1 className="font-display font-semibold leading-[1.1] tracking-tight text-4xl sm:text-6xl lg:text-7xl mb-6">
-              Legal Documents.
-              <span className="gradient-text block">Drafted by AI.</span>
+              AI legal drafting
+              <span className="gradient-text block">for Indian law.</span>
             </h1>
             <p className="text-lg sm:text-xl text-ink-muted leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
-              LexForge AI generates professional-grade Indian legal documents in under 30 seconds. Legal notices, contracts, petitions, and 16 more — all powered by cutting-edge AI.
+              Draft legal notices, writ petitions, bail applications and sixteen
+              more Indian formats in under a minute. Search real Supreme Court and
+              High Court judgments, read the bare Acts, and build a moot memorial —
+              with citations quoted as reported, never invented.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <Link href="/register" className="w-full sm:w-auto">
@@ -95,49 +207,11 @@ export default async function LandingPage() {
             <p className="mt-4 text-[13px] text-ink-faint">No credit card required · Free to use · Deploy-ready</p>
           </div>
 
-          {/* Preview Card */}
-          <Card className="p-0 overflow-hidden max-w-md mx-auto w-full lg:max-w-none">
-            <div className="bg-surface-2 px-4 py-3 flex items-center gap-2 border-b border-border">
-              <div className="size-3 rounded-full bg-border" />
-              <div className="size-3 rounded-full bg-border" />
-              <div className="size-3 rounded-full bg-border" />
-              <span className="ml-2 text-xs text-ink-faint">lexforge.ai/dashboard</span>
-            </div>
-            <div className="p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              {[['12', 'Documents'], ['8', 'Finalized'], ['3', 'Exports'], ['19', 'Doc Types']].map(([v, l]) => (
-                <div key={l} className="bg-surface-2 border border-border rounded-xl p-3 sm:p-4">
-                  <div className="text-2xl sm:text-[28px] font-bold text-gold">{v}</div>
-                  <div className="text-xs text-ink-faint mt-1">{l}</div>
-                </div>
-              ))}
-            </div>
-            <div className="px-4 sm:px-6 pb-4 sm:pb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                ['📋', 'Legal Notice: Property Dispute', 'finalized'],
-                ['📝', 'Contract: Service Agreement', 'draft'],
-                ['🏛️', 'Petition: HC Writ', 'finalized'],
-                ['⚖️', 'Case Brief: Mehta v. State', 'draft'],
-              ].map(([icon, title, status]) => (
-                <div key={title} className="bg-surface-2 border border-border rounded-lg px-3 py-2.5 flex items-center gap-2.5">
-                  <span className="text-xl">{icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] text-ink font-medium truncate">{title}</div>
-                    <div className={`text-[11px] mt-0.5 ${status === 'finalized' ? 'text-success' : 'text-gold'}`}>{status}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-
-        {/* Stats bar — fixed: was a hard-coded 4-col grid with no breakpoints */}
-        <div className="max-w-[900px] mx-auto mt-16 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 py-8 border-t border-border">
-          {[['19', 'Document Types'], ['< 30s', 'AI Generation'], ['3', 'Export Formats'], ['30', 'Case Laws']].map(([v, l]) => (
-            <div key={l} className="text-center">
-              <div className="text-3xl sm:text-4xl font-display font-semibold text-gold-light">{v}</div>
-              <div className="text-xs sm:text-sm text-ink-muted mt-1">{l}</div>
-            </div>
-          ))}
+          {/* The product's claim, drawn: a statute taken apart, and the
+              document that comes out of it. */}
+          <div className="flex justify-center lg:justify-end">
+            <ExplodedLawBook />
+          </div>
         </div>
       </section>
 
@@ -199,13 +273,56 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="mx-4 sm:mx-6 mb-16 sm:mb-20 bg-gradient-to-br from-[#1A1200] to-surface border border-gold/20 rounded-3xl px-4 sm:px-6 py-14 sm:py-16 text-center">
-        <h2 className="font-display font-semibold text-3xl sm:text-4xl mb-4">Ready to Forge Your Legal Documents?</h2>
-        <p className="text-ink-muted text-lg mb-9">Join legal professionals using LexForge AI to work smarter.</p>
-        <Link href="/register">
-          <Button variant="primary" size="lg">Get Started — It&apos;s Free</Button>
-        </Link>
+      {/* CTA — the direct way in, said plainly */}
+      <section className="mx-4 sm:mx-6 mb-12 bg-gradient-to-br from-[#1A1200] to-surface border border-gold/20 rounded-3xl px-4 sm:px-6 py-14 sm:py-16 text-center">
+        <h2 className="font-display font-semibold text-3xl sm:text-4xl mb-4">Open the app</h2>
+        <p className="text-ink-muted text-lg mb-9 max-w-xl mx-auto">
+          Free to start, no card. Sign in if you already have an account.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link href="/register" className="w-full sm:w-auto">
+            <Button variant="primary" size="lg" className="w-full sm:w-auto">Start free →</Button>
+          </Link>
+          <Link href="/login" className="w-full sm:w-auto">
+            <Button variant="secondary" size="lg" className="w-full sm:w-auto">Sign in</Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Contact — a real address and a real person, because a legal
+          product with neither is one nobody trusts with a case. */}
+      <section id="contact" className="mx-4 sm:mx-6 mb-16 sm:mb-20">
+        <div className="max-w-[1000px] mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-surface border border-border rounded-2xl p-6">
+            <div className="text-[11px] text-gold font-bold tracking-[2px] uppercase mb-3">Talk to us</div>
+            {hasEmail() && (
+              <a href={`mailto:${COMPANY.email}`} className="text-ink no-underline text-sm block mb-1.5 break-all">{COMPANY.email}</a>
+            )}
+            {COMPANY.phone && <div className="text-ink-muted text-sm">{COMPANY.phone}</div>}
+            <div className="text-ink-faint text-xs mt-3 leading-relaxed">
+              One person reads every email. Replies within two working days.
+            </div>
+          </div>
+
+          <div className="bg-surface border border-border rounded-2xl p-6">
+            <div className="text-[11px] text-gold font-bold tracking-[2px] uppercase mb-3">Where we are</div>
+            <div className="text-ink text-sm font-medium">{COMPANY.legalName}</div>
+            {hasAddress()
+              ? <div className="text-ink-muted text-sm whitespace-pre-line mt-1 leading-relaxed">{COMPANY.address}</div>
+              : <div className="text-ink-muted text-sm mt-1">{COMPANY.city}, {COMPANY.state}, India</div>}
+          </div>
+
+          <div className="bg-surface border border-gold/25 rounded-2xl p-6">
+            <div className="text-[11px] text-gold font-bold tracking-[2px] uppercase mb-3">For law colleges</div>
+            <div className="text-ink-muted text-sm leading-relaxed mb-4">
+              A pilot is free for a full term. Send us your class list and every
+              student has an account waiting.
+            </div>
+            <Link href="/for-colleges" className="text-gold no-underline text-sm font-semibold">
+              See how a college is set up →
+            </Link>
+          </div>
+        </div>
       </section>
 
       {/* Footer — accordion on mobile, columns on sm:+ */}

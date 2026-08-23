@@ -76,6 +76,10 @@ export const authConfig = {
       if (token?.id) session.user.id = token.id
       if (token?.tier) session.user.tier = token.tier
       if (typeof token?.suspended === 'boolean') session.user.suspended = token.suspended
+      // Set on accounts created from a college's spreadsheet: they still
+      // have the password the college chose and no security question, so
+      // the app routes them through onboarding before anything else.
+      if (typeof token?.mustOnboard === 'boolean') session.user.mustOnboard = token.mustOnboard
       return session
     },
   },

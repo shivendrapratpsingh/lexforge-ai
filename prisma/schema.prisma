@@ -24,6 +24,25 @@ model User {
   // can), so it is protected exactly like a password. The attempt counter
   // and lockout exist because a nickname has little entropy and would
   // otherwise be trivially brute-forceable.
+  // ── Single device ────────────────────────────────────────────
+  // Sessions are JWTs, which are stateless by design — a token stays
+  // valid wherever it is copied and there is no server-side list of
+  // logins to revoke. So the token carries this number and the server
+  // holds the truth: signing in anywhere bumps it, and every older
+  // token stops matching on its next check.
+  sessionVersion      Int       @default(0)
+  // Set when a login supersedes another, so the device being pushed out
+  // can say why rather than silently returning to the sign-in page.
+  supersededAt        DateTime?
+
+  // ── Bulk-created accounts ────────────────────────────────────
+  // A student imported from a college's spreadsheet has a password the
+  // college chose and no security question. Both are fixed on first
+  // login before they reach the app: they set their own password, so
+  // the one in the spreadsheet stops working, and a security question,
+  // so they are never locked out the way an account with neither is.
+  mustOnboard         Boolean   @default(false)
+
   securityQuestion    String?
   securityAnswerHash  String?
   securityAttempts    Int       @default(0)
@@ -393,6 +412,7 @@ model Institution {
 
   members  User[]
   invites  InstitutionInvite[]
+  imports  StudentImport[]
   usage    ApiUsage[]
   invoices Invoice[]
 
@@ -530,4 +550,35 @@ model Invoice {
 
   @@index([institutionId])
   @@index([status])
+}
+
+// One spreadsheet a college uploaded, and what it did.
+//
+// Kept because the import creates accounts, changes passwords and
+// removes access — and when a college says "our third year lost access
+// on Tuesday", the answer has to be a record rather than a guess.
+//
+// The file itself is NOT kept. It contains student names, emails and
+// passwords in the clear; it is parsed in memory and discarded, and
+// only the counts and the errors survive.
+model StudentImport {
+  id            String      @id @default(cuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  filename      String
+  uploadedBy    String                            // email of whoever uploaded
+  batch         String?
+
+  rowsRead      Int         @default(0)
+  created       Int         @default(0)           // new accounts
+  relinked      Int         @default(0)           // existing users joined to this college
+  updated       Int         @default(0)           // already members, details refreshed
+  removed       Int         @default(0)           // dropped off the list
+  skipped       Int         @default(0)           // bad or duplicate rows
+  errors        Json?                             // row number -> what was wrong
+
+  createdAt     DateTime    @default(now())
+
+  @@index([institutionId, createdAt])
 }

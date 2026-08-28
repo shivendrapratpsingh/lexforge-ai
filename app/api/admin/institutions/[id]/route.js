@@ -123,6 +123,24 @@ export async function PATCH(req, { params }) {
 
     const { prisma } = await import('@/lib/prisma')
 
+    // Trial -> paid, in one action.
+    //
+    // Deliberately does NOT touch a single student account. Every
+    // student keeps their login, their password, their documents and
+    // their batch — the only thing that changes is the college's plan
+    // and its end date. A conversion that made three hundred students
+    // sign up again is a conversion that does not happen.
+    if (b.convertToPaid) {
+      const months = Math.max(1, Math.min(Number(b.months) || 12, 60))
+      const now = new Date()
+      const current = await prisma.institution.findUnique({ where: { id }, select: { endsAt: true } })
+      // Days left on the trial are added, not thrown away. A college
+      // that converts on day 20 of 30 keeps the ten it paid nothing for.
+      const from = current?.endsAt && new Date(current.endsAt) > now ? new Date(current.endsAt) : now
+      data.plan = 'paid'
+      data.endsAt = new Date(from.getTime() + months * 30 * 86400000)
+    }
+
     // Regenerating cuts off anyone who was passed the old code — which
     // is the point, when a code ends up in a public WhatsApp group.
     if (b.regenerateJoinCode) {

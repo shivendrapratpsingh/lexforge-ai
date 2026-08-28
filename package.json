@@ -12,7 +12,7 @@
     "icons": "node scripts/build-icons.mjs",
     "db:push": "dotenv -e .env.local -- prisma db push",
     "db:studio": "dotenv -e .env.local -- prisma studio",
-    "verify": "npm run verify:models && npm run verify:robots && npm run verify:mail && npm run verify:dates && npm run verify:pricing && npm run verify:billing && npm run verify:institutions && npm run verify:expiry && npm run verify:college && npm run verify:invoicing && npm run verify:study && npm run verify:digest && npm run verify:assistant && npm run verify:sources",
+    "verify": "npm run verify:models && npm run verify:robots && npm run verify:mail && npm run verify:dates && npm run verify:pricing && npm run verify:billing && npm run verify:institutions && npm run verify:expiry && npm run verify:college && npm run verify:invoicing && npm run verify:study && npm run verify:digest && npm run verify:assistant && npm run verify:sources && npm run verify:trial",
     "verify:models": "dotenv -e .env.local -- node scripts/verify-models.mjs",
     "verify:billing": "node scripts/verify-billing.mjs",
     "verify:institutions": "dotenv -e .env.local -- node scripts/verify-institutions.mjs",
@@ -31,7 +31,8 @@
     "verify:pricing": "node scripts/verify-pricing.mjs",
     "verify:languages": "dotenv -e .env.local -- node scripts/verify-languages.mjs",
     "verify:import": "dotenv -e .env.local -- node scripts/verify-student-import.mjs",
-    "submit:indexnow": "node scripts/submit-indexnow.mjs"
+    "submit:indexnow": "node scripts/submit-indexnow.mjs",
+    "verify:trial": "dotenv -e .env.local -- node scripts/verify-trial.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

@@ -102,7 +102,14 @@ export async function POST(req) {
         plan: ['pilot', 'paid', 'expired'].includes(b.plan) ? b.plan : 'pilot',
         seats: Number.isFinite(Number(b.seats)) ? Math.max(0, Number(b.seats)) : 0,
         startsAt: b.startsAt ? new Date(b.startsAt) : new Date(),
-        endsAt: b.endsAt ? new Date(b.endsAt) : null,
+        // A trial is a pilot with an end date. Colleges ask for "one month
+        // free" and this is that, expressed in the two fields that
+        // already decide whether students have access.
+        endsAt: b.endsAt
+          ? new Date(b.endsAt)
+          : (Number(b.trialDays) > 0
+              ? new Date(Date.now() + Math.min(Number(b.trialDays), 365) * 86400000)
+              : null),
         contactName: b.contactName || null,
         contactEmail: b.contactEmail || null,
         notes: b.notes || null,

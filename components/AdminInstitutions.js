@@ -176,6 +176,15 @@ export default function AdminInstitutions() {
                 border: `1px solid ${i.active ? 'rgba(63,166,107,.4)' : 'rgba(225,88,75,.4)'}`,
                 color: i.active ? '#5FCC8D' : '#E1584B',
               }}>{i.active ? i.plan : 'inactive'}</span>
+              {i.endsAt && (() => {
+                const days = Math.ceil((new Date(i.endsAt) - Date.now()) / 86400000)
+                const tone = days < 0 ? '#FF8A80' : days <= 7 ? '#E8C25A' : '#6E6E68'
+                return (
+                  <span style={{ fontSize: 11.5, color: tone, fontWeight: days <= 7 ? 700 : 400 }}>
+                    {days < 0 ? 'expired' : days === 0 ? 'ends today' : `${days} day${days === 1 ? '' : 's'} left`}
+                  </span>
+                )
+              })()}
               <span style={{ fontSize: 11.5, color: '#6E6E68' }}>
                 {i.members} member{i.members === 1 ? '' : 's'}
                 {i.invites > 0 && ` · ${i.invites} invited`}
@@ -243,8 +252,20 @@ function AddForm({ onDone }) {
           </select>
         </div>
         <div>
-          <label style={S.label}>Access ends (optional)</label>
+          <label style={S.label}>Access ends</label>
           <input type="date" value={f.endsAt} onChange={set('endsAt')} style={S.input} />
+          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+            {[[30, '1 month free'], [90, '1 term'], [0, 'No expiry']].map(([d, label]) => (
+              <button key={label} type="button" style={{ ...S.ghost, padding: '4px 9px', fontSize: 11 }}
+                onClick={() => setF(v => ({
+                  ...v,
+                  plan: d ? 'pilot' : v.plan,
+                  endsAt: d ? new Date(Date.now() + d * 86400000).toISOString().slice(0, 10) : '',
+                }))}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         <div>
           <label style={S.label}>Contact email</label>
@@ -311,12 +332,17 @@ function Detail({ id, onChanged }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
         {chip('activity', 'What they use')}
         {chip('members', `Members (${d.memberList.length})`)}
         {chip('import', 'Upload student list')}
         {chip('invoices', 'Invoices')}
         {chip('settings', 'Settings')}
+        {/* The document a Principal signs. Opens on white, prints to PDF. */}
+        <a href={`/admin/agreement/${id}`} target="_blank" rel="noopener noreferrer"
+          style={{ ...S.ghost, padding: '6px 12px', fontSize: 12, textDecoration: 'none', marginLeft: 'auto' }}>
+          ↗ Agreement PDF
+        </a>
       </div>
 
       {tab === 'activity' && (
@@ -590,6 +616,21 @@ function Settings({ inst, onDone }) {
     } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
   }
 
+  async function convert(months) {
+    if (!confirm(`Convert ${inst.name} to a paid plan for ${months} months? Students are not affected — they keep everything.`)) return
+    setBusy(true); setMsg(null)
+    try {
+      const r = await fetch(`/api/admin/institutions/${inst.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ convertToPaid: true, months }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setMsg({ ok: true, text: `Now paid until ${new Date(j.institution.endsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. No student was touched.` })
+      onDone?.()
+    } catch (e) { setMsg({ ok: false, text: e.message }) } finally { setBusy(false) }
+  }
+
   async function remove() {
     if (!confirm(`Remove ${inst.name}? Its members keep their accounts and all their work — they simply lose institutional Pro.`)) return
     setBusy(true)
@@ -614,6 +655,25 @@ function Settings({ inst, onDone }) {
         <div><label style={S.label}>Access ends</label><input type="date" value={f.endsAt} onChange={set('endsAt')} style={S.input} /></div>
         <div><label style={S.label}>Contact email</label><input value={f.contactEmail} onChange={set('contactEmail')} style={S.input} /></div>
       </div>
+      {inst.plan === 'pilot' && (
+        <div style={{ marginTop: 14, padding: 14, background: '#0A0A0A', border: '1px solid rgba(63,166,107,.28)', borderRadius: 10 }}>
+          <div style={S.label}>End of trial</div>
+          <p style={{ fontSize: 12.5, color: '#9A9A9A', margin: '8px 0 11px', lineHeight: 1.7 }}>
+            Converting changes the plan and the end date and <strong>nothing else</strong>.
+            Every student keeps their login, their password and their documents —
+            nobody signs up again. Days left on the trial are added, not lost.
+          </p>
+          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+            {[[12, '1 year'], [36, '3 years'], [60, '5 years']].map(([m, label]) => (
+              <button key={m} type="button" style={S.ghost} disabled={busy}
+                onClick={() => convert(m)}>
+                Convert · {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
         <button type="submit" style={S.btn(busy)} disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
         <button type="button" style={S.btn(busy, true)} onClick={remove} disabled={busy}>Remove institution</button>

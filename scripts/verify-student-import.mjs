@@ -69,7 +69,13 @@ try {
   check('generated passwords are returned once', r1.credentials.filter(c => c.generated).length, 1)
 
   const ravi = await prisma.user.findUnique({ where: { email: mail('a') } })
-  check('the student is Pro immediately', ravi.tier, 'pro')
+  // NOT tier='pro'. Access comes from the college being active, checked
+  // at request time, so that an expiring trial actually revokes it —
+  // see scripts/verify-trial.mjs. Stamping the column made access
+  // permanent and a trial impossible to end.
+  check('the student carries no standalone pro tier', ravi.tier, 'free')
+  const { institutionGrantsPro } = await import('../lib/institutions.js')
+  check('but the college grants them Pro', Boolean(await institutionGrantsPro(mail('a'))), true)
   check('and linked to the college', ravi.institutionId, inst.id)
   check('and must onboard before using the app', ravi.mustOnboard, true)
   check('the spreadsheet password works', await bcrypt.compare('Ravi@2027', ravi.password), true)

@@ -203,12 +203,48 @@ export default async function Agreement({ params }) {
           that cannot lawfully be excluded, including for fraud.
         </P>
 
-        <H n={isTrial ? 9 : 8}>Term and termination</H>
-        <ul style={{ paddingLeft: 20, margin: '0 0 9px' }}>
-          <LI>Either party may end this agreement on 30 days&rsquo; written notice.</LI>
-          <LI>Ending it never deletes a student account or any work in it. Students revert to the free plan and retain everything they have written.</LI>
-          <LI>Where the Provider ends the agreement without cause, the unused portion of any fee paid is refunded.</LI>
-        </ul>
+        <H n={isTrial ? 9 : 8}>Term, termination and refunds</H>
+        <P>
+          Either party may end this agreement on 30 days&rsquo; written notice.
+          Ending it never deletes a student account or any work in it — students
+          revert to the free plan and retain everything they have written.
+        </P>
+
+        {/* Set out prominently and in plain words, deliberately.
+            A term in a standard-form agreement binds only if it was brought
+            to the other party's notice; one buried in small print is the
+            first thing struck out when it is challenged, and by then the
+            relationship is over anyway. Stated clearly, accepted openly,
+            and enforceable. */}
+        <div style={{ border: '2px solid #111', padding: '14px 16px', margin: '12px 0 10px', background: '#FAFAFA' }}>
+          <div style={{ fontSize: 10.5, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8F6608', fontWeight: 700, marginBottom: 8 }}>
+            Please read — refund position on early termination
+          </div>
+          <p style={{ fontSize: 12.5, lineHeight: 1.8, margin: '0 0 9px', color: '#111' }}>
+            <strong>(a) If the Institution ends this agreement before the end of the
+            term, fees already paid are NOT refunded, in whole or in part.</strong>{' '}
+            The fee buys the term, and seats are provisioned and paid for by the
+            Provider for its full length.
+          </p>
+          <p style={{ fontSize: 12.5, lineHeight: 1.8, margin: 0, color: '#111' }}>
+            <strong>(b) If the Provider ends this agreement before the end of the
+            term other than for the Institution&rsquo;s breach, the Provider&rsquo;s
+            entire liability is to refund fifty per cent (50%) of the fee paid for
+            the unexpired portion of the term</strong>, and nothing further.
+          </p>
+        </div>
+
+        <P>
+          This applies to a term of one, three or five years alike. The Institution
+          confirms it has read this clause and had the opportunity to take advice on
+          it before signing.
+        </P>
+        <P>
+          Where the Institution ends the agreement because of the Provider&rsquo;s
+          material breach which the Provider has failed to remedy within 30 days of
+          written notice, clause (a) does not apply and the unexpired portion is
+          refunded in full.
+        </P>
 
         <H n={isTrial ? 10 : 9}>Governing law and jurisdiction</H>
         <P>
@@ -244,6 +280,12 @@ export default async function Agreement({ params }) {
                   <div style={{ borderBottom: '1px solid #bbb', height: 20 }} />
                   <div style={{ marginTop: 12, color: '#777', fontSize: 11 }}>Designation &amp; date</div>
                   <div style={{ borderBottom: '1px solid #bbb', height: 20 }} />
+                  {i === 1 && (
+                    <div style={{ marginTop: 12, fontSize: 10.5, color: '#555', lineHeight: 1.6 }}>
+                      By signing, the Institution confirms it has read and accepted
+                      the refund position at clause {isTrial ? 9 : 8}.
+                    </div>
+                  )}
                 </td>
               ))}
             </tr>

@@ -4,6 +4,7 @@ import { isAdmin } from '@/lib/admin'
 import {
   SELLER, IS_GST_REGISTERED, rupees, amountInWords, formatDate,
 } from '@/lib/invoicing'
+import PrintButton from '@/components/PrintButton'
 
 // A printable invoice. Deliberately on white with black text and no app
 // chrome — this is going to a college's accounts department, printed or
@@ -11,6 +12,19 @@ import {
 // rectangle. Nothing here depends on JavaScript.
 
 export const dynamic = 'force-dynamic'
+
+// A printed PDF is named after the page title, so the college receives
+// the invoice number as the filename rather than "invoice".
+export async function generateMetadata({ params }) {
+  const { id } = await params
+  const { prisma } = await import('@/lib/prisma')
+  const iv = await prisma.invoice.findUnique({
+    where: { id }, select: { number: true, status: true },
+  }).catch(() => null)
+  if (!iv) return { title: 'LexForge Invoice' }
+  const kind = iv.status === 'proforma' ? 'Proforma Invoice' : 'Tax Invoice'
+  return { title: `LexForge ${kind} ${iv.number.replace(/\//g, '-')}` }
+}
 
 export default async function InvoicePage({ params }) {
   const session = await auth()
@@ -38,13 +52,16 @@ export default async function InvoicePage({ params }) {
         @media print {
           .no-print { display: none !important; }
           @page { margin: 16mm; }
+          * { -webkit-print-color-adjust: exact; print-color-adjust: exact }
+          table { break-inside: avoid; page-break-inside: avoid }
         }
       `}</style>
 
       <div style={{ maxWidth: 760, margin: '0 auto', fontFamily: 'system-ui, -apple-system, Segoe UI, sans-serif' }}>
 
-        <div className="no-print" style={{ marginBottom: 20, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <a href="/admin" style={{ fontSize: 13, color: '#666', textDecoration: 'none', alignSelf: 'center' }}>← Admin</a>
+        <div className="no-print" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <a href="/admin" style={{ fontSize: 13, color: '#666', textDecoration: 'none' }}>← Admin</a>
+          <PrintButton />
         </div>
 
         {/* Header */}

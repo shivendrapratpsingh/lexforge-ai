@@ -1,4 +1,5 @@
 'use client'
+import DownloadButtons from '@/components/DownloadButtons'
 //
 // /future-lawyer/qa — AI legal question-and-answer for students.
 // User types a question, gets a citation-backed answer from the AI.
@@ -99,6 +100,19 @@ export default function LegalQAPage() {
           marginBottom: 14,
           display: history.length || loading ? 'block' : 'none',
         }}>
+        {history.length > 0 && (
+          // The whole session, not one answer — a student revising wants
+          // the questions they asked alongside what came back.
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+            <DownloadButtons
+              compact
+              title="Legal Q and A"
+              content={() => history
+                .map(h => ['QUESTION', h.q, '', 'ANSWER', h.a, ''].join(String.fromCharCode(10)))
+                .join(String.fromCharCode(10) + String.fromCharCode(10))}
+            />
+          </div>
+        )}
         {history.map((item, i) => (
           <div key={i} style={{ marginBottom: 16 }}>
             <div style={{

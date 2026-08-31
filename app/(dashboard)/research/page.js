@@ -1,4 +1,5 @@
 'use client'
+import DownloadButtons from '@/components/DownloadButtons'
 import { useState } from 'react'
 import { searchCaseLaws } from '@/lib/utils'
 
@@ -210,7 +211,10 @@ export default function ResearchPage() {
 
           {analysis && (
             <div style={{ background: '#0D0D0D', border: '1px solid rgba(212,160,23,0.15)', borderRadius: 12, padding: 20, maxHeight: 620, overflowY: 'auto' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#D4A017', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 12 }}>⚖ Analysis Result</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#D4A017', letterSpacing: '1.5px', textTransform: 'uppercase' }}>⚖ Analysis Result</div>
+                <DownloadButtons compact title="Legal analysis" content={analysis} />
+              </div>
               <div style={{ fontSize: 13, color: '#C0C0C0', lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>{analysis}</div>
               <SourceList />
               <p style={{ fontSize: 11, color: '#5A5A5A', lineHeight: 1.6, marginTop: 16, paddingTop: 12, borderTop: '1px solid #1F1F1F' }}>

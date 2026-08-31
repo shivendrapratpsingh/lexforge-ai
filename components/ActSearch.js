@@ -1,4 +1,5 @@
 'use client'
+import DownloadButtons from '@/components/DownloadButtons'
 
 import { useState } from 'react'
 import Link from 'next/link'
@@ -48,6 +49,27 @@ const S = {
   },
 }
 
+const N = String.fromCharCode(10)
+
+// The Acts, their key sections and the link to the official text —
+// which is the part a student is actually meant to go and read.
+function actsText(res) {
+  const one = (a) => [
+    `${a.fullName || a.shortName}${a.year ? `, ${a.year}` : ''}`,
+    ...(a.keySections || []).map(sec => `   ${sec.n}: ${sec.desc}`),
+    a.url ? `   ${a.url}` : null,
+    '',
+  ].filter(Boolean)
+  const group = (label, list) =>
+    list?.length ? [label.toUpperCase(), '', ...list.flatMap(one)] : []
+  return ['ACT SEARCH RESULTS', '',
+    ...group('Curated Acts', res?.curated),
+    ...group('From India Code', res?.official),
+    ...group('Other sources', res?.external),
+    'Always read the bare Act. Section numbers change with amendments.',
+  ].join(N)
+}
+
 export default function ActSearch({ isPro }) {
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
@@ -87,6 +109,9 @@ export default function ActSearch({ isPro }) {
 
       {res && (
         <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+            <DownloadButtons compact title="Act search results" content={() => actsText(res)} />
+          </div>
           {res.expandedWith && (
             <div style={{ ...S.card, borderColor: 'rgba(212,160,23,.3)' }}>
               <div style={S.kicker}>Searched instead for</div>

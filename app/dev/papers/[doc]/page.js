@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { Letterhead } from '@/components/Letterhead'
 import { GstDeclarationBody, DpdpBody } from '@/components/papers'
 import AgreementDocument from '@/components/AgreementDocument'
+import DownloadButtons from '@/components/DownloadButtons'
 
 // ─────────────────────────────────────────────────────────────────
 //  Look at a paper without an admin session.  DEVELOPMENT ONLY.
@@ -17,6 +18,7 @@ import AgreementDocument from '@/components/AgreementDocument'
 //    /dev/papers/gst-declaration
 //    /dev/papers/dpdp
 //    /dev/papers/letterhead
+//    /dev/papers/downloads        (the download buttons, on their own)
 //    /dev/papers/agreement        (paid licence)
 //    /dev/papers/agreement-trial  (the one-month trial)
 //
@@ -44,6 +46,25 @@ export default async function DevPaper({ params, searchParams }) {
     udyam: 'UDYAM-XX-00-0000000',
     pan: 'AAAAA0000A',
   } : undefined
+
+  // The download control on its own, so the click path can be exercised
+  // without spending an AI call to produce something to download.
+  if (doc === 'downloads') {
+    const sample = [
+      'IN THE COURT OF SESSIONS JUDGE',
+      'RAMESH KUMAR ...APPLICANT',
+      'VERSUS',
+      'STATE ...OPPOSITE PARTY',
+      '1. That the applicant is falsely implicated.',
+    ].join('\n')
+    return (
+      <div style={{ background: '#0D0D0D', minHeight: '100vh', padding: 24, color: '#F0F0F0', fontFamily: 'system-ui, sans-serif' }}>
+        <h1 style={{ fontSize: 18 }}>Download control</h1>
+        <div style={{ marginTop: 20 }}><DownloadButtons title="Specimen order analysis" content={sample} /></div>
+        <div style={{ marginTop: 24 }}><DownloadButtons title="Specimen compact" content={sample} compact /></div>
+      </div>
+    )
+  }
 
   if (doc === 'agreement' || doc === 'agreement-trial') {
     // A stand-in college, so both variants of the clauses can be read.

@@ -1,4 +1,5 @@
 'use client'
+import DownloadButtons from '@/components/DownloadButtons'
 //
 // /study — student section of LexForge AI.
 // Four tabs: Landmark Judgments • Legal Principles • AI Tutor • Quiz.
@@ -285,6 +286,17 @@ function TutorTab() {
         {error && <div style={{ color: '#FF6B6B', marginTop: 10, fontSize: 13 }}>⚠ {error}</div>}
       </div>
 
+      {history.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+          <DownloadButtons
+            compact
+            title="Tutor session"
+            content={() => history
+              .map(h => ['QUESTION', h.q, '', 'TUTOR', h.a, ''].join(String.fromCharCode(10)))
+              .join(String.fromCharCode(10) + String.fromCharCode(10))}
+          />
+        </div>
+      )}
       {history.map((h, i) => (
         <div key={i} style={cardStyle}>
           <div style={{ ...labelStyle, color: '#9A9A9A' }}>Question</div>
@@ -295,6 +307,26 @@ function TutorTab() {
       ))}
     </div>
   )
+}
+
+// A quiz as a handout: questions first, answers at the end, so it can be
+// printed and given out without giving the answers away at the same time.
+function quizText(topic, mode, items) {
+  const N = String.fromCharCode(10)
+  if (!items?.length) return ''
+  const head = [topic ? `QUIZ — ${topic}` : 'QUIZ', mode === 'mcq' ? 'Multiple choice' : 'Flashcards', '']
+  if (mode !== 'mcq') {
+    return [...head, ...items.flatMap((it, i) =>
+      [`${i + 1}. ${it.front || it.q || ''}`, `   ${it.back || it.a || ''}`, ''])].join(N)
+  }
+  const qs = items.flatMap((it, i) => [
+    `${i + 1}. ${it.q || it.question || ''}`,
+    ...(it.options || []).map((o, n) => `   ${String.fromCharCode(65 + n)}. ${o}`),
+    '',
+  ])
+  const answers = ['', 'ANSWERS', ...items.map((it, i) =>
+    `${i + 1}. ${it.answer || ''}${it.explanation ? ` — ${it.explanation}` : ''}`)]
+  return [...head, ...qs, ...answers].join(N)
 }
 
 // ─── Quiz tab ────────────────────────────────────────────────────
@@ -365,6 +397,19 @@ function QuizTab() {
         </button>
         {error && <div style={{ color: '#FF6B6B', marginTop: 10, fontSize: 13 }}>⚠ {error}</div>}
       </div>
+
+      {items.length > 0 && (
+        // A quiz is worth downloading precisely because it is disposable
+        // on screen — a teacher wants it as a handout, and a student
+        // wants it to revise from without regenerating it.
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+          <DownloadButtons
+            compact
+            title={topic ? `Quiz — ${topic}` : 'Quiz'}
+            content={() => quizText(topic, mode, items)}
+          />
+        </div>
+      )}
 
       {mode === 'mcq' && items.map((it, i) => {
         const correct = picked[i] && picked[i] === (it.answer?.[0] || it.answer)

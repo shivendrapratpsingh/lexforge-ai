@@ -1,4 +1,5 @@
 'use client'
+import DownloadButtons from '@/components/DownloadButtons'
 //
 // /future-lawyer/moot — Moot Court Memorial Builder.
 // Paste a moot problem, pick a side, AI drafts a memorial outline.
@@ -161,6 +162,13 @@ export default function MootBuilderPage() {
           }}>
             ✅ Memorial outline generated for the <strong>{SIDES.find(s => s.value === side)?.label}</strong>
             {moot && <span style={{ color: '#7A7A7A', marginLeft: 6 }}>· {moot}</span>}
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <DownloadButtons
+              title={moot ? `Memorial — ${moot}` : 'Moot memorial outline'}
+              content={memorial}
+            />
           </div>
 
           <div style={{

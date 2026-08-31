@@ -1,4 +1,5 @@
 'use client'
+import DownloadButtons from '@/components/DownloadButtons'
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -47,6 +48,41 @@ function Offline({ p }) {
       </p>
     </div>
   )
+}
+
+const N = String.fromCharCode(10)
+
+// A judgment list is only useful away from the screen if the citation
+// and the link come with it.
+function judgmentsText(res) {
+  const rows = (res?.results || []).flatMap((d, i) => [
+    `${i + 1}. ${d.title || 'Untitled'}`,
+    d.court ? `   Court: ${d.court}` : null,
+    d.date ? `   Date: ${d.date}` : null,
+    d.citation ? `   Citation: ${d.citation}` : null,
+    d.url ? `   ${d.url}` : null,
+    d.snippet ? `   ${d.snippet}` : null,
+    '',
+  ].filter(Boolean))
+  return ['JUDGMENT SEARCH RESULTS', `${res?.total ?? rows.length} result(s)`, '', ...rows,
+    'Read the original judgment before relying on it.'].join(N)
+}
+
+function caseStatusText(res) {
+  if (!res) return ''
+  const pair = (k, v) => (v ? `${String(k).padEnd(18)}: ${v}` : null)
+  return ['CASE STATUS',
+    res.title || res.caseNumber || res.cnr || '', '',
+    pair('CNR', res.cnr),
+    pair('Case number', res.caseNumber),
+    pair('Court', res.court),
+    pair('Stage', res.stage),
+    pair('Next date', res.nextDate),
+    pair('Judge', res.judge),
+    pair('Filed', res.filedOn),
+    pair('Status', res.status),
+    '', 'Retrieved through LexForge AI. Confirm against the cause list.',
+  ].filter(v => v !== null).join(N)
 }
 
 export default function CaseLawSearch() {
@@ -137,8 +173,13 @@ function Judgments({ status }) {
 
       {res && (
         <div style={S.card}>
-          <div style={{ fontSize: 12, color: '#6E6E68', marginBottom: res.relaxed ? 8 : 14 }}>
-            {res.total.toLocaleString('en-IN')} result{res.total === 1 ? '' : 's'}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: res.relaxed ? 8 : 14 }}>
+            <div style={{ fontSize: 12, color: '#6E6E68' }}>
+              {res.total.toLocaleString('en-IN')} result{res.total === 1 ? '' : 's'}
+            </div>
+            {/* The list with its citations and links — what a student
+                actually needs to carry out of a research session. */}
+            <DownloadButtons compact title="Judgment search results" content={() => judgmentsText(res)} />
           </div>
 
           {/* The index requires every word to appear, so an over-specified
@@ -232,8 +273,11 @@ function CaseLookup({ status }) {
 
       {res && (
         <div style={S.card}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 17, color: '#F0E4C0', marginBottom: 4 }}>
-            {res.title || res.caseNumber || res.cnr}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ fontFamily: 'Georgia, serif', fontSize: 17, color: '#F0E4C0', marginBottom: 4 }}>
+              {res.title || res.caseNumber || res.cnr}
+            </div>
+            <DownloadButtons compact title={`Case status ${res.cnr || ''}`.trim()} content={() => caseStatusText(res)} />
           </div>
           <div style={{ fontSize: 12, color: '#8A7748', marginBottom: 14 }}>
             Now tracked — the 8 AM job will keep this up to date.

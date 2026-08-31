@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { isAdmin, hasProAccess } from '@/lib/admin'
 import { stripMarkdown } from '@/lib/markdown'
 import { buildExport, EXPORT_FORMATS } from '@/lib/export-document'
 
@@ -35,6 +36,17 @@ export async function POST(req) {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Downloading is Pro. A free account can generate and read what it
+    // generated; keeping the file is what the plan is for.
+    const pro = isAdmin(session) || await hasProAccess(session.user.email, session.user.tier)
+    if (!pro) {
+      return NextResponse.json({
+        error: 'Downloading is part of Pro. Your work stays here and you can still copy it.',
+        code: 'PRO_REQUIRED',
+        upgrade: '/upgrade',
+      }, { status: 402 })
     }
 
     // The form post sends urlencoded; keep JSON working too so the same

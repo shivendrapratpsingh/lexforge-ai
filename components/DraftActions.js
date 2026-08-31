@@ -12,6 +12,12 @@ export function DraftActions({ draft }) {
     setExporting(format)
     try {
       const res = await fetch(`/api/export/${draft.id}/${format}`)
+      if (res.status === 402) {
+        const j = await res.json().catch(() => ({}))
+        alert(j.error || 'Downloading is part of Pro.')
+        router.push('/upgrade')
+        return
+      }
       if (!res.ok) throw new Error('Export failed')
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)

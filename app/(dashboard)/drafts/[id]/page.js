@@ -1,3 +1,4 @@
+import DownloadButtons from '@/components/DownloadButtons'
 import { auth } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { formatDate, DOCUMENT_TYPES, ALL_COURTS } from '@/lib/utils'
@@ -169,13 +170,7 @@ export default async function DraftPage({ params }) {
           {/* Export */}
           <div style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 14, padding: 18 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#3A3A3A', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 12 }}>Export Document</div>
-            {['pdf', 'docx', 'txt'].map(fmt => (
-              <a key={fmt} href={`/api/export/${draft.id}/${fmt}`}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#0D0D0D', border: '1px solid #1C1C1C', borderRadius: 8, textDecoration: 'none', marginBottom: 7, color: '#C0C0C0', fontSize: 13, fontWeight: 500 }}>
-                <span>{fmt === 'pdf' ? '📕' : fmt === 'docx' ? '📘' : '📄'} {fmt.toUpperCase()}</span>
-                <span style={{ color: '#D4A017', fontSize: 12 }}>↓</span>
-              </a>
-            ))}
+            <DownloadButtons draftId={draft.id} compact />
           </div>
 
           {/* Case Laws */}

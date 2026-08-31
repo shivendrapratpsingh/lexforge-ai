@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { isAdmin } from '@/lib/admin'
+import { isAdmin, hasProAccess } from '@/lib/admin'
 import { stripMarkdown } from '@/lib/markdown'
 import { buildExport, safeFileName, EXPORT_FORMATS } from '@/lib/export-document'
 
@@ -17,6 +17,17 @@ export async function GET(req, { params }) {
     const { id, format } = await params
     if (!EXPORT_FORMATS.includes(format))
       return NextResponse.json({ error: 'Invalid format. Use: pdf, docx or txt' }, { status: 400 })
+
+    // Same gate as the ad-hoc route: exporting a document is Pro,
+    // whether or not it was saved first.
+    const pro = isAdmin(session) || await hasProAccess(session.user.email, session.user.tier)
+    if (!pro) {
+      return NextResponse.json({
+        error: 'Downloading is part of Pro. Your document is saved and you can still copy it.',
+        code: 'PRO_REQUIRED',
+        upgrade: '/upgrade',
+      }, { status: 402 })
+    }
 
     const { prisma } = await import('@/lib/prisma')
     // Admins can export any draft; users only their own.

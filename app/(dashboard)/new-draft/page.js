@@ -6,6 +6,7 @@ import { DOCUMENT_TYPES, COURTS, ALL_COURTS, LANGUAGES } from '@/lib/utils'
 import { isJunkValue, validateTemplateData, buildValidationError } from '@/lib/validation'
 import { PRO_TAGLINE, getProFeatureList } from '@/lib/pro-features'
 import FolderUploader from '@/components/FolderUploader'
+import DownloadButtons from '@/components/DownloadButtons'
 import DocumentCopyButton from '@/components/DocumentCopyButton'
 import GeneratingOverlay from '@/components/GeneratingOverlay'
 import { DOC_FIELDS } from '@/lib/document-fields'
@@ -720,13 +721,17 @@ export default function NewDraftPage() {
       if (data.autoClientAction === 'created') setAutoClientMsg('✓ Client profile created automatically')
       else if (data.autoClientAction === 'linked') setAutoClientMsg(`✓ Linked to existing client: ${data.client?.name}`)
 
-      // Auto-download PDF
-      setTimeout(() => {
-        const a    = document.createElement('a')
-        a.href     = `/api/export/${data.id}/pdf`
-        a.download = `${data.title?.replace(/[^a-z0-9]/gi, '_')}.pdf`
-        a.click()
-      }, 800)
+      // Auto-download the PDF — for Pro only. Firing this on a free
+      // account now lands on the 402 from the export route and hands
+      // the user a file full of JSON, which is worse than no download.
+      if (me?.isPro) {
+        setTimeout(() => {
+          const a    = document.createElement('a')
+          a.href     = `/api/export/${data.id}/pdf`
+          a.download = `${data.title?.replace(/[^a-z0-9]/gi, '_')}.pdf`
+          a.click()
+        }, 800)
+      }
     } catch (err) {
       if (err?.name === 'AbortError') {
         setError('Request timed out after 90 seconds. The server may be overloaded — please try again.')
@@ -825,8 +830,7 @@ export default function NewDraftPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <a href={`/api/export/${result.id}/pdf`} download style={{ padding: '9px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 9, color: '#EF4444', fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>📕 PDF</a>
-            <a href={`/api/export/${result.id}/docx`} download style={{ padding: '9px 16px', background: 'rgba(33,150,243,0.1)', border: '1px solid rgba(33,150,243,0.2)', borderRadius: 9, color: '#2196F3', fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>📘 DOCX</a>
+            <DownloadButtons draftId={result.id} compact />
             <a href={`/drafts/${result.id}`} style={{ padding: '9px 16px', background: 'linear-gradient(135deg, #D4A017, #B8860B)', border: 'none', borderRadius: 9, color: '#0D0D0D', fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>View Full →</a>
             <button onClick={() => { setResult(null); setStep(1); setSelectedType(null); setFormData({}); setChatAnswers({}); setChatStep(0); setAutoClientMsg('') }}
               style={{ padding: '9px 16px', background: '#141414', border: '1px solid #2A2A2A', borderRadius: 9, color: '#8A8A8A', fontSize: 13, cursor: 'pointer' }}>+ New Doc</button>
@@ -903,7 +907,7 @@ export default function NewDraftPage() {
               />
             </div>
             <div style={{ padding: '14px 22px', borderTop: '1px solid #1C1C1C', display: 'flex', gap: 10 }}>
-              <a href={`/api/export/${result.id}/pdf`} download style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'linear-gradient(135deg, #D4A017, #B8860B)', borderRadius: 9, color: '#0D0D0D', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>⬇ Download PDF</a>
+              <DownloadButtons draftId={result.id} compact formats={['pdf']} />
               <a href={`/drafts/${result.id}`} style={{ flex: 1, textAlign: 'center', padding: '10px', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 9, color: '#A0A0A0', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Open Full View</a>
             </div>
           </div>

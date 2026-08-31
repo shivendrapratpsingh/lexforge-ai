@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ALL_HIGH_COURTS } from '@/lib/india-data'
 
 const TOOLS = [
   { id: 'order',     label: 'Order Analyzer',       icon: '⚖️',  desc: 'Paste a court order to get structured action plan, compliance dates & next steps.' },
@@ -11,14 +12,17 @@ const TOOLS = [
   { id: 'compliance',label: 'Compliance Report',    icon: '📋',  desc: 'Generate compliance affidavit/report after fulfilling court directions.' },
 ]
 
+// Every High Court in India, then the generic forums, rather than the
+// two Allahabad benches this offered before. The generic entries stay
+// because an order analysed here often comes from a court the user
+// would rather not hunt for by name.
 const COURTS = [
   { value: '', label: '— Select Court —' },
-  { value: 'ALLAHABAD_HC', label: 'Allahabad High Court' },
-  { value: 'ALLAHABAD_HC_LB', label: 'Allahabad HC — Lucknow Bench' },
   { value: 'SUPREME_COURT', label: 'Supreme Court of India' },
-  { value: 'DISTRICT_COURT', label: 'District Court' },
-  { value: 'SESSIONS_COURT', label: 'Sessions Court' },
-  { value: 'MAGISTRATE', label: 'Magistrate Court' },
+  ...ALL_HIGH_COURTS.map(c => ({ value: c.value, label: c.label })),
+  { value: 'DISTRICT_COURT', label: 'District Court (any State)' },
+  { value: 'SESSIONS_COURT', label: 'Sessions Court (any State)' },
+  { value: 'MAGISTRATE', label: 'Magistrate Court (any State)' },
 ]
 
 const DOC_TYPES = [

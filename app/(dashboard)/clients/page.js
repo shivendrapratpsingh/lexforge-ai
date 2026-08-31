@@ -1,8 +1,12 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { STATES } from '@/lib/india-data'
 
-const DISTRICTS = ['', 'Prayagraj', 'Pratapgarh', 'Kaushambi', 'Fatehpur', 'Chitrakoot', 'Mirzapur', 'Varanasi', 'Lucknow', 'Kanpur', 'Other']
+// The district filter used to be a fixed list of ten Uttar Pradesh
+// districts, so a lawyer anywhere else could not filter by their own.
+// It is now derived from the clients on screen: you can only usefully
+// filter by a district you actually have somebody in.
 const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently Updated' },
   { value: 'name',   label: 'Name (A–Z)'       },
@@ -18,7 +22,7 @@ function maskAadhaar(n) {
   return d.length === 12 ? `XXXX-XXXX-${d.slice(8)}` : n
 }
 
-const BLANK = { name: '', fatherName: '', age: '', gender: '', phone: '', email: '', address: '', city: '', district: 'Prayagraj', state: 'Uttar Pradesh', pincode: '', aadhaarNumber: '', tags: '', notes: '' }
+const BLANK = { name: '', fatherName: '', age: '', gender: '', phone: '', email: '', address: '', city: '', district: '', state: '', pincode: '', aadhaarNumber: '', tags: '', notes: '' }
 
 export default function ClientsPage() {
   const csvRef = useRef(null)
@@ -58,7 +62,7 @@ export default function ClientsPage() {
   function openAdd()  { setEditingId(null); setForm(BLANK); setError(''); setDupWarn(null); setShowModal(true) }
   function openEdit(c) {
     setEditingId(c.id)
-    setForm({ name: c.name||'', fatherName: c.fatherName||'', age: c.age||'', gender: c.gender||'', phone: c.phone||'', email: c.email||'', address: c.address||'', city: c.city||'', district: c.district||'', state: c.state||'Uttar Pradesh', pincode: c.pincode||'', aadhaarNumber: c.aadhaarNumber||'', tags: c.tags||'', notes: c.notes||'' })
+    setForm({ name: c.name||'', fatherName: c.fatherName||'', age: c.age||'', gender: c.gender||'', phone: c.phone||'', email: c.email||'', address: c.address||'', city: c.city||'', district: c.district||'', state: c.state||'', pincode: c.pincode||'', aadhaarNumber: c.aadhaarNumber||'', tags: c.tags||'', notes: c.notes||'' })
     setError(''); setDupWarn(null); setShowModal(true)
   }
 
@@ -161,7 +165,8 @@ export default function ClientsPage() {
         <select value={district} onChange={e => setDistrict(e.target.value)}
           style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 9, padding: '10px 14px', color: district ? '#F0F0F0' : '#5A5A5A', fontSize: 13, outline: 'none', cursor: 'pointer' }}>
           <option value="">All Districts</option>
-          {DISTRICTS.filter(Boolean).map(d => <option key={d} value={d}>{d}</option>)}
+          {[...new Set(clients.map(c => c.district).filter(Boolean))].sort()
+            .map(d => <option key={d} value={d}>{d}</option>)}
         </select>
         <select value={sort} onChange={e => setSort(e.target.value)}
           style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 9, padding: '10px 14px', color: '#F0F0F0', fontSize: 13, outline: 'none', cursor: 'pointer' }}>
@@ -268,11 +273,25 @@ export default function ClientsPage() {
                   {GENDER_OPTIONS.map(g => <option key={g} value={g}>{g || 'Select'}</option>)}
                 </select>
               </div>
+              {/* State first, then the districts of that state. There was
+                  no state field at all before this — it was set to Uttar
+                  Pradesh on every client, invisibly, wherever they were. */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, color: '#5A5A5A', marginBottom: 5, fontWeight: 700, textTransform: 'uppercase' }}>State</label>
+                <select value={form.state} onChange={e => setForm({ ...form, state: e.target.value, district: '' })}
+                  style={{ width: '100%', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 8, padding: '9px 12px', color: '#F0F0F0', fontSize: 13, outline: 'none', cursor: 'pointer' }}>
+                  <option value="">Select State</option>
+                  {STATES.map(st => <option key={st.code} value={st.name}>{st.name}</option>)}
+                </select>
+              </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, color: '#5A5A5A', marginBottom: 5, fontWeight: 700, textTransform: 'uppercase' }}>District</label>
                 <select value={form.district} onChange={e => setForm({ ...form, district: e.target.value })}
-                  style={{ width: '100%', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 8, padding: '9px 12px', color: '#F0F0F0', fontSize: 13, outline: 'none', cursor: 'pointer' }}>
-                  {DISTRICTS.map(d => <option key={d} value={d}>{d || 'Select District'}</option>)}
+                  disabled={!form.state}
+                  style={{ width: '100%', background: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: 8, padding: '9px 12px', color: form.state ? '#F0F0F0' : '#5A5A5A', fontSize: 13, outline: 'none', cursor: form.state ? 'pointer' : 'not-allowed' }}>
+                  <option value="">{form.state ? 'Select District' : 'Pick a state first'}</option>
+                  {(STATES.find(st => st.name === form.state)?.districts || [])
+                    .map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
 

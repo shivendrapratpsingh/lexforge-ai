@@ -23,7 +23,7 @@ const SPECIMEN = {
   name: 'A B C (specimen party)',
   other: 'X Y Z (specimen opposite party)',
   addr: '[ADDRESS — SPECIMEN]',
-  city: 'Prayagraj',
+  city: '[CITY — SPECIMEN]',
 }
 
 export async function POST(req) {

@@ -66,7 +66,7 @@ const CHAT_QUESTIONS = {
     { key: 'writType',         q: 'What type of writ are you filing? (Certiorari / Mandamus / Habeas Corpus / Prohibition / Quo Warranto)' },
     { key: 'petitionCategory', q: 'Is this a Civil Misc. Writ Petition (WRIT-C), Service matter (WRIT-A), or Habeas Corpus (WRIT-B)?' },
     { key: 'petitionerName',   q: 'What is the full name of the petitioner? (include s/o, age, and residential address)' },
-    { key: 'respondentName',   q: 'Who are the respondents? (State of UP through Principal Secretary is usually Respondent No. 1)' },
+    { key: 'respondentName',   q: 'Who are the respondents? (the State through its Principal Secretary is usually Respondent No. 1)' },
     { key: 'impugnedOrder',    q: 'What is the impugned order or action being challenged? Give brief details.' },
     { key: 'impugnedDate',     q: 'What is the date of the impugned order/action?' },
     { key: 'facts',            q: 'Describe the chronological facts — what happened, when, and what authorities did or failed to do?' },
@@ -88,7 +88,7 @@ const CHAT_QUESTIONS = {
     { key: 'petitionerName',   q: 'What is the name of the petitioner or organization filing this PIL?' },
     { key: 'publicIssue',      q: 'What is the public issue? Describe it in one clear sentence.' },
     { key: 'affectedParties',  q: 'Who is affected by this issue? How many people and in which area?' },
-    { key: 'respondents',      q: 'Who are the respondents? (Usually State of UP + relevant authorities)' },
+    { key: 'respondents',      q: 'Who are the respondents? (usually the State and the relevant authorities)' },
     { key: 'facts',            q: 'Describe the documented facts — dates, locations, and evidence of harm.' },
     { key: 'officialInaction', q: 'Have you made any representations to authorities? What action was taken?' },
     { key: 'legalViolations',  q: 'Which fundamental rights or laws are being violated by the inaction/action?' },
@@ -132,7 +132,7 @@ const CHAT_QUESTIONS = {
   ],
   VAKALATNAMA: [
     { key: 'advocateName',     q: 'What is the full name of the advocate?' },
-    { key: 'enrollmentNo',     q: 'What is the UP/Allahabad Bar Council enrollment number?' },
+    { key: 'enrollmentNo',     q: 'What is your State Bar Council enrollment number?' },
     { key: 'clientName',       q: 'What is the full name of the client?' },
     { key: 'clientFather',     q: "What is the client's father's/husband's name?" },
     { key: 'clientAge',        q: 'What is the age of the client?' },
@@ -242,7 +242,7 @@ const CHAT_QUESTIONS = {
     { key: 'recipientName',     q: 'Who are you writing to? (full name; if a company, the name of the addressee)' },
     { key: 'recipientEmail',    q: 'Recipient email address? (optional)' },
     { key: 'senderName',        q: 'Your full name as it should appear in the sign-off?' },
-    { key: 'senderDesignation', q: 'Your designation? (e.g., Advocate, Allahabad High Court — optional)' },
+    { key: 'senderDesignation', q: 'Your designation? (e.g., Advocate, High Court — optional)' },
     { key: 'senderContact',     q: 'Your contact details? (phone, email, Bar Council enrollment no. — optional)' },
     { key: 'subjectHint',       q: 'Any specific subject line you want? (leave blank to auto-generate)' },
     { key: 'caseRef',           q: 'Any case or reference number to mention? (FIR no., writ no., client ID — optional)' },
@@ -926,7 +926,7 @@ export default function NewDraftPage() {
 
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#F0F0F0', marginBottom: 4 }}>Generate New Document</h1>
-        <p style={{ color: '#5A5A5A', fontSize: 14 }}>Uttar Pradesh & Tamil Nadu Courts Edition — AI-powered legal drafting</p>
+        <p style={{ color: '#5A5A5A', fontSize: 14 }}>Every Indian court — Supreme Court, High Courts, tribunals and district courts</p>
       </div>
 
       {/* Step indicator */}
@@ -1076,19 +1076,40 @@ export default function NewDraftPage() {
                 />
                 {courtDropdown && (() => {
                   const q = courtSearch.toLowerCase().trim()
-                  // Group filtered results by state section
-                  const sections = [
-                    { title: 'UP – High Courts',       courts: COURTS.UP_HIGH_COURTS },
-                    { title: 'UP – Prayagraj Courts',  courts: COURTS.UP_PRAYAGRAJ },
-                    { title: 'UP – Nearby Districts',  courts: COURTS.UP_NEARBY },
-                    { title: 'TN – High Courts',       courts: COURTS.TN_HIGH_COURTS },
-                    { title: 'TN – District Courts',   courts: COURTS.TN_DISTRICT },
-                    { title: 'TN – Special Courts',    courts: COURTS.TN_SPECIAL },
-                  ]
-                  const filtered = sections.map(s => ({
-                    ...s,
-                    courts: q ? s.courts.filter(c => c.short.toLowerCase().includes(q) || c.label.toLowerCase().includes(q) || (c.state || '').toLowerCase().includes(q)) : s.courts,
-                  })).filter(s => s.courts.length > 0)
+
+                  // This list used to be six hardcoded sections — UP and
+                  // Tamil Nadu — while ALL_COURTS already carried 1,134
+                  // courts across every state. A lawyer anywhere else
+                  // could not select their own court at all.
+                  //
+                  // Unsearched, it shows what somebody would genuinely
+                  // browse: the Supreme Court, the High Courts, the
+                  // national tribunals. The ~750 district courts are
+                  // reachable by typing a city or a state, which is how
+                  // anyone looks for their own court anyway.
+                  let filtered
+                  if (!q) {
+                    filtered = [
+                      { title: 'Supreme Court',                 courts: COURTS.SUPREME },
+                      { title: 'High Courts',                   courts: COURTS.ALL_INDIA_HIGH_COURTS },
+                      { title: 'Tribunals and national forums', courts: COURTS.ALL_INDIA_TRIBUNALS },
+                    ].filter(s => s.courts?.length)
+                  } else {
+                    const hits = ALL_COURTS.filter(c =>
+                      (c.short || '').toLowerCase().includes(q) ||
+                      (c.label || '').toLowerCase().includes(q) ||
+                      (c.state || '').toLowerCase().includes(q)
+                    ).slice(0, 80)
+                    // Grouped by state, so searching "Karnataka" reads as
+                    // a place rather than eighty undifferentiated rows.
+                    const byState = new Map()
+                    for (const c of hits) {
+                      const k = c.state || 'All India'
+                      if (!byState.has(k)) byState.set(k, [])
+                      byState.get(k).push(c)
+                    }
+                    filtered = [...byState.entries()].map(([title, courts]) => ({ title, courts }))
+                  }
 
                   if (filtered.length === 0) return (
                     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: 8, zIndex: 50, marginTop: 3, padding: '10px 14px', fontSize: 12, color: '#5A5A5A' }}>
@@ -1116,7 +1137,7 @@ export default function NewDraftPage() {
                 })()}
               </div>
               {!selectedCourt && !courtDropdown && (
-                <div style={{ fontSize: 11, color: '#4A4A4A', marginTop: 5 }}>Type court name, city, or "Madras" / "Prayagraj" to filter</div>
+                <div style={{ fontSize: 11, color: '#4A4A4A', marginTop: 5 }}>Type a court, a city or a state — "Bengaluru", "Karnataka", "Madras"</div>
               )}
             </div>
 

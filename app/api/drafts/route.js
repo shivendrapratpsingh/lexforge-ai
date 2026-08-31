@@ -5,6 +5,7 @@ import { isAdmin, hasProAccess, requiresProDocumentDynamic, getFreeDocsLimit } f
 import { isJunkValue } from '@/lib/validation'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getFollowUp, buildFollowUpCourtDate } from '@/lib/followup'
+import { kanoonConfigured } from '@/lib/legal-data/config'
 
 // AI generation can take 20–40s with 70B models. Vercel's Hobby plan caps
 // serverless functions at 10s by default, which silently kills the request
@@ -100,6 +101,16 @@ export async function GET(req) {
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
+
+// Which documents actually argue a point of law. A rent agreement, a
+// vakalatnama or an RTI application cites no judgment, so searching for
+// one would be two billed searches spent on nothing.
+const AUTHORITY_TYPES = new Set([
+  'BAIL_APPLICATION', 'WRIT_PETITION', 'PIL', 'PETITION', 'STAY_APPLICATION',
+  'CASE_BRIEF', 'MEMORANDUM', 'LEGAL_OPINION', 'CONSUMER_COMPLAINT',
+  'DIVORCE_PETITION',
+])
+const wantsAuthority = (t) => AUTHORITY_TYPES.has(t)
 
 export async function POST(req) {
   try {
@@ -207,6 +218,51 @@ export async function POST(req) {
 
     const targetWordsClamped = clampTargetWords(targetWords, userIsPro)
 
+    // ── Retrieve the authority BEFORE drafting ──────────────────
+    //
+    // The draft used to be written from the model's own recollection of
+    // case law, under a rule that said "name a judgment only if you are
+    // certain". The model is certain and wrong at the same time — that
+    // is what a fabricated citation is — so judgments are now retrieved
+    // from the real index first and the model may name nothing else.
+    //
+    // Deliberately narrow, because each run costs two billed searches:
+    //   - filings only. A rent agreement or a legal notice argues no
+    //     point of law, and paying to search judgments for one is waste.
+    //   - Pro only, for the same reason.
+    //   - fails CLOSED. If retrieval breaks, the draft is written with
+    //     no case law at all rather than falling back on memory, which
+    //     is the failure this exists to prevent.
+    let authority = { cases: [], acts: [], retrieved: false }
+    if (userIsPro && wantsAuthority(documentType) && kanoonConfigured()) {
+      try {
+        const { findRelevantCases } = await import('@/lib/legal-data/case-finder')
+        const found = await findRelevantCases({
+          facts: details,
+          documentType,
+          court,
+          reliefSought: cleanTemplateData.relief || cleanTemplateData.reliefSought || '',
+          actsInvolved: cleanTemplateData.offence || cleanTemplateData.applicableLaws || '',
+        }, { userId: session.user.id })
+
+        // Flatten the hierarchy tiers, apex court first, and cap it.
+        // Only titles and citations go into the prompt — never judgment
+        // bodies, which would blow the token budget for the draft itself.
+        authority = {
+          cases: (found.tiers || []).flatMap(t => t.cases).slice(0, 6).map(c => ({
+            title: c.title, court: c.court, date: c.date, citation: c.citation,
+            docId: c.docId, url: c.url,
+          })),
+          acts: found.acts || [],
+          retrieved: true,
+        }
+      } catch (e) {
+        // Not fatal: no authority simply means the absolute no-citation
+        // rule applies, which is the safe side of this trade.
+        console.error('[draft/authority]', e?.code || e?.message || e)
+      }
+    }
+
     let content
     try {
       content = await generateLegalDocument(documentType, fullDetails, court, language, {
@@ -214,6 +270,8 @@ export async function POST(req) {
         targetWords: targetWordsClamped,
         userId: session.user.id,
         operation: 'draft',
+        cases: authority.cases,
+        acts: authority.acts,
       })
     } catch (genErr) {
       if (genErr?.code === 'AI_REFUSAL') {
@@ -274,7 +332,7 @@ export async function POST(req) {
               fatherName: extracted.fatherName || null,
               age:        extracted.age        || null,
               address:    extracted.address    || null,
-              state:      'Uttar Pradesh',
+              state:      '',
             },
           })
           autoClientId     = newClient.id
@@ -303,6 +361,22 @@ export async function POST(req) {
       legalReasoning = `Relevant precedents: ${caseLaws.map(c => `${c.name} (${c.citation})`).join(', ')}`
     }
 
+    // The authority the draft was actually written against, listed so it
+    // can be checked. A retrieved judgment with a link is the difference
+    // between a citation a reader can verify and one they must trust.
+    if (authority.retrieved && authority.cases.length) {
+      const lines = authority.cases.map(c => {
+        const head = `- ${c.title}${c.court ? ` — ${c.court}` : ''}${c.citation ? ` (${c.citation})` : ''}`
+        return c.url ? [head, `  ${c.url}`].join('\n') : head
+      }).join('\n')
+      legalReasoning = [
+        legalReasoning || null,
+        '**Judgments retrieved for this draft** — the document was written ' +
+        'against these, and the AI was not permitted to name any other:',
+        lines,
+      ].filter(Boolean).join('\n\n')
+    }
+
     // ── Create draft ───────────────────────────────────────────
     const draft = await prisma.draft.create({
       data: {
@@ -312,7 +386,12 @@ export async function POST(req) {
         content,
         documentType,
         templateData: cleanTemplateData,
-        caseLaws,
+        // What this draft was actually built from. When judgments were
+        // retrieved they are stored instead of the curated shelf, so the
+        // record shows the authority the document was written against.
+        caseLaws: authority.retrieved && authority.cases.length
+          ? { retrieved: true, cases: authority.cases, acts: authority.acts }
+          : caseLaws,
         status:    'draft',
         caseStatus: 'active',
         court,

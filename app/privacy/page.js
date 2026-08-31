@@ -1,5 +1,6 @@
 import LegalPage, { P, H, UL, Callout, ContactBlock } from '@/components/LegalPage'
 import { COMPANY } from '@/lib/company'
+import { PROCESSORS } from '@/lib/processors'
 
 export const metadata = {
   title: 'Privacy Policy — LexForge AI',
@@ -62,13 +63,19 @@ export default function Privacy() {
         purposes.
       </P>
       <UL>
-        <li><strong>Groq</strong> (United States) — receives the facts you enter, to generate the draft. This is the only third party that sees your document text.</li>
-        <li><strong>Neon</strong> — hosts the database where your account and documents are stored.</li>
-        <li><strong>Vercel</strong> (United States) — hosts and serves the application.</li>
-        <li><strong>Razorpay</strong> (India) — processes payments. Receives your name, email and the amount. Handles all card and UPI details itself.</li>
-        <li><strong>Indian Kanoon</strong> (India) — receives your search terms when you search judgments. It does not receive your documents or your identity.</li>
-        <li><strong>India Code</strong> — a Government repository we read from. It receives nothing about you.</li>
-        <li><strong>Our email provider</strong> — receives your address to deliver service emails such as receipts.</li>
+        {/* Rendered from lib/processors.js, which the DPDP undertaking a
+            college signs also renders from. Two hand-maintained copies of
+            this list is one chance for the public page and the signed one
+            to disagree. */}
+        {PROCESSORS.map(p => {
+          const country = p.publicCountry === null ? null : (p.publicCountry ?? p.country)
+          return (
+            <li key={p.name}>
+              <strong>{p.publicName || p.name}</strong>
+              {country ? ` (${country})` : ''} &mdash; {p.short}
+            </li>
+          )
+        })}
       </UL>
       <P>
         Some of these operate outside India, so your data may be processed

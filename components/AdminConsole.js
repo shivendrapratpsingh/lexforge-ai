@@ -624,6 +624,26 @@ export default function AdminConsole() {
       {/* ── Cost of running it ── */}
       <AdminCosts />
 
+      {/* ── The folder you walk into a college with ── */}
+      <section>
+        <h2 style={{ fontSize: 13, color: '#D4A017', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>
+          Papers
+        </h2>
+        <div style={{ ...CARD, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 13, color: '#8A8A8A', lineHeight: 1.7, maxWidth: 620 }}>
+            GST non-registration declaration, data protection undertaking and a blank
+            letterhead — the documents a college asks for that are not the agreement
+            and not the invoice. The page also lists which of your details are still
+            unset.
+          </div>
+          <a href="/admin/papers"
+             style={{ flex: 'none', textDecoration: 'none', fontSize: 13, fontWeight: 700, color: '#0D0D0D',
+                      background: 'linear-gradient(135deg,#D4A017,#B8860B)', padding: '9px 16px', borderRadius: 9 }}>
+            Open papers →
+          </a>
+        </div>
+      </section>
+
       {/* ── Institutions ── */}
       <AdminInstitutions />
 

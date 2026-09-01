@@ -37,6 +37,13 @@ export default async function Papers() {
 
   const papers = [
     {
+      href: '/admin/papers/rate-card',
+      title: 'Rate card',
+      asked: 'Every college, in the first meeting.',
+      does: 'The schedule of fees on your letterhead — individual and institutional, monthly and annual — read from the same place the checkout and the invoice read, so the three can never quote different prices.',
+      tip: 'Add ?seats=400&to=Name of College and it works the total for that college.',
+    },
+    {
       href: '/admin/papers/gst-declaration',
       title: 'GST non-registration declaration',
       asked: 'The accounts department, when the invoice shows no tax.',

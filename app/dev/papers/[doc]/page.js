@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { Letterhead } from '@/components/Letterhead'
-import { GstDeclarationBody, DpdpBody } from '@/components/papers'
+import { GstDeclarationBody, DpdpBody, RateCardBody } from '@/components/papers'
 import AgreementDocument from '@/components/AgreementDocument'
 import DownloadButtons from '@/components/DownloadButtons'
 
@@ -18,6 +18,7 @@ import DownloadButtons from '@/components/DownloadButtons'
 //    /dev/papers/gst-declaration
 //    /dev/papers/dpdp
 //    /dev/papers/letterhead
+//    /dev/papers/rate-card        (?seats=400 works a total)
 //    /dev/papers/downloads        (the download buttons, on their own)
 //    /dev/papers/agreement        (paid licence)
 //    /dev/papers/agreement-trial  (the one-month trial)
@@ -82,6 +83,15 @@ export default async function DevPaper({ params, searchParams }) {
         endsAt: new Date(now + (trial ? 30 : 365) * 86400000),
         _count: { members: 120 },
       }} />
+    )
+  }
+
+  if (doc === 'rate-card') {
+    const seats = Math.max(0, Math.min(5000, Number(sp?.seats) || 0))
+    return (
+      <Letterhead company={company} kicker="Schedule of fees" title="Rate card" to={to}>
+        <RateCardBody seats={seats} to={to} company={company} />
+      </Letterhead>
     )
   }
 

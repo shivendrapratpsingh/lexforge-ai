@@ -15,11 +15,26 @@ const check = (n, got, want) => {
 const m = rupees(PLANS.monthly.amountPaise)
 const y = rupees(PLANS.yearly.amountPaise)
 
-check('monthly is ₹420', m, 420)
-check('yearly is ₹4,032', y, 4032)
-check('yearly is exactly 20% off twelve months', y, Math.round(m * 12 * 0.8))
-check('a seat costs the same as an individual month', rupees(INSTITUTION_SEAT.monthlyPaise), 420)
-check('a seat-year is exactly 30% off twelve months', rupees(INSTITUTION_SEAT.yearlyPaise), Math.round(m * 12 * 0.7))
+// Buying a year does not buy a percentage off the total. It buys a
+// LOWER MONTHLY RATE, paid once for twelve months — which is why the
+// yearly figure is twelve times the annual rate, not a discount on the
+// monthly one.
+const seatM = rupees(INSTITUTION_SEAT.monthlyPaise)
+const seatY = rupees(INSTITUTION_SEAT.yearlyPaise)
+
+check('direct monthly is ₹2,250', m, 2250)
+check('direct yearly is ₹24,000', y, 24000)
+check('the yearly price is ₹2,000 a month for twelve months', y, 2000 * 12)
+check('a college seat is ₹2,000 a month', seatM, 2000)
+check('a college seat-year is ₹21,600', seatY, 21600)
+check('the seat-year is ₹1,800 a month for twelve months', seatY, 1800 * 12)
+
+// The reason the structure exists: a college that funds it pays less
+// per head than a student buying alone. If that ever inverts, a college
+// has no commercial reason to sign.
+check('a college pays less per head than an individual, monthly', seatM < m, true)
+check('a college pays less per head than an individual, yearly', seatY < y, true)
+check('committing to a year always costs less per month', y / 12 < m, true)
 check('the student plan is gone', planFor('student'), null)
 check('only two plans are sold', Object.keys(PLANS).length, 2)
 check('no plan is gated on an institution', Object.values(PLANS).some(p => p.requiresInstitution), false)

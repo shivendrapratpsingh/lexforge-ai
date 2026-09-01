@@ -1,6 +1,7 @@
 import { COMPANY } from '@/lib/company'
 import { PROCESSORS, OFFSHORE } from '@/lib/processors'
-import { Clause, P, TemplateNote } from '@/components/Letterhead'
+import { Clause, P, H, TemplateNote } from '@/components/Letterhead'
+import { RATE_CARD, rupees } from '@/lib/billing'
 
 // ─────────────────────────────────────────────────────────────────
 //  The text of the papers, separated from the pages that serve them.
@@ -268,6 +269,132 @@ export function DpdpBody({ to, company }) {
         date printed above. If the stack changes — a new sub-processor, a new place of
         storage — this page changes with it, and any copy already signed will be out of
         date. Re-issue it when that happens.
+      </TemplateNote>
+    </>
+  )
+}
+
+// ── Rate card ────────────────────────────────────────────────────
+// Every figure is read from lib/billing.js, so the rate card, the
+// checkout and the invoice can never quote three different prices.
+export function RateCardBody({ seats = 0, to = '', company }) {
+  const C = company ? { ...COMPANY, ...company } : COMPANY
+  const money = (p) => '₹' + rupees(p).toLocaleString('en-IN')
+  const D = RATE_CARD.direct
+  const I = RATE_CARD.institution
+
+  const cell = { padding: '9px 10px', borderBottom: '1px solid #ddd', fontSize: 12, lineHeight: 1.6, verticalAlign: 'top' }
+  const th = { ...cell, fontWeight: 700, background: '#F4F4F4', borderBottom: '2px solid #ccc', textAlign: 'left', fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.5px' }
+  const num = { ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
+
+  return (
+    <>
+      <P>
+        The fees below are the standard rates of <strong>{C.name}</strong> and are
+        valid for ninety days from the date of this letter.
+      </P>
+
+      <H n={1}>Individual subscription — students and advocates</H>
+      <P style={{ marginTop: -2 }}>
+        One rate for everyone who subscribes directly. A law student and a
+        practising advocate pay the same.
+      </P>
+      <table style={{ width: '100%', borderCollapse: 'collapse', margin: '4px 0 6px' }}>
+        <thead>
+          <tr><th style={th}>Term</th><th style={{ ...th, textAlign: 'right' }}>Rate</th><th style={{ ...th, textAlign: 'right' }}>Payable</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={cell}><strong>Monthly</strong></td>
+            <td style={num}>{money(D.monthly)} per month</td>
+            <td style={num}>{money(D.monthly)}</td>
+          </tr>
+          <tr>
+            <td style={cell}><strong>Annual</strong><div style={{ color: '#666', fontSize: 10.5 }}>Paid once for twelve months</div></td>
+            <td style={num}>{money(D.yearlyPerMonth)} per month</td>
+            <td style={num}>{money(D.yearlyTotal)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <H n={2}>Institutional licence — colleges</H>
+      <P style={{ marginTop: -2 }}>
+        Charged per student, so a college with forty students is not billed like
+        one with four hundred.
+      </P>
+      <table style={{ width: '100%', borderCollapse: 'collapse', margin: '4px 0 6px' }}>
+        <thead>
+          <tr><th style={th}>Term</th><th style={{ ...th, textAlign: 'right' }}>Rate per student</th><th style={{ ...th, textAlign: 'right' }}>Per student, per year</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={cell}><strong>Monthly</strong></td>
+            <td style={num}>{money(I.monthlyPerSeat)} per month</td>
+            <td style={num}>—</td>
+          </tr>
+          <tr>
+            <td style={cell}><strong>Annual</strong><div style={{ color: '#666', fontSize: 10.5 }}>Paid once for twelve months</div></td>
+            <td style={num}>{money(I.yearlyPerSeatPerMonth)} per month</td>
+            <td style={num}>{money(I.yearlyPerSeatTotal)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {seats > 0 && (
+        <div className="keep" style={{ border: '2px solid #111', padding: '12px 14px', margin: '12px 0', background: '#FAFAFA' }}>
+          <div style={{ fontSize: 10.5, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8F6608', fontWeight: 700, marginBottom: 7 }}>
+            Worked for {to || 'this institution'}
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              <tr>
+                <td style={{ ...cell, borderBottom: 'none' }}>{seats} students, annual licence</td>
+                <td style={{ ...num, borderBottom: 'none', fontWeight: 700, fontSize: 14 }}>
+                  {money(I.yearlyPerSeatTotal * seats)} per year
+                </td>
+              </tr>
+              <tr>
+                <td style={{ ...cell, borderBottom: 'none', color: '#555' }}>{seats} students, monthly</td>
+                <td style={{ ...num, borderBottom: 'none', color: '#555' }}>
+                  {money(I.monthlyPerSeat * seats)} per month
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <H n={3}>What is included at every rate</H>
+      <ul style={{ paddingLeft: 20, margin: '0 0 10px' }}>
+        {[
+          'All twenty document types, in seven languages, for every Indian court — the Supreme Court, all High Courts and their benches, national tribunals and district courts.',
+          'Judgment search across the Supreme Court, High Courts and tribunals, with live case status by CNR.',
+          'Act search with the official text, and the moot memorial builder, AI tutor and quiz tools.',
+          'Export of every document to PDF, Word or plain text.',
+          'For colleges: a faculty dashboard showing enrolment and activity by batch.',
+        ].map((t, i) => (
+          <li key={i} style={{ fontSize: 12, lineHeight: 1.75, marginBottom: 5, color: '#222' }}>{t}</li>
+        ))}
+      </ul>
+
+      <H n={4}>Terms</H>
+      <ul style={{ paddingLeft: 20, margin: '0 0 10px' }}>
+        {[
+          'A one-month trial is available to institutions at no charge and with no obligation.',
+          'Fees are invoiced in advance of the term and are payable within 30 days.',
+          'Tax deducted at source, where applicable, is the payer’s responsibility to deposit and certify.',
+          'Fees already paid are not refunded on early termination. The full refund position is set out in the licence agreement, which is provided before signature.',
+          'These rates are exclusive of any tax that may become chargeable.',
+        ].map((t, i) => (
+          <li key={i} style={{ fontSize: 12, lineHeight: 1.75, marginBottom: 5, color: '#222' }}>{t}</li>
+        ))}
+      </ul>
+
+      <TemplateNote>
+        Rates are quoted per student and per month, and the annual figure is that
+        monthly rate paid once for twelve months. Where an institution’s student
+        numbers change during a term, the licence is not re-priced mid-term;
+        the count is taken at the start of each renewal.
       </TemplateNote>
     </>
   )

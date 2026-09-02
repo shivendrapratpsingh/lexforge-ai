@@ -37,6 +37,11 @@
     "verify:grounding": "dotenv -e .env.local -- node scripts/verify-grounding.mjs"
   },
   "dependencies": {
+    "@expo-google-fonts/noto-serif": "^0.4.2",
+    "@expo-google-fonts/noto-serif-devanagari": "^0.4.1",
+    "@expo-google-fonts/noto-serif-kannada": "^0.4.2",
+    "@expo-google-fonts/noto-serif-tamil": "^0.4.1",
+    "@expo-google-fonts/noto-serif-telugu": "^0.4.2",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",

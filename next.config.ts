@@ -16,6 +16,22 @@ const nextConfig: NextConfig = {
   // resolves from node_modules and works.
   serverExternalPackages: ['@prisma/client', 'prisma', 'pdf-parse', 'pdfjs-dist'],
 
+  // The PDF export embeds real Unicode fonts (lib/pdf-fonts.js), read
+  // from node_modules at request time. Nothing imports the .ttf files,
+  // so Vercel's tracer cannot see them and drops them from the bundle —
+  // every font load then fails and PDFs silently revert to the WinAnsi
+  // `times` fallback that corrupts ₹ and every Indic script. Naming them
+  // here is what puts them in the deployment.
+  outputFileTracingIncludes: {
+    '/api/**': [
+      './node_modules/@expo-google-fonts/noto-serif/**/*.ttf',
+      './node_modules/@expo-google-fonts/noto-serif-devanagari/**/*.ttf',
+      './node_modules/@expo-google-fonts/noto-serif-tamil/**/*.ttf',
+      './node_modules/@expo-google-fonts/noto-serif-telugu/**/*.ttf',
+      './node_modules/@expo-google-fonts/noto-serif-kannada/**/*.ttf',
+    ],
+  },
+
   // Don't fail the build on TypeScript errors — safer for first deploy.
   // Remove this later once you've cleaned up any type errors.
   typescript: {

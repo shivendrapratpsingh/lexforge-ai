@@ -149,6 +149,29 @@ export async function POST(req) {
     if (!documentType || !DOCUMENT_TYPES.find(t => t.value === documentType))
       return NextResponse.json({ error: 'Invalid document type.' }, { status: 400 })
 
+    // ── The court code must be one we actually know ───────────────
+    //
+    // courtAddendum() returns '' for anything unrecognised, so an
+    // unknown code did not fail — it silently produced a filing with NO
+    // court-specific formatting at all: no cause-title rule, no case
+    // number block, no jurisdictional statute set. The draft still came
+    // back looking plausible because the model inferred a court from the
+    // facts, which is the worst outcome of the three: wrong, confident,
+    // and unannounced. getCourtLabel() compounds it by echoing the raw
+    // code back into the UI as though it were a court's name.
+    //
+    // 1,134 courts are listed. Anything outside that list is a caller
+    // error and is now told so.
+    if (court) {
+      const { ALL_COURTS } = await import('@/lib/utils')
+      if (!ALL_COURTS.some(c => c.value === court)) {
+        return NextResponse.json({
+          error: `Unknown court "${court}".`,
+          hint: 'Pick a court from the list — the draft would otherwise be formatted for no court in particular.',
+        }, { status: 400 })
+      }
+    }
+
     // ── Strip junk placeholders ("NA", "no", "don't know", etc.) ──
     const cleanTemplateData = sanitizeTemplateData(templateData)
 

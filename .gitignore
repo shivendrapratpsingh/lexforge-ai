@@ -74,3 +74,4 @@ next-env.d.ts
 # Timestamped backups of .env.local — never commit these
 .env.local.bak-*
 .env*.bak
+test-output/

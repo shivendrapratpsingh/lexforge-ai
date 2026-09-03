@@ -1,10 +1,18 @@
 // Calls every model the app names, the way the app calls it. This is
 // the check that was missing when Groq retired the Llama models and
 // three features went down without a single error anyone saw.
-import Groq from 'groq-sdk'
+import { activeProviders, clientFor, chainStatus } from '../lib/ai.js'
 import { PRO_MODELS, FREE_MODELS } from '../lib/groq.js'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY, timeout: 60000, maxRetries: 0 })
+// Every provider in AI_PROVIDERS that has a key, and every model it
+// names — because a fallback nobody has ever called is not a fallback.
+console.table(chainStatus())
+const providers = activeProviders()
+if (!providers.length) {
+  console.error('NO PROVIDER  set GEMINI_API_KEY or GROQ_API_KEY')
+  process.exit(1)
+}
+const groq = clientFor(providers[0])
 const models = [...new Set([...PRO_MODELS, ...FREE_MODELS])]
 let fails = 0
 

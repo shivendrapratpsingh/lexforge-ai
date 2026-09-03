@@ -93,12 +93,14 @@ ${schema}
 
 Now produce the JSON.`
 
-    const { default: Groq } = await import('groq-sdk')
     const { PRO_MODELS } = await import('@/lib/groq')
     // Whatever lib/groq.js is on. Naming a model here is how this route
     // came to be calling one Groq had retired.
     const STUDY_MODEL = PRO_MODELS[0]
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY, timeout: 60000, maxRetries: 1 })
+    const { activeProviders, clientFor } = await import('@/lib/ai')
+    const [_p] = activeProviders()
+    if (!_p) throw Object.assign(new Error('No AI provider is configured.'), { code: 'NO_AI_PROVIDER' })
+    const groq = clientFor(_p)
 
     const completion = await groq.chat.completions.create({
       model: STUDY_MODEL,

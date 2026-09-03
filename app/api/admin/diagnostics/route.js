@@ -63,8 +63,10 @@ export async function GET() {
 
   results.push(await probe('AI (Groq)', async () => {
     const { PRO_MODELS } = await import('@/lib/groq')
-    const { default: Groq } = await import('groq-sdk')
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY, timeout: 30000, maxRetries: 0 })
+    const { activeProviders, clientFor } = await import('@/lib/ai')
+    const [_p] = activeProviders()
+    if (!_p) throw Object.assign(new Error('No AI provider is configured.'), { code: 'NO_AI_PROVIDER' })
+    const groq = clientFor(_p)
     const c = await groq.chat.completions.create({
       model: PRO_MODELS[0], max_tokens: 900, reasoning_effort: 'low',
       messages: [{ role: 'user', content: 'Reply with exactly: OK' }],

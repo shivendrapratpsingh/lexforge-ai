@@ -9,12 +9,14 @@
 //
 // This reproduces each route's own Groq call exactly rather than going
 // over HTTP, because the routes require a signed-in session.
-import Groq from 'groq-sdk'
+import { activeProviders, clientFor } from '../lib/ai.js'
 import { PRO_MODELS } from '../lib/groq.js'
 import { LANDMARK_JUDGMENTS, LEGAL_PRINCIPLES } from '../lib/study-content.js'
 import { INDIAN_LAWS } from '../lib/indian-laws.js'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY, timeout: 60000, maxRetries: 1 })
+const [_p] = activeProviders()
+if (!_p) { console.error('NO PROVIDER  set GEMINI_API_KEY or GROQ_API_KEY'); process.exit(1) }
+const groq = clientFor(_p)
 const MODEL = PRO_MODELS[0]
 let fails = 0
 const fail = (why) => { fails++; console.log(`FAIL  ${why}`) }

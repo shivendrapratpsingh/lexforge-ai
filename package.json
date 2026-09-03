@@ -14,6 +14,7 @@
     "db:studio": "dotenv -e .env.local -- prisma studio",
     "verify": "npm run verify:models && npm run verify:robots && npm run verify:mail && npm run verify:dates && npm run verify:pricing && npm run verify:billing && npm run verify:institutions && npm run verify:expiry && npm run verify:college && npm run verify:invoicing && npm run verify:study && npm run verify:digest && npm run verify:assistant && npm run verify:sources && npm run verify:trial && npm run verify:papers && npm run verify:grounding",
     "verify:models": "dotenv -e .env.local -- node scripts/verify-models.mjs",
+    "verify:provider": "dotenv -e .env.local -- node scripts/verify-provider.mjs",
     "verify:billing": "node scripts/verify-billing.mjs",
     "verify:institutions": "dotenv -e .env.local -- node scripts/verify-institutions.mjs",
     "verify:expiry": "dotenv -e .env.local -- node scripts/verify-expiry.mjs",

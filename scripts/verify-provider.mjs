@@ -28,6 +28,16 @@
 import { chainStatus, activeProviders, clientFor, attemptPlan } from '../lib/ai.js'
 import { PRO_MODELS, FREE_MODELS, buildDraftPromptForTest, generateLegalDocument } from '../lib/groq.js'
 
+// generateLegalDocument() interpolates `details` into a template
+// literal. app/api/drafts/route.js hands it a FORMATTED STRING; passing
+// the raw object instead stringifies to "[object Object]" and the model
+// then invents every particular. Mirror the route exactly, or this test
+// measures the wrong thing.
+const asDetails = (o) => Object.entries(o)
+  .filter(([, v]) => v?.toString().trim())
+  .map(([k, v]) => `${k.replace(/([A-Z])/g, ' $1').trim()}: ${v}`)
+  .join(String.fromCharCode(10))
+
 let fails = 0
 const check = (ok, label, detail = '') => {
   if (!ok) fails++
@@ -98,7 +108,7 @@ const CRIMINAL = [
 ]
 for (const [type, details] of CRIMINAL) {
   try {
-    const text = await generateLegalDocument(type, details, 'TN_COIMBATORE', 'english',
+    const text = await generateLegalDocument(type, asDetails(details), 'TN_COIMBATORE', 'english',
                                              { isPro: true, operation: 'verify' })
     const words = String(text || '').trim().split(/\s+/).filter(Boolean).length
     check(words > 150, `${type} generated`, `${words} words`)
@@ -112,15 +122,24 @@ for (const [type, details] of CRIMINAL) {
 
 // ── 5 & 6. A real draft, at length, with the facts intact ─────────
 console.log('\n─── a real rent agreement, end to end ───')
+// The field NAMES matter. RENT_AGREEMENT declares landlordName /
+// tenantName / rent / term in lib/document-fields.js; passing
+// CONTRACT's partyA / partyB / payment instead gives the model keys it
+// does not recognise, and the fidelity checks below then fail for a
+// reason that has nothing to do with the provider.
 const facts = {
-  partyA: 'Ganesan', partyB: 'Gayathri',
-  purpose: 'Rental agreement',
-  payment: '20000, monthly, cash',
-  duration: '1 year from 2026 September 1 to 2027 September 1',
-  terms: 'Tenant is responsible for all minor repairs. Owner is responsible for major repairs.',
+  landlordName: 'Ganesan',
+  tenantName: 'Gayathri',
+  tenantAddress: '14 Bharathi Street, Coimbatore',
+  propertyAddress: 'Flat 3B, 22 Race Course Road, Coimbatore 641018',
+  propertyDetails: 'Two-bedroom flat, second floor, with covered parking.',
+  rent: 'Rs. 20,000 per month, payable in cash on or before the 5th',
+  deposit: 'Rs. 2,40,000',
+  term: '1 year, from 1 September 2026 to 1 September 2027',
+  specialTerms: 'Tenant is responsible for all minor repairs. Owner is responsible for major repairs.',
 }
 try {
-  const text = await generateLegalDocument('RENT_AGREEMENT', facts, 'TN_COIMBATORE', 'english',
+  const text = await generateLegalDocument('RENT_AGREEMENT', asDetails(facts), 'TN_COIMBATORE', 'english',
                                            { isPro: true, operation: 'verify' })
   const body  = String(text || '')
   const words = body.trim().split(/\s+/).filter(Boolean).length

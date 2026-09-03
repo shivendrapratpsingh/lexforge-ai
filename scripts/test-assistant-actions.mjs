@@ -8,7 +8,8 @@
 //
 //  Run:  node scripts/test-assistant-actions.mjs
 // ─────────────────────────────────────────────────────────────────
-import { resolveAction, ACTIONS, actionCatalogueForPrompt } from '../lib/assistant-actions.js'
+import { resolveAction, ACTIONS, actionCatalogueForPrompt, ACTION_EXAMPLES } from '../lib/assistant-actions.js'
+import { DOC_FIELDS } from '../lib/document-fields.js'
 
 let pass = 0, fail = 0
 function check(name, got, want) {
@@ -99,6 +100,30 @@ const menu = actionCatalogueForPrompt()
 for (const id of Object.keys(ACTIONS)) {
   if (menu.includes(`"${id}"`)) { pass++; console.log(`  ok   ${id} is offered to the model`) }
   else { fail++; console.log(`  FAIL ${id} exists but the model is never told about it`) }
+}
+
+console.log('')
+console.log('THE PROMPT EXAMPLES ARE THEMSELVES VALID')
+// An example that does not resolve is worse than no example: it teaches
+// the model to emit a block that is then silently thrown away.
+for (const e of ACTION_EXAMPLES) {
+  const label = e.user.slice(0, 46)
+  if (e.action === null) { pass++; console.log('  ok   ' + label + ' -- no block, as intended'); continue }
+  const r = resolveAction(e.action)
+  if (!r) { fail++; console.log('  FAIL ' + label + ' -- example does not resolve'); continue }
+  pass++; console.log('  ok   ' + label + ' -> ' + r.href.slice(0, 52))
+
+  // A draft example teaches field names. Wrong ones survive
+  // resolveAction and are then dropped by the /new-draft page, so the
+  // user gets an empty form and nothing says why.
+  const t = e.action.args && e.action.args.documentType
+  const fields = e.action.args && e.action.args.fields
+  if (t && fields) {
+    const real = new Set((DOC_FIELDS[t] || []).map(f => f.name))
+    const wrong = Object.keys(fields).filter(k => !real.has(k))
+    if (wrong.length) { fail++; console.log('  FAIL ' + t + ' example uses field names that do not exist: ' + wrong.join(', ')) }
+    else { pass++; console.log('  ok   ' + t + ' field names are real') }
+  }
 }
 
 console.log(`\n${pass} passed, ${fail} failed\n`)

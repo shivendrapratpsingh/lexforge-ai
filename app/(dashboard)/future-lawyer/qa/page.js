@@ -1,4 +1,5 @@
 'use client'
+import { useSearchParams } from 'next/navigation'
 import DownloadButtons from '@/components/DownloadButtons'
 //
 // /future-lawyer/qa — AI legal question-and-answer for students.
@@ -23,10 +24,22 @@ export default function LegalQAPage() {
   const [error,    setError]    = useState('')
   const taRef = useRef(null)
   const listRef = useRef(null)
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
   }, [history, loading])
+
+  // ?q= — sent by the Case Assistant. Ask it immediately rather than
+  // leaving it sitting in the box: the user already pressed a button
+  // that said this was the question they wanted answered here, and a
+  // second press to confirm it is the friction the handover exists to
+  // remove. `ask` takes the text explicitly, so this works on the very
+  // first render.
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q && q.trim().length >= 5) ask(q)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function ask(q) {
     const text = (q ?? question).trim()

@@ -1,7 +1,7 @@
 'use client'
 import DownloadButtons from '@/components/DownloadButtons'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 
 // ─────────────────────────────────────────────────────────────────
@@ -70,22 +70,33 @@ function actsText(res) {
   ].join(N)
 }
 
-export default function ActSearch({ isPro }) {
-  const [q, setQ] = useState('')
+export default function ActSearch({ isPro, initialQuery = '' }) {
+  const [q, setQ] = useState(initialQuery)
   const [busy, setBusy] = useState(false)
   const [res, setRes] = useState(null)
   const [err, setErr] = useState('')
 
-  async function run(e) {
-    e.preventDefault()
+  // Takes the term as an argument rather than reading `q`, so the effect
+  // below can run the search on the very first render — before any state
+  // update has landed.
+  const search = useCallback(async (term) => {
+    const query = String(term || '').trim()
+    if (!query) return
     setBusy(true); setErr(''); setRes(null)
     try {
-      const r = await fetch(`/api/acts/search?q=${encodeURIComponent(q)}`)
+      const r = await fetch(`/api/acts/search?q=${encodeURIComponent(query)}`)
       const j = await r.json()
       if (!r.ok) throw new Error(j.error)
       setRes(j)
     } catch (e) { setErr(e.message) } finally { setBusy(false) }
-  }
+  }, [])
+
+  function run(e) { e.preventDefault(); search(q) }
+
+  // Arrived from the Case Assistant with ?q=… — run it straight away.
+  // Landing on a filled box that still needs a click is the same dead
+  // end as landing on an empty one.
+  useEffect(() => { search(initialQuery) }, [initialQuery, search])
 
   return (
     <div style={{ maxWidth: 820 }}>

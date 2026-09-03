@@ -85,7 +85,7 @@ function caseStatusText(res) {
   ].filter(v => v !== null).join(N)
 }
 
-export default function CaseLawSearch() {
+export default function CaseLawSearch({ initialQuery = '' }) {
   const [tab, setTab] = useState('judgments')
   const [status, setStatus] = useState(null)
 
@@ -107,36 +107,44 @@ export default function CaseLawSearch() {
         </button>
       </div>
 
-      {tab === 'judgments' && <Judgments status={status} />}
+      {tab === 'judgments' && <Judgments status={status} initialQuery={initialQuery} />}
       {tab === 'case' && <CaseLookup status={status} />}
       {tab === 'acts' && <Acts status={status} />}
     </div>
   )
 }
 
-function Judgments({ status }) {
-  const [q, setQ] = useState('')
+function Judgments({ status, initialQuery = '' }) {
+  const [q, setQ] = useState(initialQuery)
   const [court, setCourt] = useState('')
   const [busy, setBusy] = useState(false)
   const [res, setRes] = useState(null)
   const [err, setErr] = useState(null)
 
-  const provider = status?.providers?.judgments
-  if (provider && !provider.configured) return <Offline p={provider} />
-
-  const go = async (e) => {
-    e.preventDefault()
+  // Takes the term as an argument so the effect below can fire on first
+  // render, before the state update from `initialQuery` has landed.
+  const search = useCallback(async (term, courtFilter) => {
+    const query = String(term || '').trim()
+    if (!query) return
     setBusy(true); setErr(null); setRes(null)
     try {
       const u = new URL('/api/legal/search', window.location.origin)
-      u.searchParams.set('q', q)
-      if (court) u.searchParams.set('court', court)
+      u.searchParams.set('q', query)
+      if (courtFilter) u.searchParams.set('court', courtFilter)
       const r = await fetch(u)
       const j = await r.json()
       if (!r.ok) throw Object.assign(new Error(j.error), { upgrade: j.upgrade })
       setRes(j)
     } catch (e) { setErr(e) } finally { setBusy(false) }
-  }
+  }, [])
+
+  // Arrived from the Case Assistant with ?q=… — run it straight away.
+  useEffect(() => { search(initialQuery, '') }, [initialQuery, search])
+
+  const provider = status?.providers?.judgments
+  if (provider && !provider.configured) return <Offline p={provider} />
+
+  const go = (e) => { e.preventDefault(); search(q, court) }
 
   return (
     <>

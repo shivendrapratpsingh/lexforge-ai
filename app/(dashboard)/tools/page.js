@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ALL_HIGH_COURTS } from '@/lib/india-data'
 import DownloadButtons from '@/components/DownloadButtons'
 
@@ -99,9 +99,9 @@ function orderAnalysisText(r) {
 }
 
 // ── Order Analyzer ─────────────────────────────────────────────
-function OrderAnalyzer() {
-  const [text, setText]     = useState('')
-  const [court, setCourt]   = useState('')
+function OrderAnalyzer({ seed = '', seedCourt = '' }) {
+  const [text, setText]     = useState(seed)
+  const [court, setCourt]   = useState(seedCourt)
   const [loading, setLoading] = useState(false)
   const [result, setResult]   = useState(null)
   const [err, setErr]         = useState('')
@@ -223,9 +223,9 @@ function MiniSection({ title, items, color }) {
 }
 
 // ── Amendment Tool ─────────────────────────────────────────────
-function AmendmentTool() {
+function AmendmentTool({ seed = '' }) {
   const router = useRouter()
-  const [original, setOriginal] = useState('')
+  const [original, setOriginal] = useState(seed)
   const [amendments, setAmendments] = useState('')
   const [docType, setDocType]   = useState('PETITION')
   const [court, setCourt]       = useState('')
@@ -282,9 +282,9 @@ function AmendmentTool() {
 }
 
 // ── Fresh Application ──────────────────────────────────────────
-function FreshApplication() {
+function FreshApplication({ seed = '' }) {
   const router = useRouter()
-  const [rejectionText, setRejectionText] = useState('')
+  const [rejectionText, setRejectionText] = useState(seed)
   const [additionalGrounds, setAdditional] = useState('')
   const [docType, setDocType]   = useState('BAIL_APPLICATION')
   const [court, setCourt]       = useState('')
@@ -343,9 +343,9 @@ function FreshApplication() {
 }
 
 // ── Appeal Generator ───────────────────────────────────────────
-function AppealGenerator() {
+function AppealGenerator({ seed = '' }) {
   const router = useRouter()
-  const [judgment, setJudgment] = useState('')
+  const [judgment, setJudgment] = useState(seed)
   const [appealType, setAppealType] = useState('HIGH_COURT')
   const [grounds, setGrounds]   = useState('')
   const [court, setCourt]       = useState('')
@@ -402,9 +402,9 @@ function AppealGenerator() {
 }
 
 // ── Counter / Reply ────────────────────────────────────────────
-function CounterReply() {
+function CounterReply({ seed = '' }) {
   const router = useRouter()
-  const [oppDoc, setOppDoc]     = useState('')
+  const [oppDoc, setOppDoc]     = useState(seed)
   const [position, setPosition] = useState('')
   const [docType, setDocType]   = useState('AFFIDAVIT')
   const [court, setCourt]       = useState('')
@@ -461,9 +461,9 @@ function CounterReply() {
 }
 
 // ── Compliance Report ──────────────────────────────────────────
-function ComplianceReport() {
+function ComplianceReport({ seed = '' }) {
   const router = useRouter()
-  const [orderText, setOrderText]   = useState('')
+  const [orderText, setOrderText]   = useState(seed)
   const [complianceDetails, setDetails] = useState('')
   const [court, setCourt]           = useState('')
   const [lang, setLang]             = useState('english')
@@ -554,16 +554,45 @@ function ResultPanel({ content, draft, title, router }) {
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function ToolsPage() {
+  const searchParams = useSearchParams()
+
+  // ?tool=&court=&prefill={"text":"…"} — sent by the Case Assistant when
+  // somebody describes a document they have RECEIVED rather than one
+  // they need drafted. The panel opens with their text already in it.
+  //
+  // Read once, on mount. Re-reading would fight the user for control of
+  // the tab every time the URL changed under them.
   const [active, setActive] = useState('order')
+  const [seed, setSeed] = useState('')
+  const [seedCourt, setSeedCourt] = useState('')
+
+  useEffect(() => {
+    const t = searchParams.get('tool')
+    if (t && TOOLS.some(x => x.id === t)) setActive(t)
+
+    const court = searchParams.get('court')
+    if (court) setSeedCourt(court)
+
+    const prefill = searchParams.get('prefill')
+    if (prefill) {
+      try {
+        const data = JSON.parse(prefill)
+        if (data && typeof data.text === 'string') setSeed(data.text)
+      } catch {}
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const tool = TOOLS.find(t => t.id === active)
 
+  // Keyed on the seed so a panel that mounted empty is rebuilt once the
+  // seed arrives — useState only reads its initial value on first mount.
   const PANELS = {
-    order:      <OrderAnalyzer />,
-    amendment:  <AmendmentTool />,
-    fresh:      <FreshApplication />,
-    appeal:     <AppealGenerator />,
-    counter:    <CounterReply />,
-    compliance: <ComplianceReport />,
+    order:      <OrderAnalyzer key={seed} seed={seed} seedCourt={seedCourt} />,
+    amendment:  <AmendmentTool key={seed} seed={seed} />,
+    fresh:      <FreshApplication key={seed} seed={seed} />,
+    appeal:     <AppealGenerator key={seed} seed={seed} />,
+    counter:    <CounterReply key={seed} seed={seed} />,
+    compliance: <ComplianceReport key={seed} seed={seed} />,
   }
 
   return (

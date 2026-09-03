@@ -156,6 +156,53 @@ function IntentCTA({ intent, onNavigate }) {
   )
 }
 
+// The button the AI's answer earns.
+//
+// IntentCTA above is the free tier's keyword guess: it knows a document
+// type and nothing else, so the user still lands on an empty form. This
+// one carries the particulars the assistant just heard back from the
+// user's own message, so the form opens already filled.
+//
+// It is an offer, never a jump. The assistant is sometimes wrong, and a
+// panel that navigates on its own would throw away whatever the user was
+// in the middle of doing to act on a guess.
+function ActionCTA({ action, onGo }) {
+  return (
+    <div style={{
+      marginTop: 8,
+      marginBottom: 10,
+      padding: 12,
+      borderRadius: 12,
+      background: 'rgba(212,160,23,0.08)',
+      border: '1px solid rgba(212,160,23,0.25)',
+    }}>
+      <div style={{ fontSize: 12.5, color: COLORS.inkMuted, marginBottom: 8 }}>
+        {action.detail}
+      </div>
+      <button
+        type="button"
+        onClick={() => onGo(action.href)}
+        style={{
+          padding: '8px 14px',
+          borderRadius: 9,
+          border: 'none',
+          background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldDim})`,
+          color: COLORS.bg,
+          fontWeight: 800,
+          fontSize: 12.5,
+          cursor: 'pointer',
+        }}
+      >
+        {action.label} →
+      </button>
+      <div style={{ fontSize: 10.5, color: COLORS.inkFaint, marginTop: 7 }}>
+        Opens with what you told me already filled in. Check every field
+        before you file.
+      </div>
+    </div>
+  )
+}
+
 function QuickPicks({ onPick }) {
   const picks = ['legal-notice', 'affidavit', 'rti', 'cheque-bounce', 'bail', 'writ']
   return (
@@ -206,7 +253,9 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
       setMessages([
         {
           role: 'assistant',
-          text: `Hi ${first} — I'm your Case Assistant. Tell me what you're trying to draft or ask about, and I'll point you the right way.`,
+          text: isPro
+            ? `Hi ${first} — tell me what happened, in your own words. I'll tell you which Act and sections apply, and then open the right document with your details already filled in.`
+            : `Hi ${first} — I'm your Case Assistant. Tell me what you're trying to draft or ask about, and I'll point you the right way.`,
         },
       ])
     }
@@ -235,6 +284,15 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
     router.push(`/new-draft?type=${type}`)
   }
 
+  // hrefs come from lib/assistant-actions.js, which refuses anything that
+  // is not a same-site path. Re-checked here anyway: this is the one
+  // place a model-influenced string becomes navigation.
+  function goToAction(href) {
+    if (typeof href !== 'string' || !href.startsWith('/')) return
+    setOpen(false)
+    router.push(href)
+  }
+
   function pushMessage(msg) {
     setMessages(prev => [...prev, msg])
   }
@@ -246,12 +304,21 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
     pushMessage({ role: 'user', text })
     setInput('')
 
-    // Try client-side intent detection first — instant, free, no API call.
-    const intent = detectIntent(text)
-    if (intent) {
-      pushMessage({ role: 'assistant', text: '', intent })
-      if (!open) setHasUnread(true)
-      return
+    // Keyword matching is the FREE tier's answer: instant, costs nothing,
+    // and lands the user on the right empty form.
+    //
+    // Pro deliberately skips it. Paying for reasoning and then being
+    // intercepted by a substring match is the worst of both — "rent
+    // agreement" would open a blank form when the same sentence, sent to
+    // the model, comes back with the applicable Act, the notice period
+    // that governs, and the form already filled from the facts given.
+    if (!isPro) {
+      const intent = detectIntent(text)
+      if (intent) {
+        pushMessage({ role: 'assistant', text: '', intent })
+        if (!open) setHasUnread(true)
+        return
+      }
     }
 
     if (!isPro) {
@@ -268,12 +335,20 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, { role: 'user', text }].map(m => ({ role: m.role, content: m.text })),
+          // Keyword-CTA turns carry no prose (`text` is ''); sending them
+          // as empty messages is rejected by some providers.
+          messages: [...messages, { role: 'user', text }]
+            .filter(m => m.text)
+            .map(m => ({ role: m.role, content: m.text })),
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || 'Assistant request failed')
-      pushMessage({ role: 'assistant', text: data.reply || "I couldn't come up with a response for that — try rephrasing?" })
+      pushMessage({
+        role: 'assistant',
+        text: data.reply || "I couldn't come up with a response for that — try rephrasing?",
+        action: data.action || null,
+      })
     } catch (err) {
       pushMessage({ role: 'assistant', text: `Something went wrong reaching the assistant: ${err.message}` })
     } finally {
@@ -361,6 +436,7 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
               <div key={i}>
                 {m.text && <MessageBubble role={m.role}>{m.text}</MessageBubble>}
                 {m.intent && <IntentCTA intent={m.intent} onNavigate={navigateToIntent} />}
+                {m.action && <ActionCTA action={m.action} onGo={goToAction} />}
               </div>
             ))}
 

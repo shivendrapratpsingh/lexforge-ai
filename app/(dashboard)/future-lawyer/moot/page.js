@@ -4,8 +4,9 @@ import DownloadButtons from '@/components/DownloadButtons'
 // /future-lawyer/moot — Moot Court Memorial Builder.
 // Paste a moot problem, pick a side, AI drafts a memorial outline.
 //
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import MootAuthorities from '@/components/MootAuthorities'
 
 const SIDES = [
@@ -21,6 +22,23 @@ export default function MootBuilderPage() {
   const [memorial, setMemorial] = useState('')
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState('')
+  const searchParams = useSearchParams()
+
+  // ?prefill={"problem":"…","side":"…"} — sent by the Case Assistant.
+  //
+  // Fills the form but does NOT press Build. A memorial takes minutes,
+  // and the problem text is long enough that it deserves a look before
+  // it is spent — unlike the search pages, where re-running costs
+  // nothing and the query is one line the user can see at a glance.
+  useEffect(() => {
+    const prefill = searchParams.get('prefill')
+    if (!prefill) return
+    try {
+      const data = JSON.parse(prefill)
+      if (typeof data?.problem === 'string') setProblem(data.problem)
+      if (SIDES.some(x => x.value === data?.side)) setSide(data.side)
+    } catch {}
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function generate() {
     if (problem.trim().length < 60) {

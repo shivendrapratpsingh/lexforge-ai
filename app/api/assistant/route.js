@@ -61,9 +61,13 @@ export async function POST(req) {
     }
 
     const { caseAssistant } = await import('@/lib/groq')
-    const reply = await caseAssistant(body.messages, draftContext)
+    // Returns { reply, action }. `action` is a validated in-app
+    // destination the widget offers as a button — never a redirect the
+    // server performs. See lib/assistant-actions.js for why: the
+    // assistant proposes, the user disposes.
+    const { reply, action } = await caseAssistant(body.messages, draftContext)
 
-    return NextResponse.json({ reply })
+    return NextResponse.json({ reply, action: action || null })
   } catch (err) {
     console.error('[POST /api/assistant]', err)
     const msg = process.env.NODE_ENV === 'development'

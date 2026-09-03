@@ -324,18 +324,43 @@ export default function NewDraftPage() {
       .catch(() => {})
   }, [])
 
-  // ── Pre-fill from parent draft (?from=draftId&type=DOC_TYPE&prefill={...}) ──
+  // ── Pre-fill (?from=draftId&type=DOC_TYPE&court=&language=&prefill={...}) ──
+  //
+  // Two senders: "Draft a follow-up" on an existing draft, and the Case
+  // Assistant, which hands over the particulars a user has just finished
+  // explaining in the chat panel so they never type them twice.
+  //
+  // EVERY VALUE IS CHECKED AGAINST THE REAL LIST before it is applied. A
+  // court or language that does not exist would otherwise sit selected in
+  // the UI and be rejected by the API only after the user has filled in
+  // the whole form.
   useEffect(() => {
     const type    = searchParams.get('type')
+    const court   = searchParams.get('court')
+    const lang    = searchParams.get('language')
     const prefill = searchParams.get('prefill')
-    if (type) {
+
+    if (type && DOCUMENT_TYPES.some(t => t.value === type)) {
       setSelectedType(type)
       setStep(2)
     }
+    if (court && ALL_COURTS.some(c => c.value === court)) setSelectedCourt(court)
+    if (lang  && LANGUAGES.some(l => l.value === lang))   setSelectedLang(lang)
+
     if (prefill) {
       try {
         const data = JSON.parse(prefill)
-        if (data && typeof data === 'object') setFormData(data)
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          // Keep only fields this document actually has. The assistant
+          // works from the user's words, so it can offer a field name
+          // that belongs to a neighbouring document type; those would
+          // otherwise ride along invisibly into the API payload.
+          const known = Object.hasOwn(DOC_FIELDS, type) ? DOC_FIELDS[type] : null
+          const allowed = Array.isArray(known) ? new Set(known.map(f => f.name)) : null
+          setFormData(allowed
+            ? Object.fromEntries(Object.entries(data).filter(([k]) => allowed.has(k)))
+            : data)
+        }
       } catch {}
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

@@ -4,9 +4,15 @@ import ActSearch from '@/components/ActSearch'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ActsPage() {
+// `searchParams` is a Promise in Next 16.
+// ?q= is set by the Case Assistant when it decides the answer to
+// somebody's problem is a statute rather than a document.
+export default async function ActsPage({ searchParams }) {
   const session = await auth()
   if (!session) redirect('/login')
+
+  const sp = await searchParams
+  const initialQuery = typeof sp?.q === 'string' ? sp.q : ''
 
   const { hasProAccess } = await import('@/lib/admin')
   const isPro = await hasProAccess(session.user?.email, session.user?.tier).catch(() => false)
@@ -21,7 +27,7 @@ export default async function ActsPage() {
           open the official text, and see which document you would actually file.
         </div>
       </div>
-      <ActSearch isPro={isPro} />
+      <ActSearch isPro={isPro} initialQuery={initialQuery} />
     </div>
   )
 }

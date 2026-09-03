@@ -7,11 +7,15 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { getFollowUp, buildFollowUpCourtDate } from '@/lib/followup'
 import { kanoonConfigured } from '@/lib/legal-data/config'
 
-// AI generation can take 20–40s with 70B models. Vercel's Hobby plan caps
-// serverless functions at 10s by default, which silently kills the request
-// and the user sees no output. Raise to 60s (Hobby max). Pro plans allow up
-// to 300s — bump this if you ever need it.
-export const maxDuration = 60
+// Measured, not guessed: a full filing takes 98-232 seconds. At the old
+// ceiling of 60 the function was killed mid-generation and the user got
+// a timeout rather than a document - every time, for the longest and
+// most valuable filings. 300 is the Vercel Pro maximum.
+//
+// THIS REQUIRES THE VERCEL PRO PLAN. On Hobby the platform caps the
+// function at 60s regardless of what is written here, so on Hobby this
+// line is inert and long drafts will still fail.
+export const maxDuration = 300
 export const runtime = 'nodejs'
 
 // Strip junk placeholders ("NA", "no", "don't know", "-", etc.) from templateData

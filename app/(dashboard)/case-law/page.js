@@ -4,9 +4,14 @@ import CaseLawSearch from '@/components/CaseLawSearch'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CaseLawPage() {
+// `searchParams` is a Promise in Next 16.
+// ?q= is set by the Case Assistant when the user wants precedent.
+export default async function CaseLawPage({ searchParams }) {
   const session = await auth()
   if (!session) redirect('/login')
+
+  const sp = await searchParams
+  const initialQuery = typeof sp?.q === 'string' ? sp.q : ''
 
   return (
     <div>
@@ -18,7 +23,7 @@ export default async function CaseLawPage() {
           status by CNR; and new Acts checked every morning.
         </div>
       </div>
-      <CaseLawSearch />
+      <CaseLawSearch initialQuery={initialQuery} />
     </div>
   )
 }

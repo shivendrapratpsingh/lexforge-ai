@@ -1,4 +1,5 @@
 'use client'
+import { useSearchParams } from 'next/navigation'
 import DownloadButtons from '@/components/DownloadButtons'
 //
 // /study — student section of LexForge AI.
@@ -9,7 +10,7 @@ import DownloadButtons from '@/components/DownloadButtons'
 // This is intentionally a single client component so the entire study
 // experience renders without a full page transition.
 //
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { LANDMARK_JUDGMENTS, LEGAL_PRINCIPLES } from '@/lib/study-content'
 
 const TABS = [
@@ -20,7 +21,24 @@ const TABS = [
 ]
 
 export default function StudyPage() {
+  const searchParams = useSearchParams()
+
+  // ?topic=&tab=tutor|quiz — sent by the Case Assistant when the user is
+  // revising rather than litigating. Read once, on mount; re-reading
+  // would take the tab away from them mid-session.
   const [tab, setTab] = useState('judgments')
+  const [seedTopic, setSeedTopic] = useState('')
+
+  useEffect(() => {
+    const t = searchParams.get('tab')
+    if (t && TABS.some(x => x.key === t)) setTab(t)
+    const topic = searchParams.get('topic')
+    if (topic) {
+      setSeedTopic(topic)
+      // A topic with no tab named is a question, not a quiz request.
+      if (!t) setTab('tutor')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -69,8 +87,8 @@ export default function StudyPage() {
 
       {tab === 'judgments'  && <JudgmentsTab />}
       {tab === 'principles' && <PrinciplesTab />}
-      {tab === 'tutor'      && <TutorTab />}
-      {tab === 'quiz'       && <QuizTab />}
+      {tab === 'tutor'      && <TutorTab key={seedTopic} seed={seedTopic} />}
+      {tab === 'quiz'       && <QuizTab key={seedTopic} seed={seedTopic} />}
     </div>
   )
 }
@@ -215,8 +233,8 @@ function PrinciplesTab() {
 }
 
 // ─── AI Tutor tab ────────────────────────────────────────────────
-function TutorTab() {
-  const [question, setQuestion] = useState('')
+function TutorTab({ seed = '' }) {
+  const [question, setQuestion] = useState(seed)
   const [loading, setLoading]   = useState(false)
   const [history, setHistory]   = useState([])  // [{ q, a }]
   const [error, setError]       = useState('')
@@ -330,8 +348,8 @@ function quizText(topic, mode, items) {
 }
 
 // ─── Quiz tab ────────────────────────────────────────────────────
-function QuizTab() {
-  const [topic, setTopic]   = useState('')
+function QuizTab({ seed = '' }) {
+  const [topic, setTopic]   = useState(seed)
   const [count, setCount]   = useState(5)
   const [mode, setMode]     = useState('mcq')          // 'mcq' | 'flashcards'
   const [items, setItems]   = useState([])

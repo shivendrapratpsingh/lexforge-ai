@@ -35,7 +35,8 @@
     "submit:indexnow": "node scripts/submit-indexnow.mjs",
     "verify:trial": "dotenv -e .env.local -- node scripts/verify-trial.mjs",
     "verify:papers": "dotenv -e .env.local -- node scripts/verify-papers.mjs",
-    "verify:grounding": "dotenv -e .env.local -- node scripts/verify-grounding.mjs"
+    "verify:grounding": "dotenv -e .env.local -- node scripts/verify-grounding.mjs",
+    "test:assistant": "node scripts/test-assistant-actions.mjs && node scripts/test-assistant-parser.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/noto-serif": "^0.4.2",

@@ -7,15 +7,20 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { getFollowUp, buildFollowUpCourtDate } from '@/lib/followup'
 import { kanoonConfigured } from '@/lib/legal-data/config'
 
-// Measured, not guessed: a full filing takes 98-232 seconds. At the old
-// ceiling of 60 the function was killed mid-generation and the user got
-// a timeout rather than a document - every time, for the longest and
-// most valuable filings. 300 is the Vercel Pro maximum.
+// AI_TIMEOUT_ROUTE - one of nine routes whose ceiling has to move
+// together. Change them with `npm run timeouts:pro` / `:hobby`, not by
+// hand, so none is left behind.
 //
-// THIS REQUIRES THE VERCEL PRO PLAN. On Hobby the platform caps the
-// function at 60s regardless of what is written here, so on Hobby this
-// line is inert and long drafts will still fail.
-export const maxDuration = 300
+// Measured, not guessed: a full filing takes 98-232 seconds. At 60 the
+// function is killed mid-generation and the user gets a timeout rather
+// than a document - every time, for the longest and most valuable
+// filings. 300 is the Vercel Pro maximum and the actual fix.
+//
+// Held at 60 because this project is on Hobby, where 60 IS the platform
+// ceiling. A higher number here buys nothing on Hobby and risks the
+// deployment being rejected outright for exceeding the plan limit - so
+// it stays at the plan limit until the plan changes.
+export const maxDuration = 60
 export const runtime = 'nodejs'
 
 // Strip junk placeholders ("NA", "no", "don't know", "-", etc.) from templateData

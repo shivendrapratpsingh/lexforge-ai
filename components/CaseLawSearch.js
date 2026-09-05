@@ -231,10 +231,25 @@ function Judgments({ status, initialQuery = '' }) {
 // Kanoon document call, so loading them for a page of ten results would
 // cost about two rupees per search for something most people never
 // open.
+// How a passage is flagged. The colour describes THE WORDS FOUND in a
+// later judgment, never the standing of the case — which is why every
+// label is about language rather than status. "Overruled" is a
+// conclusion; "language of doubt" is an observation, and only the
+// second is something we are in a position to make.
+const SIGNAL = {
+  negative:  { label: 'Language of doubt or overruling', colour: '#D98A80', bg: 'rgba(200,80,70,0.09)' },
+  narrowing: { label: 'Distinguished or narrowed',       colour: '#D4A017', bg: 'rgba(212,160,23,0.08)' },
+  positive:  { label: 'Followed or approved',            colour: '#7FB88A', bg: 'rgba(90,170,110,0.08)' },
+  neutral:   { label: 'Mentioned',                       colour: '#8A8A8A', bg: 'transparent' },
+}
+
 function Result({ d }) {
   const [cites, setCites] = useState(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [treat, setTreat] = useState(null)
+  const [treatBusy, setTreatBusy] = useState(false)
+  const [treatErr, setTreatErr] = useState('')
 
   async function load() {
     if (cites || busy) return
@@ -245,6 +260,19 @@ function Result({ d }) {
       if (!r.ok) throw new Error(j.error || 'Could not load later citations.')
       setCites(j)
     } catch (e) { setErr(e.message) } finally { setBusy(false) }
+  }
+
+  // Separate from the count above, and on its own button, because it
+  // costs more: one document call plus a fragment per judgment read.
+  async function loadTreatment() {
+    if (treat || treatBusy) return
+    setTreatBusy(true); setTreatErr('')
+    try {
+      const r = await fetch(`/api/legal/treatment?docId=${encodeURIComponent(d.docId)}`)
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Could not check how this has been treated.')
+      setTreat(j)
+    } catch (e) { setTreatErr(e.message) } finally { setTreatBusy(false) }
   }
 
   const total = cites ? cites.apex.length + cites.others.length : 0
@@ -301,6 +329,69 @@ function Result({ d }) {
               inference, and a student who draws it loses a moot. */}
           <div style={{ marginTop: 10, fontSize: 11, color: '#6A6A6A', lineHeight: 1.55 }}>
             {cites.caveat}
+          </div>
+
+          {total > 0 && !treat && (
+            <button type="button" onClick={loadTreatment} disabled={treatBusy}
+              style={{
+                marginTop: 11, padding: '5px 11px', borderRadius: 6,
+                border: '1px solid #2A2A2A', background: 'transparent',
+                color: treatBusy ? '#5A5A5A' : '#8A7748', fontSize: 11.5,
+                fontFamily: 'inherit', cursor: treatBusy ? 'wait' : 'pointer',
+              }}>
+              {treatBusy ? 'Reading what they said…' : 'See what those courts said about it'}
+            </button>
+          )}
+          {treatErr && <div style={{ marginTop: 8, fontSize: 11.5, color: '#C08A82' }}>{treatErr}</div>}
+        </div>
+      )}
+
+      {treat && (
+        <div style={{ marginTop: 10, padding: '11px 13px', background: '#101010', border: '1px solid #1F1F1F', borderRadius: 8 }}>
+          <div style={{ fontSize: 12, color: '#C9BFA4', fontWeight: 600 }}>
+            Read {treat.examined} of the judgments that cite this
+            {treat.counts.negative > 0 && (
+              <span style={{ color: SIGNAL.negative.colour }}>
+                {' '}· {treat.counts.negative} use language of doubt
+              </span>
+            )}
+          </div>
+
+          {treat.passages.length === 0 ? (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#8A8A8A', lineHeight: 1.55 }}>
+              None of them contained a passage naming this case that we could
+              retrieve. That is not evidence either way — open the judgments and read them.
+            </div>
+          ) : (
+            <div style={{ marginTop: 9 }}>
+              {treat.passages.map(p => {
+                const s = SIGNAL[p.signal] || SIGNAL.neutral
+                return (
+                  <div key={p.docId} style={{
+                    padding: '9px 11px', marginBottom: 8, borderRadius: 6,
+                    background: s.bg, borderLeft: `2px solid ${s.colour}`,
+                  }}>
+                    <div style={{ fontSize: 10.5, color: s.colour, fontWeight: 700, letterSpacing: '.4px' }}>
+                      {s.label}
+                    </div>
+                    <a href={p.sourceUrl} target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'block', fontSize: 12.5, color: '#C9BFA4', textDecoration: 'none', marginTop: 3, lineHeight: 1.4 }}>
+                      {p.apex && <span style={{ color: '#D4A017', fontWeight: 600 }}>SC · </span>}
+                      {p.title}
+                    </a>
+                    {/* The quote is the point. A label without the words
+                        it came from is the classification we cannot make. */}
+                    <div style={{ fontSize: 12, color: '#9A9A9A', marginTop: 6, lineHeight: 1.6, fontStyle: 'italic' }}>
+                      “{p.passage}”
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <div style={{ marginTop: 8, fontSize: 11, color: '#6A6A6A', lineHeight: 1.55 }}>
+            {treat.caveat}
           </div>
         </div>
       )}

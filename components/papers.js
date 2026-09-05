@@ -337,6 +337,20 @@ export function RateCardBody({ seats = 0, to = '', company }) {
             <td style={num}>{money(I.yearlyPerSeatPerMonth)} per month</td>
             <td style={num}>{money(I.yearlyPerSeatTotal)}</td>
           </tr>
+          {/* Printed WITH its limits. A discount whose boundary is left
+              unstated is not a programme, it is just a lower price, and
+              it becomes the number the next college expects. */}
+          <tr>
+            <td style={cell}>
+              <strong>Founding college</strong>
+              <div style={{ color: '#666', fontSize: 10.5 }}>
+                First year only, for the first colleges to adopt. Reverts to the
+                standard annual rate on renewal.
+              </div>
+            </td>
+            <td style={num}>{money(I.foundingPerSeat)} per month</td>
+            <td style={num}>{money(I.foundingPerSeatTotal)}</td>
+          </tr>
         </tbody>
       </table>
 

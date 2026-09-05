@@ -213,19 +213,98 @@ function Judgments({ status, initialQuery = '' }) {
               distinctive ones, e.g. <b style={{ color: '#C9BFA4' }}>section 138 rebuttal presumption</b>.
             </div>
           )}
-          {res.results.map(d => (
-            <a key={d.docId} href={d.sourceUrl} target="_blank" rel="noopener noreferrer"
-              style={{ display: 'block', padding: '13px 0', borderBottom: '1px solid #1F1F1F', textDecoration: 'none' }}>
-              <div style={{ fontFamily: 'Georgia, serif', fontSize: 14.5, color: '#F0E4C0', lineHeight: 1.4 }}>{d.title}</div>
-              <div style={{ fontSize: 11.5, color: '#8A7748', marginTop: 4 }}>
-                {[d.court, d.date, d.citation].filter(Boolean).join(' · ')}
-              </div>
-              {d.snippet && <div style={{ fontSize: 12.5, color: '#8A8A8A', marginTop: 6, lineHeight: 1.55 }}>{d.snippet}</div>}
-            </a>
-          ))}
+          {res.results.map(d => <Result key={d.docId} d={d} />)}
         </div>
       )}
     </>
+  )
+}
+
+
+// One judgment in the result list, and the later cases that cite it.
+//
+// The card used to be a single <a> wrapping everything, which left
+// nowhere to put a control — a button cannot sit inside an anchor. The
+// link is now on the title alone.
+//
+// Later citations are fetched ONLY when asked for. Each one is a billed
+// Kanoon document call, so loading them for a page of ten results would
+// cost about two rupees per search for something most people never
+// open.
+function Result({ d }) {
+  const [cites, setCites] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function load() {
+    if (cites || busy) return
+    setBusy(true); setErr('')
+    try {
+      const r = await fetch(`/api/legal/citedby?docId=${encodeURIComponent(d.docId)}`)
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Could not load later citations.')
+      setCites(j)
+    } catch (e) { setErr(e.message) } finally { setBusy(false) }
+  }
+
+  const total = cites ? cites.apex.length + cites.others.length : 0
+
+  return (
+    <div style={{ padding: '13px 0', borderBottom: '1px solid #1F1F1F' }}>
+      <a href={d.sourceUrl} target="_blank" rel="noopener noreferrer"
+        style={{ fontFamily: 'Georgia, serif', fontSize: 14.5, color: '#F0E4C0', lineHeight: 1.4, textDecoration: 'none', display: 'block' }}>
+        {d.title}
+      </a>
+      <div style={{ fontSize: 11.5, color: '#8A7748', marginTop: 4 }}>
+        {[d.court, d.date, d.citation].filter(Boolean).join(' · ')}
+      </div>
+      {d.snippet && <div style={{ fontSize: 12.5, color: '#8A8A8A', marginTop: 6, lineHeight: 1.55 }}>{d.snippet}</div>}
+
+      {!cites && (
+        <button type="button" onClick={load} disabled={busy}
+          style={{
+            marginTop: 9, padding: '4px 10px', borderRadius: 6,
+            border: '1px solid #2A2A2A', background: 'transparent',
+            color: busy ? '#5A5A5A' : '#8A7748', fontSize: 11.5,
+            fontFamily: 'inherit', cursor: busy ? 'wait' : 'pointer',
+          }}>
+          {busy ? 'Checking…' : 'Later citations'}
+        </button>
+      )}
+
+      {err && <div style={{ marginTop: 8, fontSize: 11.5, color: '#C08A82' }}>{err}</div>}
+
+      {cites && (
+        <div style={{ marginTop: 10, padding: '11px 13px', background: '#101010', border: '1px solid #1F1F1F', borderRadius: 8 }}>
+          <div style={{ fontSize: 12, color: '#C9BFA4', fontWeight: 600 }}>
+            {total === 0
+              ? 'No later judgment in the index cites this one.'
+              : `Cited in ${total}${cites.capped ? '+' : ''} later judgment${total === 1 ? '' : 's'}` +
+                (cites.apex.length ? ` · ${cites.apex.length} from the Supreme Court` : '')}
+          </div>
+
+          {total > 0 && (
+            <ul style={{ margin: '9px 0 0', padding: 0, listStyle: 'none' }}>
+              {[...cites.apex, ...cites.others].slice(0, 8).map(c => (
+                <li key={c.docId} style={{ padding: '5px 0', borderTop: '1px solid #1A1A1A' }}>
+                  <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 12.5, color: '#9A9A9A', textDecoration: 'none', lineHeight: 1.45 }}>
+                    {c.apex && <span style={{ color: '#D4A017', fontWeight: 600 }}>SC · </span>}
+                    {c.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Printed, not implied. The count invites exactly the wrong
+              inference, and a student who draws it loses a moot. */}
+          <div style={{ marginTop: 10, fontSize: 11, color: '#6A6A6A', lineHeight: 1.55 }}>
+            {cites.caveat}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

@@ -42,7 +42,8 @@
     "timeouts:hobby": "node scripts/set-ai-timeouts.mjs 60",
     "test:closing": "node scripts/test-closing-markers.mjs",
     "pdf:overview": "python scripts/build-overview-pdf.py",
-    "test:treatment": "node scripts/test-treatment.mjs"
+    "test:treatment": "node scripts/test-treatment.mjs",
+    "verify:tools": "dotenv -e .env.local -- node scripts/verify-tools.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/noto-serif": "^0.4.2",

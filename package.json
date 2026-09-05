@@ -36,10 +36,11 @@
     "verify:trial": "dotenv -e .env.local -- node scripts/verify-trial.mjs",
     "verify:papers": "dotenv -e .env.local -- node scripts/verify-papers.mjs",
     "verify:grounding": "dotenv -e .env.local -- node scripts/verify-grounding.mjs",
-    "test:assistant": "node scripts/test-assistant-actions.mjs && node scripts/test-assistant-parser.mjs",
+    "test:assistant": "node scripts/test-assistant-actions.mjs && node scripts/test-assistant-parser.mjs && node scripts/test-closing-markers.mjs",
     "test:assistant:live": "dotenv -e .env.local -- node scripts/test-assistant-live.mjs",
     "timeouts:pro": "node scripts/set-ai-timeouts.mjs 300",
-    "timeouts:hobby": "node scripts/set-ai-timeouts.mjs 60"
+    "timeouts:hobby": "node scripts/set-ai-timeouts.mjs 60",
+    "test:closing": "node scripts/test-closing-markers.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/noto-serif": "^0.4.2",

@@ -22,7 +22,7 @@ const check = (name, got, want) => {
 check('configured with keys', b.configured(), true)
 check('test key is not live', b.IS_LIVE, false)
 check('price honours env override', b.PLANS.monthly.amountPaise, 39900)
-check('price falls back when env absent', b.PLANS.yearly.amountPaise, 2400000)  // ₹24,000
+check('price falls back when env absent', b.PLANS.yearly.amountPaise, 301200)   // ₹3,012 = ₹251 × 12
 check('there is no separate student plan', b.PLANS.student, undefined)
 check('unknown plan is refused', b.planFor('free-forever'), null)
 

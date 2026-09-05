@@ -1,6 +1,7 @@
 'use client'
 import { useSearchParams } from 'next/navigation'
 import DownloadButtons from '@/components/DownloadButtons'
+import FolderUploader from '@/components/FolderUploader'
 //
 // /study — student section of LexForge AI.
 // Four tabs: Landmark Judgments • Legal Principles • AI Tutor • Quiz.
@@ -105,6 +106,197 @@ const labelStyle = { fontSize: 10, color: '#D4A017', fontWeight: 800, letterSpac
 const subtleText = { color: '#7A7A7A', fontSize: 13, lineHeight: 1.55 }
 const bodyText   = { color: '#D0D0D0', fontSize: 14, lineHeight: 1.6 }
 
+// ─── Comment on a judgment the student brings in ─────────────────
+//
+//  The 28 judgments below this are the ones everybody already has a
+//  brief for. The case a student is actually set for a comment is
+//  usually not one of them — it is whatever their professor handed
+//  out on Monday. That case is the one they need help with, and until
+//  now the app had nothing to say about it.
+//
+//  Upload it, and it is read and commented on in the same shape as the
+//  landmark cases, with the sections a comment needs that a summary
+//  does not: how the court reasoned, what was obiter, who dissented,
+//  and what the judgment can fairly be criticised for.
+function YourCaseComment() {
+  const [text, setText] = useState('')
+  const [fileNote, setFileNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [result, setResult] = useState(null)
+  const [sampled, setSampled] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  async function run() {
+    if (!text.trim() || busy) return
+    setBusy(true); setErr(''); setResult(null)
+    try {
+      const r = await fetch('/api/study/case-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || 'Could not produce a case comment.')
+      setResult(j.comment)
+      setSampled(Boolean(j.sampled))
+    } catch (e) { setErr(e.message) } finally { setBusy(false) }
+  }
+
+  function reset() {
+    setResult(null); setText(''); setFileNote(''); setErr('')
+  }
+
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0
+
+  return (
+    <div style={{ ...cardStyle, borderColor: 'rgba(212,160,23,0.28)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+        <div>
+          <div style={labelStyle}>Your own case</div>
+          <h3 style={{ color: '#F0F0F0', margin: '4px 0 6px', fontSize: 17, fontWeight: 700 }}>
+            Comment on a judgment you have been set
+          </h3>
+          <div style={{ ...subtleText, fontSize: 12.5, maxWidth: 620 }}>
+            Upload the judgment — PDF or Word — or paste its text. You get back the
+            same sections as the cases below, plus the reasoning, the obiter, the
+            dissent and a critique.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          style={{
+            padding: '8px 14px', flexShrink: 0,
+            background: open ? '#D4A017' : 'transparent',
+            color: open ? '#0D0D0D' : '#D4A017',
+            border: '1px solid rgba(212,160,23,0.4)',
+            borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          {open ? 'Close' : 'Upload a case'}
+        </button>
+      </div>
+
+      {open && !result && (
+        <div style={{ marginTop: 16, paddingTop: 15, borderTop: '1px solid #1C1C1C' }}>
+          <FolderUploader
+            hint="Choose the judgment file — a single PDF or Word file is best."
+            onText={(combined, files) => {
+              setText(combined || '')
+              const n = Array.isArray(files) ? files.filter(f => f?.name).length : 0
+              setFileNote(n ? `${n} file${n === 1 ? '' : 's'} read` : '')
+              setErr('')
+            }}
+          />
+
+          <div style={{ ...subtleText, fontSize: 11.5, margin: '14px 0 6px' }}>
+            …or paste the judgment text here
+          </div>
+          <textarea
+            value={text}
+            onChange={e => { setText(e.target.value); setFileNote('') }}
+            rows={5}
+            placeholder="Paste the full text of the judgment…"
+            style={{
+              width: '100%', boxSizing: 'border-box', padding: '11px 13px',
+              background: '#0A0A0A', border: '1px solid #1F1F1F', borderRadius: 9,
+              color: '#E0E0E0', fontSize: 12.5, fontFamily: 'inherit',
+              resize: 'vertical', outline: 'none',
+            }}
+          />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={run}
+              disabled={busy || !text.trim()}
+              style={{
+                padding: '10px 18px', borderRadius: 9, border: 'none',
+                background: busy || !text.trim() ? '#2A2A2A' : '#D4A017',
+                color: busy || !text.trim() ? '#6A6A6A' : '#0D0D0D',
+                fontWeight: 800, fontSize: 13,
+                cursor: busy || !text.trim() ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {busy ? 'Reading the judgment…' : 'Write the case comment'}
+            </button>
+            <span style={{ ...subtleText, fontSize: 11.5 }}>
+              {fileNote && fileNote + ' · '}
+              {words ? words.toLocaleString('en-IN') + ' words' : 'nothing loaded yet'}
+            </span>
+          </div>
+
+          {busy && (
+            <div style={{ ...subtleText, fontSize: 11.5, marginTop: 10, lineHeight: 1.6 }}>
+              A full judgment takes a while to read properly — usually under a
+              minute. Leave this open.
+            </div>
+          )}
+          {err && (
+            <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8,
+              background: 'rgba(200,80,70,0.08)', border: '1px solid rgba(200,80,70,0.3)',
+              color: '#E0A69E', fontSize: 12.5, lineHeight: 1.55 }}>
+              {err}
+            </div>
+          )}
+        </div>
+      )}
+
+      {result && (
+        <div style={{ marginTop: 16, paddingTop: 15, borderTop: '1px solid #1C1C1C' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
+            <div>
+              {result.area && <div style={labelStyle}>{result.area}</div>}
+              <h3 style={{ color: '#F0F0F0', margin: '4px 0 6px', fontSize: 17, fontWeight: 700 }}>{result.name}</h3>
+              <div style={{ ...subtleText, fontSize: 12 }}>
+                {[result.year, result.court].filter(Boolean).join(' • ')}
+              </div>
+              {result.citation && (
+                <div style={{ ...subtleText, fontSize: 12, color: '#9A9A9A', marginTop: 4 }}>📑 {result.citation}</div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={reset}
+              style={{
+                padding: '8px 14px', flexShrink: 0, background: 'transparent',
+                color: '#D4A017', border: '1px solid rgba(212,160,23,0.4)',
+                borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              Another case
+            </button>
+          </div>
+
+          {/* Order follows how a comment is actually written: what
+              happened, what was asked, what was decided, what binds,
+              and only then the analysis. */}
+          <Field label="Facts"            body={result.facts} />
+          <Field label="Issues"           body={result.issue} />
+          <Field label="Holding"          body={result.holding} />
+          <Field label="Ratio Decidendi"  body={result.ratio} highlight />
+          <Field label="How the court reasoned" body={result.reasoning} />
+          <Field label="Obiter Dicta"     body={result.obiter} />
+          <Field label="Dissent"          body={result.dissent} />
+          <Field label="Authorities relied on" body={result.authorities} />
+          <Field label="Critique"         body={result.critique} />
+          <Field label="Why it matters"   body={result.importance} />
+          <Field label="In the exam"      body={result.examFocus} />
+
+          <div style={{ ...subtleText, fontSize: 11, marginTop: 14, paddingTop: 12,
+            borderTop: '1px solid #1C1C1C', lineHeight: 1.6 }}>
+            Written only from the judgment you uploaded. Where the text did not say
+            something, it says so rather than filling the gap.
+            {sampled && ' Free accounts read the judgment in samples rather than in full, so long judgments are covered less closely — Pro reads far more of it.'}
+            {' '}Read the judgment yourself before you rely on this in a viva.
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Judgments tab ───────────────────────────────────────────────
 function JudgmentsTab() {
   const [q, setQ] = useState('')
@@ -122,6 +314,7 @@ function JudgmentsTab() {
 
   return (
     <div>
+      <YourCaseComment />
       <SearchBox value={q} onChange={setQ} placeholder="Search by case name, area, doctrine, fact pattern…" />
       <div style={{ ...subtleText, marginBottom: 12 }}>
         {filtered.length} of {LANDMARK_JUDGMENTS.length} judgments
@@ -521,12 +714,18 @@ function SearchBox({ value, onChange, placeholder }) {
 }
 
 function Field({ label, body, highlight }) {
+  // A generated comment can legitimately omit a section — an unanimous
+  // bench has no dissent. A label with nothing under it reads as the
+  // page having failed, so the whole field goes.
+  if (!body || !String(body).trim()) return null
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={labelStyle}>{label}</div>
       <div style={{
         ...bodyText,
         marginTop: 4,
+        // These fields now carry several paragraphs, not one line.
+        whiteSpace: 'pre-wrap',
         ...(highlight ? { padding: '8px 12px', background: 'rgba(212,160,23,0.06)', borderLeft: '2px solid #D4A017', borderRadius: 4 } : {}),
       }}>{body}</div>
     </div>

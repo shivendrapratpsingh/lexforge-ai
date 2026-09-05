@@ -75,3 +75,4 @@ next-env.d.ts
 .env.local.bak-*
 .env*.bak
 test-output/
+LexForge-AI-Overview.pdf

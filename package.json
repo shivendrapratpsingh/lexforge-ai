@@ -40,7 +40,8 @@
     "test:assistant:live": "dotenv -e .env.local -- node scripts/test-assistant-live.mjs",
     "timeouts:pro": "node scripts/set-ai-timeouts.mjs 300",
     "timeouts:hobby": "node scripts/set-ai-timeouts.mjs 60",
-    "test:closing": "node scripts/test-closing-markers.mjs"
+    "test:closing": "node scripts/test-closing-markers.mjs",
+    "pdf:overview": "python scripts/build-overview-pdf.py"
   },
   "dependencies": {
     "@expo-google-fonts/noto-serif": "^0.4.2",

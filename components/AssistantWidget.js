@@ -267,7 +267,7 @@ const FREE_PICKS = [
 const OPENING = {
   student: {
     line: (n) => `Hi ${n} — what are you working on?`,
-    body: 'Tell me in your own words. A document for your drafting file, a moot problem, a judgment you have to comment on, or a topic you are revising — I will answer, then open the right page with your details already filled in.',
+    body: 'A document for your drafting file, a moot problem, a judgment to comment on, a topic you are revising. Ask in your own words and I will open the right page with your details already filled in.',
     picks: [
       ['Draft for my file', 'I need to draft a legal notice for my DPC file'],
       ['Moot problem', 'I have a moot problem on the right to privacy and I am for the petitioner'],
@@ -277,7 +277,7 @@ const OPENING = {
   },
   faculty: {
     line: (n) => `Hi ${n} — what can I set up for you?`,
-    body: 'A model answer for an exercise you are setting, a quiz on any topic, a judgment read and commented on, or a check on how a case has been treated since. Ask in plain words.',
+    body: 'A model answer for an exercise you are setting, a quiz on any topic, a judgment read and commented on, or a check on how a case has been treated since.',
     picks: [
       ['Model answer', 'Draft a model demand notice under Section 138 NI Act for a cheque of Rs 4,50,000'],
       ['Set a quiz', 'Quiz on the doctrine of basic structure, 10 questions'],
@@ -287,7 +287,7 @@ const OPENING = {
   },
   advocate: {
     line: (n) => `Hi ${n} — what has happened?`,
-    body: 'Describe the matter in your own words. I will tell you which Act and sections apply, and then open the right document with the particulars you have just given me already filled in.',
+    body: 'Describe the matter in your own words. I will tell you which Act and sections apply, then open the right document with those particulars already filled in.',
     picks: [
       ['A cheque bounced', 'A cheque for Rs 4,50,000 was returned for insufficient funds last week'],
       ['I received an order', 'I received a court order yesterday and need to know what it requires'],
@@ -392,9 +392,16 @@ export default function AssistantWidget({ isPro = false, userName = 'friend', au
   }, [open])
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    if (!scrollRef.current) return
+    // Not on the opening. Scrolling to the bottom of a panel holding
+    // only the greeting cuts "Hi Rakesh - what has happened?" off the
+    // top, which is the one line that has to be read. Follow the
+    // conversation only once there is one.
+    if (messages.length <= 1 && !loading) {
+      scrollRef.current.scrollTop = 0
+      return
     }
+    scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [messages, loading])
 
   useEffect(() => {
@@ -499,7 +506,9 @@ export default function AssistantWidget({ isPro = false, userName = 'friend', au
             zIndex: 60,
             width: 360,
             maxWidth: 'calc(100vw - 32px)',
-            height: 520,
+            // 520 cut the fourth starter off on the opening. maxHeight
+            // below still keeps it inside a short window.
+            height: 566,
             maxHeight: 'calc(100vh - 100px)',
             display: 'flex',
             flexDirection: 'column',
@@ -556,8 +565,6 @@ export default function AssistantWidget({ isPro = false, userName = 'friend', au
               padding: '14px 14px 6px',
             }}
           >
-            {messages.length <= 1 && <StarterPicks picks={isPro ? opening.picks : FREE_PICKS} onPick={send} />}
-
             {messages.map((m, i) => (
               <div key={i}>
                 {m.text && <MessageBubble role={m.role}>{m.text}</MessageBubble>}
@@ -570,6 +577,16 @@ export default function AssistantWidget({ isPro = false, userName = 'friend', au
               <MessageBubble role="assistant">
                 <span style={{ opacity: 0.6 }}>Thinking…</span>
               </MessageBubble>
+            )}
+
+            {/* BELOW the greeting, not above it. Above, they read as a
+                toolbar bolted to the top of a chat; below, they read as
+                the answer to the question just asked. And the panel
+                scrolls to the bottom on every new message, so anything
+                sitting above the first message is scrolled out of sight
+                at the exact moment it is meant to be seen. */}
+            {messages.length <= 1 && !loading && (
+              <StarterPicks picks={isPro ? opening.picks : FREE_PICKS} onPick={send} />
             )}
           </div>
 

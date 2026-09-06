@@ -18,6 +18,15 @@ export default async function DashboardLayout({ children }) {
   // college confirms who the co-ordinator is — it must not be something
   // a stale token can carry.
   let faculty = false
+  // Who the assistant is greeting. A student wants help with a drafting
+  // file and a moot; a co-ordinator wants a model answer and a quiz; an
+  // advocate wants a notice sent and an order read. Same assistant,
+  // different first sentence.
+  //
+  // `role` defaults to "student" for everyone, so it cannot tell a
+  // practising advocate from a law student on its own. Membership of an
+  // institution is what actually separates them.
+  let audience = 'advocate'
   try {
     const { prisma } = await import('@/lib/prisma')
     const me = await prisma.user.findUnique({
@@ -25,6 +34,8 @@ export default async function DashboardLayout({ children }) {
       select: { role: true, institutionId: true, mustOnboard: true },
     })
     faculty = me?.role === 'faculty' && Boolean(me.institutionId)
+    if (faculty) audience = 'faculty'
+    else if (me?.institutionId) audience = 'student'
 
     // An account created from a college's spreadsheet still has the
     // password the college chose and no security question. Neither is
@@ -144,6 +155,7 @@ export default async function DashboardLayout({ children }) {
       <AssistantWidget
         isPro={pro || admin}
         userName={session.user?.name || (session.user?.email?.split('@')[0]) || 'friend'}
+        audience={audience}
       />
     </div>
   )

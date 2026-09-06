@@ -56,16 +56,33 @@ function prettyName(name) {
   return name.split(' ')[0]
 }
 
-const QUICK_ICONS = {
-  'legal-notice': '📩',
-  affidavit: '📜',
-  rti: '📄',
-  'cheque-bounce': '💸',
-  bail: '⚖️',
-  writ: '🏛️',
+// The mark. Scales of justice drawn as one continuous line, because a
+// speech bubble said "chat widget" and this is the only thing in the
+// product that will answer a question about the law.
+//
+// Stroked rather than filled, and built from four shapes, so it stays
+// legible at the 24px it actually renders at — a detailed emblem turns
+// to mud at that size. Takes currentColor so one mark serves the gold
+// button and the dark panel header without a second copy.
+function Mark({ size = 24, strokeWidth = 1.7 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {/* the upright and the beam */}
+      <path d="M12 3.6v15.2" />
+      <path d="M4.6 7.1h14.8" />
+      {/* the knot where the pans hang */}
+      <circle cx="12" cy="7.1" r="1.05" fill="currentColor" stroke="none" />
+      {/* the two pans, as shallow bowls on their cords */}
+      <path d="M6.9 7.4 4.3 12.4h5.2L6.9 7.4Z" />
+      <path d="M17.1 7.4l-2.6 5h5.2l-2.6-5Z" />
+      {/* the base */}
+      <path d="M8.4 20.4h7.2" />
+    </svg>
+  )
 }
 
-function FAB({ onClick, hasUnread }) {
+function FAB({ onClick, hasUnread, pulse }) {
   return (
     <button
       type="button"
@@ -87,9 +104,18 @@ function FAB({ onClick, hasUnread }) {
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
+        color: COLORS.bg,
       }}
     >
-      <span style={{ fontSize: 24 }}>💬</span>
+      {/* One ring, once, only for somebody who has never opened it.
+          Anything that keeps pulsing becomes something to ignore. */}
+      {pulse && (
+        <span aria-hidden="true" className="lf-assistant-ring" style={{
+          position: 'absolute', inset: -4, borderRadius: '50%',
+          border: `2px solid ${COLORS.gold}`, opacity: 0,
+        }} />
+      )}
+      <Mark size={25} />
       {hasUnread && (
         <span style={{
           position: 'absolute', top: 2, right: 2,
@@ -97,6 +123,17 @@ function FAB({ onClick, hasUnread }) {
           background: '#E53E3E', border: `2px solid ${COLORS.bg}`,
         }} />
       )}
+      <style>{`
+        @keyframes lf-assistant-ring {
+          0%   { opacity: .85; transform: scale(1); }
+          70%  { opacity: 0;   transform: scale(1.5); }
+          100% { opacity: 0;   transform: scale(1.5); }
+        }
+        .lf-assistant-ring { animation: lf-assistant-ring 2.2s ease-out 3; }
+        @media (prefers-reduced-motion: reduce) {
+          .lf-assistant-ring { animation: none; }
+        }
+      `}</style>
     </button>
   )
 }
@@ -203,40 +240,100 @@ function ActionCTA({ action, onGo }) {
   )
 }
 
-function QuickPicks({ onPick }) {
-  const picks = ['legal-notice', 'affidavit', 'rti', 'cheque-bounce', 'bail', 'writ']
+// What the assistant opens with, and what it offers to do first.
+//
+// A student is not asked what notice they want to send, and an advocate
+// is not offered a quiz. One assistant, three first sentences — because
+// the opening line is the only part most people read before deciding
+// whether this thing is for them.
+// What the FREE tier is offered instead.
+//
+// The picks below are written for the model, and the free tier does not
+// reach the model — it matches keywords and jumps to the right form. So
+// a free user clicking "A cheque for Rs 4,50,000 was returned for
+// insufficient funds" would be told it is a Pro feature. Seven of the
+// eight behaved that way: the panel opens itself on somebody's first
+// login, offers four things, and every one is locked.
+//
+// These are phrased to hit the matcher, so a click actually opens the
+// right draft. Free is a real tier and its first minute should work.
+const FREE_PICKS = [
+  ['Legal notice', 'I need to send a legal notice'],
+  ['Cheque bounce', 'A cheque bounced and I need a notice under Section 138'],
+  ['Rent agreement', 'I need a rent agreement'],
+  ['Bail application', 'I need a bail application'],
+]
+
+const OPENING = {
+  student: {
+    line: (n) => `Hi ${n} — what are you working on?`,
+    body: 'Tell me in your own words. A document for your drafting file, a moot problem, a judgment you have to comment on, or a topic you are revising — I will answer, then open the right page with your details already filled in.',
+    picks: [
+      ['Draft for my file', 'I need to draft a legal notice for my DPC file'],
+      ['Moot problem', 'I have a moot problem on the right to privacy and I am for the petitioner'],
+      ['Explain a doctrine', 'Explain the doctrine of basic structure'],
+      ['Quiz me', 'Quiz me on the Bharatiya Nyaya Sanhita 2023'],
+    ],
+  },
+  faculty: {
+    line: (n) => `Hi ${n} — what can I set up for you?`,
+    body: 'A model answer for an exercise you are setting, a quiz on any topic, a judgment read and commented on, or a check on how a case has been treated since. Ask in plain words.',
+    picks: [
+      ['Model answer', 'Draft a model demand notice under Section 138 NI Act for a cheque of Rs 4,50,000'],
+      ['Set a quiz', 'Quiz on the doctrine of basic structure, 10 questions'],
+      ['Explain for class', 'Explain when Section 138 NI Act applies to a friendly loan'],
+      ['Check a judgment', 'Find judgments on Section 45 PMLA twin conditions'],
+    ],
+  },
+  advocate: {
+    line: (n) => `Hi ${n} — what has happened?`,
+    body: 'Describe the matter in your own words. I will tell you which Act and sections apply, and then open the right document with the particulars you have just given me already filled in.',
+    picks: [
+      ['A cheque bounced', 'A cheque for Rs 4,50,000 was returned for insufficient funds last week'],
+      ['I received an order', 'I received a court order yesterday and need to know what it requires'],
+      ['Which Act applies', 'My tenant will not vacate after the lease ended — which Act applies?'],
+      ['Find a judgment', 'Find judgments on anticipatory bail under BNSS Section 482'],
+    ],
+  },
+}
+
+// Shown once per browser. The assistant is the fastest way into every
+// other part of the app and most people never notice a button in the
+// corner — so it introduces itself, once, and then never again.
+const GREETED_KEY = 'lf.assistant.greeted.v1'
+
+// The four openings offered before anybody types. Each sends a full
+// sentence rather than a keyword, because the assistant routes on what
+// happened — "a cheque bounced last week for Rs 4,50,000" carries the
+// facts it needs to prefill; "cheque bounce" carries none of them.
+function StarterPicks({ picks, onPick }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-      {picks.map(type => {
-        const intent = INTENTS.find(i => i.type === type)
-        if (!intent) return null
-        return (
-          <button
-            key={type}
-            type="button"
-            onClick={() => onPick(intent)}
-            style={{
-              padding: '6px 10px',
-              borderRadius: 20,
-              border: `1px solid ${COLORS.border}`,
-              background: COLORS.surface2,
-              color: COLORS.inkMuted,
-              fontSize: 12,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-            }}
-          >
-            <span>{QUICK_ICONS[type] || '📄'}</span> {intent.label}
-          </button>
-        )
-      })}
+      {picks.map(([label, prompt]) => (
+        <button
+          key={label}
+          type="button"
+          onClick={() => onPick(prompt)}
+          title={prompt}
+          style={{
+            padding: '6px 11px',
+            borderRadius: 20,
+            border: '1px solid rgba(212,160,23,0.3)',
+            background: 'rgba(212,160,23,0.06)',
+            color: COLORS.gold,
+            fontSize: 12,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+          }}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   )
 }
 
-export default function AssistantWidget({ isPro = false, userName = 'friend' }) {
+export default function AssistantWidget({ isPro = false, userName = 'friend', audience = 'advocate' }) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -248,18 +345,47 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
 
   const first = prettyName(userName)
 
+  const opening = OPENING[audience] || OPENING.advocate
+
   useEffect(() => {
     if (open && messages.length === 0) {
-      setMessages([
-        {
-          role: 'assistant',
-          text: isPro
-            ? `Hi ${first} — tell me what happened, in your own words. I'll tell you which Act and sections apply, and then open the right document with your details already filled in.`
-            : `Hi ${first} — I'm your Case Assistant. Tell me what you're trying to draft or ask about, and I'll point you the right way.`,
-        },
-      ])
+      setMessages([{
+        role: 'assistant',
+        text: opening.line(first) + '\n\n' + opening.body +
+          (isPro ? '' : '\n\nOn the free plan I match keywords and take you to the right form. Open-ended legal questions are a Pro feature.'),
+      }])
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Open itself the first time somebody uses the app, and only then.
+  //
+  // The assistant is the fastest route into every other part of the
+  // product — it answers, then hands over to the right page with the
+  // particulars already carried across — and a button in the corner is
+  // the single most ignored element on any page. So it introduces
+  // itself once.
+  //
+  // ONCE. An assistant that reopens on every visit is one people learn
+  // to close without reading, which is worse than never opening at all.
+  // The flag is per browser: someone on a new device is new to it again,
+  // which is the right side of that trade.
+  //
+  // The delay lets the page paint first. Arriving on top of a
+  // half-rendered dashboard reads as a popup, not as a greeting.
+  const [neverGreeted, setNeverGreeted] = useState(false)
+  useEffect(() => {
+    let seen = true
+    try { seen = Boolean(window.localStorage.getItem(GREETED_KEY)) } catch { seen = true }
+    if (seen) return
+
+    setNeverGreeted(true)
+    const t = setTimeout(() => {
+      setOpen(true)
+      try { window.localStorage.setItem(GREETED_KEY, String(Date.now())) } catch { /* private window */ }
+      setNeverGreeted(false)
+    }, 1100)
+    return () => clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     if (open) setHasUnread(false)
@@ -359,7 +485,7 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
 
   return (
     <>
-      {!open && <FAB onClick={() => setOpen(true)} hasUnread={hasUnread} />}
+      {!open && <FAB onClick={() => setOpen(true)} hasUnread={hasUnread} pulse={neverGreeted} />}
 
       {open && (
         <div
@@ -395,7 +521,7 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
             flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 18 }}>💬</span>
+              <span style={{ color: COLORS.gold, display: 'flex' }}><Mark size={20} /></span>
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 800, color: COLORS.ink }}>Case Assistant</div>
                 <div style={{ fontSize: 10.5, color: isPro ? COLORS.gold : COLORS.inkFaint, fontWeight: 700 }}>
@@ -430,7 +556,7 @@ export default function AssistantWidget({ isPro = false, userName = 'friend' }) 
               padding: '14px 14px 6px',
             }}
           >
-            {messages.length <= 1 && <QuickPicks onPick={(intent) => send(intent.keywords[0])} />}
+            {messages.length <= 1 && <StarterPicks picks={isPro ? opening.picks : FREE_PICKS} onPick={send} />}
 
             {messages.map((m, i) => (
               <div key={i}>
